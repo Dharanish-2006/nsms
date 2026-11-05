@@ -26,6 +26,7 @@ const writePlant = (name) => {
   try {
     localStorage.setItem(PLANT_KEY, name);
   } catch {
+    /* ignore */
   }
 };
 

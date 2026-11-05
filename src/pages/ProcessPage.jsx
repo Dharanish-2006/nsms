@@ -1,7 +1,6 @@
 import { icons, images, machineImage } from "../assets";
 import { useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
-import { EnergyChart, RuntimeBand } from "../components/Charts";
 import { AssetIcon, StatusBadge } from "../components/Icon";
 import { useData } from "../context/DataContext";
 import {
@@ -11,6 +10,7 @@ import {
   istDay,
   istHour,
   istStamp,
+  istStamp12,
   istTime,
 } from "../lib/format";
 import { statusOf } from "../lib/status";
@@ -33,6 +33,12 @@ const Row = ({ k, v }) => (
     <strong>{v}</strong>
   </div>
 );
+const RANGES = [
+  { hours: 720, label: "Last Month", short: "Last Month" },
+  { hours: 168, label: "Last Week", short: "Last Week" },
+  { hours: 24, label: "Last 24 hours", short: "Last 24 hrs" },
+  { hours: 12, label: "Last 12 hours", short: "Last 12 hrs" },
+];
 export default function ProcessPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -45,8 +51,7 @@ export default function ProcessPage() {
   const on = status === "on";
   const na = "N/A";
   const hour = istHour(lastUpdate);
-  const startHour = Math.max(0, hour - windowHrs + 1);
-  const series = m.hourlyKwh.slice(startHour, hour + 1);
+  const rangeLabel = RANGES.find((r) => r.hours === windowHrs)?.short ?? "Last 24 hrs";
   const download = () =>
     downloadCsv(`${m.id}-${istDay(lastUpdate).replace(" ", "-")}.csv`, [
       ["Machine", m.name],
@@ -105,10 +110,11 @@ export default function ProcessPage() {
             value={windowHrs}
             onChange={(e) => setWindowHrs(Number(e.target.value))}
           >
-            <option value={24}>Last Month</option>
-            <option value={24}>Last Week</option>
-            <option value={24}>Last 24 hours</option>
-            <option value={12}>Last 12 hours</option>
+            {RANGES.map((r) => (
+              <option key={r.hours} value={r.hours}>
+                {r.label}
+              </option>
+            ))}
           </select>
           <button className="primary-button download" onClick={download}>
             ↓ &nbsp; Download report
@@ -116,39 +122,7 @@ export default function ProcessPage() {
         </section>
 
         <div className="analysis-grid">
-          <InfoCard title="Electrical measurements" icon={icons.cardElectrical}>
-            <div className="data-list">
-              <Row k="Average current" v={on ? `${fmt(m.current)} A` : na} />
-              <Row k="Power factor" v={on ? fmt(m.pf, 3) : na} />
-              <Row k="Active power" v={on ? `${fmt(m.kw)} kW` : na} />
-              <Row k="Reactive power" v={on ? `${fmt(m.kvar)} kVAR` : na} />
-              <Row k="Apparent power" v={on ? `${fmt(m.kva)} kVA` : na} />
-            </div>
-            <p className="info-note">
-              ⓘ &nbsp; Different electrical quantities. Do not add them together.
-            </p>
-          </InfoCard>
-
-          <InfoCard title="Energy and demand" icon={icons.cardEnergy}>
-            <div className="data-list compact">
-              <Row
-                k="Total active energy"
-                v={
-                  <span className="counter">
-                    {m.totalKwh.toFixed(1).padStart(8, "0")} <small>kWh</small>
-                  </span>
-                }
-              />
-              <Row k="Total reactive energy" v={`${fmt(m.totalKvarh, 1)} kVARh`} />
-              <Row k="Total apparent energy" v={`${fmt(m.totalKvah, 1)} kVAh`} />
-              <Row k="Maximum demand" v={na} />
-              <Row k="Energy used (this run)" v={on ? `${fmt(m.runKwh, 1)} kWh` : na} />
-            </div>
-            <p className="chart-label">Energy used per hour today (kWh)</p>
-            <EnergyChart values={series} startHour={startHour} />
-          </InfoCard>
-
-          <InfoCard title="Operating performance" icon={icons.cardPerformance}>
+          <article className="info-card load-card">
             <div className="load-visual">
               <img src={images.loadGauge} alt="" />
               <div>
@@ -160,21 +134,35 @@ export default function ProcessPage() {
               </div>
             </div>
             <div className="data-list compact">
-              <Row k="Total runtime" v={fmtDuration(m.totalRuntimeSec)} />
-              <Row k="Running duration (this run)" v={on ? fmtDuration(m.runSec) : na} />
               <Row
-                k="Average power factor (this run)"
-                v={on && m.avgPfRun ? fmt(m.avgPfRun, 3) : na}
+                k={`Average Load Factor (${rangeLabel})`}
+                v={`${on ? Math.round(m.loadFactor) : 0} %`}
               />
             </div>
-            <RuntimeBand hours={m.hourOn} />
+          </article>
+
+          <InfoCard title="Operating performance" icon={icons.cardPerformance}>
+            <div className="data-list compact">
+              <Row k="Total runtime" v={fmtDuration(m.totalRuntimeSec)} />
+              <Row
+                k={`Running duration (${rangeLabel})`}
+                v={on ? fmtDuration(m.runSec) : na}
+              />
+              <Row
+                k={`Average power factor (${rangeLabel})`}
+                v={on && m.avgPfRun ? `${fmt(m.avgPfRun)} PF` : na}
+              />
+            </div>
           </InfoCard>
 
           <InfoCard title="Motor information" icon={icons.cardMotor}>
             <div className="data-list">
               <Row k="Motor name" v={m.name} />
-              <Row k="Motor ON" v={m.runStart ? istStamp(m.runStart) : na} />
-              <Row k="Motor OFF (last stop)" v={m.lastStop ? istStamp(m.lastStop) : na} />
+              <Row k="Motor ON" v={m.runStart ? istStamp12(m.runStart) : na} />
+              <Row
+                k="Motor OFF (last stop)"
+                v={on ? "RUNNING" : m.lastStop ? istStamp12(m.lastStop) : na}
+              />
               <Row k="Motor status" v={<StatusBadge status={status} />} />
             </div>
             <p className="success-note">

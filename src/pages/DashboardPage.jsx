@@ -7,10 +7,13 @@ import { AssetIcon, StatusBadge } from "../components/Icon";
 import { useData } from "../context/DataContext";
 import { fmt, fmtDuration } from "../lib/format";
 const todayKwh = (m) => m.hourlyKwh.reduce((a, b) => a + b, 0);
+// "Actual usage" is the energy used in the machine's current run.
+const actualKwh = (m) => (m.runKwh > 0 ? m.runKwh : 0);
 function MachineCard({ m, now, onOpen }) {
   const status = statusOf(m, now);
   const on = status === "on";
   const kwh = todayKwh(m);
+  const actual = actualKwh(m);
   return (
     <button
       className="machine-card"
@@ -36,7 +39,7 @@ function MachineCard({ m, now, onOpen }) {
         <div className="machine-stat">
           <span className="stat-title">
             <b className="line-icon clock" />
-            Runtime today
+            Runtime
           </span>
           <strong>{m.todaySec > 0 ? fmtDuration(m.todaySec) : "--"}</strong>
         </div>
@@ -57,14 +60,18 @@ function MachineCard({ m, now, onOpen }) {
             <i style={{ width: `${on ? Math.min(m.loadFactor, 100) : 0}%` }} />
           </div>
         </div>
-        <div className="machine-stat consumed">
+        <div className="machine-stat">
           <span className="stat-title">
             <b className="bolt">ϟ</b>Power Consumed
           </span>
-          <div className="consumed-value">
-            <strong>{kwh > 0 ? `${fmt(kwh, 1)} kWh` : "-- kWh"}</strong>
-            <ConsumptionBars muted={!on} />
-          </div>
+          <strong>{kwh > 0 ? `${fmt(kwh, 1)} kWh` : "-- kWh"}</strong>
+        </div>
+        <div className="machine-stat">
+          <span className="stat-title">
+            <b className="line-icon layers" />
+            Actual Usage
+          </span>
+          <strong>{actual > 0 ? `${fmt(actual, 1)} kWh` : "-- kWh"}</strong>
         </div>
       </div>
     </button>
@@ -75,6 +82,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [menu, setMenu] = useState(false);
   const total = machines.reduce((s, m) => s + todayKwh(m), 0);
+  const actualTotal = machines.reduce((s, m) => s + actualKwh(m), 0);
   return (
     <>
       <section className="hero">
@@ -118,14 +126,22 @@ export default function DashboardPage() {
         <img className="mill-art" src={images.heroMill} alt="Rice mill illustration" />
       </section>
 
-      <section className="primary-metrics" aria-label="Plant metrics">
-        <article className="metric energy">
-          <h2>POWER CONSUMED TODAY</h2>
+      <section className="usage-panel" aria-label="Plant metrics">
+        <article>
+          <h2>POWER CONSUMED</h2>
           <div className="energy-value">
             <span className="energy-icon">ϟ</span>
             <strong>{Math.round(total).toLocaleString("en-IN")}</strong>
             <span>kWh</span>
             <ConsumptionBars />
+          </div>
+        </article>
+        <article>
+          <h2>ACTUAL USAGE</h2>
+          <div className="energy-value">
+            <b className="line-icon layers usage-icon" />
+            <strong>{Math.round(actualTotal).toLocaleString("en-IN")}</strong>
+            <span>kWh</span>
           </div>
         </article>
       </section>

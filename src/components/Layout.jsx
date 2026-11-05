@@ -4,13 +4,13 @@ import { icons } from "../assets";
 import { USE_MOCK } from "../config";
 import { useAuth } from "../context/AuthContext";
 import { DataProvider, useData } from "../context/DataContext";
-import { istDate, istTime } from "../lib/format";
+import { istClock, istDate, istTime } from "../lib/format";
 import { AssetIcon } from "./Icon";
 import { ErrorPanel, PageLoader } from "./PageState";
 
 const navItems = [
   { label: "Dashboard", to: "/", icon: icons.navDashboard },
-  { label: "History", to: "/reports", icon: icons.navReports },
+  { label: "History", to: "/machines", icon: icons.navReports },
   { label: "Alerts", to: "/alerts", icon: icons.navAlerts },
   { label: "Settings", to: "/settings", icon: icons.navSettings },
 ];
@@ -26,8 +26,6 @@ function titleFor(path) {
 function Sidebar() {
   const { user, logout } = useAuth();
   const { activeAlertCount } = useData();
-  const { pathname } = useLocation();
-
   const confirmLogout = () => {
     if (window.confirm("Log out of this device?")) logout();
   };
@@ -44,16 +42,12 @@ function Sidebar() {
 
       <nav aria-label="Primary navigation">
         {navItems.map((item) => {
-          // Machine detail pages belong to the Dashboard section.
-          const forced = item.to === "/" && pathname.startsWith("/machines");
           return (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.to === "/"}
-              className={({ isActive }) =>
-                isActive || forced ? "nav-item active" : "nav-item"
-              }
+              className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}
             >
               <AssetIcon src={item.icon} />
               <span>{item.label}</span>
@@ -101,7 +95,7 @@ function Topbar() {
     <header className="topbar">
       <div className="live-datetime">
         <strong>{istDate(now)}</strong>
-        <span>{istTime(now)}</span>
+        <span>{istClock(now)}</span>
       </div>
       <span className="topbar-divider" />
       <strong>{titleFor(pathname)}</strong>
@@ -136,7 +130,7 @@ function Topbar() {
       </div>
       <div className="updated">
         <i />
-        {lastUpdate ? `Last updated ${istTime(lastUpdate)}` : "Waiting for data…"}
+        {lastUpdate ? `Last updated ${istTime(lastUpdate)} IST` : "Waiting for data…"}
       </div>
     </header>
   );
