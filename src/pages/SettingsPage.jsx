@@ -263,7 +263,7 @@ function PendingPanel() {
             </strong>
             <small>
               Requested {u.role === "admin" ? "Admin" : "User"} access · {u.email} ·{" "}
-              {fmtPhone(u.mobile)}
+              {u.mobile ? fmtPhone(u.mobile) : "No phone"}
             </small>
           </div>
           <button onClick={() => act(api.users.approve, u.id)}>Approve</button>

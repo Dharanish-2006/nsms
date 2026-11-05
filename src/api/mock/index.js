@@ -19,6 +19,19 @@ import { hash, load, save, uid } from "./storage";
 // production builds (VITE_USE_MOCK=false).
 
 const USERS_KEY = "rmm.mock.users";
+const OTP_TTL_MS = 5 * 60 * 1000;
+const OTP_MAX_TRIES = 5;
+const otps = new Map(); // `${channel}:${target}` -> { code, expires, tries }
+const proofs = new Map(); // token -> `${channel}:${target}`
+const otpKey = (channel, target) => `${channel}:${String(target).trim().toLowerCase()}`;
+const checkTarget = (channel, target) => {
+  if (channel === "email" && !/^\S+@\S+\.\S+$/.test(target))
+    fail(422, "Enter a valid email.", "validation");
+  if (channel === "phone" && !/^\d{10}$/.test(target))
+    fail(422, "Enter a valid 10-digit number.", "validation");
+  if (channel !== "email" && channel !== "phone")
+    fail(422, "Unknown channel.", "validation");
+};
 const PARAMS = ["powerFactor", "avgCurrent", "activePower", "freshness"];
 
 let seeding = null;
@@ -83,8 +96,45 @@ export const mockApi = {
       tokenStore.set(u.id);
       return publicUser(u);
     },
+    async sendOtp(channel, target) {
+      checkTarget(channel, target);
+      const code = String(Math.floor(100000 + Math.random() * 900000));
+      otps.set(otpKey(channel, target), {
+        code,
+        expires: Date.now() + OTP_TTL_MS,
+        tries: 0,
+      });
+      // Demo only: there is no SMS/email gateway, so the code is handed to the UI.
+      return { demoCode: code };
+    },
+    async verifyOtp(channel, target, code) {
+      checkTarget(channel, target);
+      const key = otpKey(channel, target);
+      const rec = otps.get(key);
+      if (!rec || rec.expires < Date.now())
+        fail(400, "That code has expired. Request a new one.", "otp_expired");
+      if (rec.tries >= OTP_MAX_TRIES) {
+        otps.delete(key);
+        fail(429, "Too many attempts. Request a new code.", "otp_locked");
+      }
+      if (rec.code !== String(code).trim()) {
+        rec.tries += 1;
+        fail(400, "Incorrect code.", "otp_invalid");
+      }
+      otps.delete(key);
+      const token = uid();
+      proofs.set(token, key);
+      return { token };
+    },
     async register(input) {
       await ensureSeed();
+      const needProof = (channel, target, token) => {
+        if (proofs.get(token) !== otpKey(channel, target))
+          fail(400, `Verify your ${channel} first.`, "not_verified");
+        proofs.delete(token);
+      };
+      needProof("email", input.email, input.emailToken);
+      if (input.mobile) needProof("phone", input.mobile, input.phoneToken);
       const list = users();
       if (
         list.some((u) => u.username.toLowerCase() === input.username.trim().toLowerCase())
@@ -97,7 +147,7 @@ export const mockApi = {
           username: input.username.trim(),
           fullName: input.fullName.trim(),
           email: input.email.trim(),
-          mobile: input.mobile,
+          mobile: input.mobile || "",
           role: input.role === "admin" ? "admin" : "user",
           status: "pending",
           passHash: await hash(input.password),

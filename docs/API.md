@@ -23,13 +23,15 @@ with fake data is in `scripts/dev-api.mjs` (`pnpm dev:api`).
 
 ## Auth
 
-| Method | Path                    | Body                                                    | Response                                                                                              |
-| ------ | ----------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| POST   | `/auth/login`           | `{ username, password }`                                | `{ token, user }`. 401 wrong credentials; 403 with `code: "pending_approval"` if not yet approved     |
-| POST   | `/auth/register`        | `{ fullName, username, email, mobile, password, role }` | 201. Account starts as `pending`. 409 if username is taken. Treat `role: "admin"` as a _request_ only |
-| GET    | `/auth/me`              |                                                         | `user`                                                                                                |
-| POST   | `/auth/logout`          |                                                         | 204                                                                                                   |
-| POST   | `/auth/change-password` | `{ currentPassword, newPassword }`                      | 204. 400 if current password is wrong                                                                 |
+| Method | Path                    | Body                                                                              | Response                                                                                                                                                                                                       |
+| ------ | ----------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/auth/login`           | `{ username, password }`                                                          | `{ token, user }`. 401 wrong credentials; 403 with `code: "pending_approval"` if not yet approved                                                                                                              |
+| POST   | `/auth/otp/send`        | `{ channel: "email" \| "phone", target }`                                         | 204. Generate a 6-digit code server-side, expire it in ~5 min, send it out of band. Rate-limit per target and IP                                                                                               |
+| POST   | `/auth/otp/verify`      | `{ channel, target, code }`                                                       | `{ token }` (short-lived, single-use proof). 400 wrong/expired code; 429 after 5 wrong tries                                                                                                                   |
+| POST   | `/auth/register`        | `{ fullName, username, email, emailToken, mobile?, phoneToken?, password, role }` | 201. `emailToken` is required and must match `email`; `mobile` is optional but if sent needs a matching `phoneToken`. Starts as `pending`. 409 if username is taken. Treat `role: "admin"` as a _request_ only |
+| GET    | `/auth/me`              |                                                                                   | `user`                                                                                                                                                                                                         |
+| POST   | `/auth/logout`          |                                                                                   | 204                                                                                                                                                                                                            |
+| POST   | `/auth/change-password` | `{ currentPassword, newPassword }`                                                | 204. 400 if current password is wrong                                                                                                                                                                          |
 
 `user`: `{ id, username, fullName, email, mobile, role: "admin" | "user", status: "active" | "pending" }`
 

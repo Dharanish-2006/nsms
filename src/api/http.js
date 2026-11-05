@@ -19,6 +19,20 @@ export const httpApi = {
     },
     register: (input) =>
       request("/auth/register", { method: "POST", body: input, auth: false }),
+    /** channel: "email" | "phone" -> 204 (code is sent out of band) */
+    sendOtp: (channel, target) =>
+      request("/auth/otp/send", {
+        method: "POST",
+        body: { channel, target },
+        auth: false,
+      }),
+    /** -> { token }, a short-lived proof of verification to pass to register */
+    verifyOtp: (channel, target, code) =>
+      request("/auth/otp/verify", {
+        method: "POST",
+        body: { channel, target, code },
+        auth: false,
+      }),
     me: () => request("/auth/me"),
     async logout() {
       try {

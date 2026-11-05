@@ -185,6 +185,12 @@ async function api(req, res, url) {
     token = `stub-${Date.now()}`;
     return json(res, 200, { token, user: publicUser(u) });
   }
+  if (route === "POST /auth/otp/send") return json(res, 204); // stub code: 123456
+  if (route === "POST /auth/otp/verify") {
+    if (body.code !== "123456")
+      return json(res, 400, { message: "Incorrect code.", code: "otp_invalid" });
+    return json(res, 200, { token: `otp-${body.channel}-${body.target}` });
+  }
   if (route === "POST /auth/register") {
     users.push({ id: `u${nextId++}`, status: "pending", role: "user", ...body });
     return json(res, 201, { ok: true });

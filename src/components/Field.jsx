@@ -11,6 +11,10 @@ export function Field({
   error,
   placeholder,
   autoComplete,
+  inputMode,
+  maxLength,
+  disabled,
+  action,
 }) {
   const errorId = useId();
   return (
@@ -23,10 +27,14 @@ export function Field({
           value={value}
           placeholder={placeholder}
           autoComplete={autoComplete}
+          inputMode={inputMode}
+          maxLength={maxLength}
+          disabled={disabled}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
           onChange={(e) => onChange(e.target.value)}
         />
+        {action}
       </div>
       {error && (
         <small id={errorId} role="alert">
