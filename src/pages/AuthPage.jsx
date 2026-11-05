@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AssetIcon } from "../components/Icon";
 import { Field } from "../components/Field";
-import { USE_MOCK, config } from "../config";
+import { OtpVerify } from "../components/OtpVerify";
+import { config } from "../config";
 import { useAuth } from "../context/AuthContext";
 function CompanyPanel() {
   return (
@@ -95,21 +96,36 @@ function RegisterForm() {
   const [errors, setErrors] = useState({});
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [usePhone, setUsePhone] = useState(false);
+  const [emailToken, setEmailToken] = useState(null);
+  const [phoneToken, setPhoneToken] = useState(null);
+  const mobileDigits = f.mobile.replace(/\s|-/g, "").replace(/^\+?91/, "");
   const set = (k) => (v) => setF((p) => ({ ...p, [k]: v }));
   const submit = async (e) => {
     e.preventDefault();
-    const mobile = f.mobile.replace(/\s|-/g, "").replace(/^\+?91/, "");
+    const mobile = usePhone ? mobileDigits : "";
     const er = {};
     if (!f.fullName.trim()) er.fullName = "Enter your full name";
     if (f.username.trim().length < 3) er.username = "At least 3 characters";
     if (!/^\S+@\S+\.\S+$/.test(f.email)) er.email = "Enter a valid email";
-    if (!/^\d{10}$/.test(mobile)) er.mobile = "Enter a valid 10-digit number";
+    if (!emailToken) er.email ||= "Verify your email with the OTP";
+    if (usePhone) {
+      if (!/^\d{10}$/.test(mobile)) er.mobile = "Enter a valid 10-digit number";
+      else if (!phoneToken) er.mobile = "Verify your phone with the OTP";
+    }
     if (f.password.length < 8) er.password = "Use at least 8 characters";
     if (f.confirm !== f.password) er.confirm = "Passwords do not match";
     setErrors(er);
     if (Object.keys(er).length) return;
     setBusy(true);
-    const err = await register({ ...f, mobile, role });
+    const { confirm: _c, ...rest } = f;
+    const err = await register({
+      ...rest,
+      mobile,
+      role,
+      emailToken,
+      ...(usePhone ? { phoneToken } : {}),
+    });
     setBusy(false);
     if (err) return setErrors({ username: err });
     setDone(true);
@@ -164,23 +180,49 @@ function RegisterForm() {
           error={errors.username}
           autoComplete="username"
         />
-        <Field
-          label="Email"
-          icon={icons.fieldMail}
-          value={f.email}
-          onChange={set("email")}
-          error={errors.email}
-          autoComplete="email"
+      </div>
+      <OtpVerify
+        channel="email"
+        label="Email"
+        icon={icons.fieldMail}
+        value={f.email}
+        onChange={set("email")}
+        target={f.email.trim()}
+        valid={/^\S+@\S+\.\S+$/.test(f.email.trim())}
+        verified={Boolean(emailToken)}
+        onVerified={setEmailToken}
+        error={errors.email}
+        autoComplete="email"
+      />
+      <label className="toggle-row">
+        <span>Add a phone number (optional)</span>
+        <input
+          type="checkbox"
+          role="switch"
+          checked={usePhone}
+          onChange={(e) => {
+            setUsePhone(e.target.checked);
+            if (!e.target.checked) setPhoneToken(null);
+          }}
         />
-        <Field
+        <i aria-hidden="true" />
+      </label>
+      {usePhone && (
+        <OtpVerify
+          channel="phone"
           label="Mobile number"
           icon={icons.fieldPhone}
           value={f.mobile}
           onChange={set("mobile")}
+          target={mobileDigits}
+          valid={/^\d{10}$/.test(mobileDigits)}
+          verified={Boolean(phoneToken)}
+          onVerified={setPhoneToken}
           error={errors.mobile}
           autoComplete="tel"
+          inputMode="tel"
         />
-      </div>
+      )}
       <Field
         label="Password"
         type="password"

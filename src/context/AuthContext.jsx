@@ -58,6 +58,25 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  // sendOtp returns null or an error message; verifyOtp returns { token } or { error }.
+  const sendOtp = useCallback(async (channel, target) => {
+    try {
+      const res = await api.auth.sendOtp(channel, target);
+      return { error: null, demoCode: res?.demoCode };
+    } catch (err) {
+      return { error: messageOf(err) };
+    }
+  }, []);
+
+  const verifyOtp = useCallback(async (channel, target, code) => {
+    try {
+      const res = await api.auth.verifyOtp(channel, target, code);
+      return { token: res.token };
+    } catch (err) {
+      return { error: messageOf(err) };
+    }
+  }, []);
+
   const changePassword = useCallback(async (current, next) => {
     try {
       await api.auth.changePassword(current, next);
@@ -77,8 +96,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const value = useMemo(
-    () => ({ ready, user, login, register, logout, changePassword }),
-    [ready, user, login, register, logout, changePassword],
+    () => ({ ready, user, login, register, sendOtp, verifyOtp, logout, changePassword }),
+    [ready, user, login, register, sendOtp, verifyOtp, logout, changePassword],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
