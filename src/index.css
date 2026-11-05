@@ -882,7 +882,7 @@ h1 {
 .machine-stats {
   min-height: 85px;
   display: grid;
-  grid-template-columns: 0.82fr 1.15fr 1fr 1fr 1.3fr;
+  grid-template-columns: 0.8fr 1.1fr 0.9fr 1.1fr 1.1fr 1.1fr;
   border-top: 1px solid #dce2d6;
   padding-top: 11px;
 }
@@ -1554,7 +1554,7 @@ h1 {
   min-height: 89px;
   padding: 16px 18px;
   display: grid;
-  grid-template-columns: 46px 1.4fr 100px 260px 110px;
+  grid-template-columns: 46px 1fr 1fr;
   align-items: center;
   gap: 16px;
   border: 1px solid #dce2d6;
@@ -2407,4 +2407,114 @@ h1 {
 .toggle-row input:focus-visible + i {
   outline: 2px solid #1e6b3c;
   outline-offset: 2px;
+}
+
+.usage-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 20px;
+  padding: 28px 0;
+  border: 1px solid #d4dbd0;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 2px 5px rgb(23 32 25 / 6%);
+}
+.usage-panel article {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.usage-panel article + article {
+  border-left: 1px solid #c3ccbc;
+}
+.usage-panel h2 {
+  margin: 0;
+  color: #263029;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+.usage-icon {
+  width: 40px;
+  height: 40px;
+  margin-right: 7px;
+}
+.threshold-card .threshold-chips {
+  display: flex;
+  gap: 16px;
+}
+.threshold-chip {
+  min-width: 150px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px;
+}
+.threshold-chip div {
+  display: grid;
+}
+.threshold-chip.critical {
+  color: #8f1a16;
+  background: #fde5e3;
+}
+.threshold-chip.warning {
+  color: #8b4b00;
+  background: #fff0d3;
+}
+.threshold-chip strong {
+  font-size: 16px;
+}
+.threshold-chip span {
+  font-size: 15px;
+  font-weight: 600;
+}
+.threshold-card {
+  min-height: 130px;
+  grid-template-columns: 90px 1fr auto auto;
+  align-items: center;
+  gap: 24px;
+}
+.threshold-card > img {
+  width: 80px;
+  height: 80px;
+}
+.threshold-card h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 600;
+}
+.threshold-card p {
+  margin: 3px 0 0;
+  color: #617068;
+  font-size: 13px;
+}
+.threshold-card .edit-btn {
+  height: 40px;
+  padding: 0 18px;
+  border: 1px solid #c3ccbc;
+  border-radius: 10px;
+  background: white;
+  font-weight: 600;
+}
+
+.info-card {
+  min-height: 0;
+}
+.info-card.load-card .load-visual {
+  height: 150px;
+  gap: 24px;
+}
+@media (max-width: 1100px) {
+  .usage-panel {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .usage-panel article + article {
+    border-left: 0;
+  }
+}
+.usage-panel .energy-value {
+  width: auto;
 }

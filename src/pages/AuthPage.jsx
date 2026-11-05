@@ -64,7 +64,7 @@ function LoginForm() {
         onChange={setUsername}
         autoComplete="username"
         placeholder={"email or phone number"}
-        />
+      />
       <Field
         label="Password"
         type="password"
@@ -169,7 +169,6 @@ function RegisterForm() {
         </div>
       </div>
       <div className="form-grid">
-
         <Field
           label="Username"
           placeholder={"your name"}
@@ -182,7 +181,7 @@ function RegisterForm() {
       <OtpVerify
         channel="email"
         label="Email"
-        
+
         icon={icons.fieldMail}
         value={f.email}
         onChange={set("email")}

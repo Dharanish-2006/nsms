@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Layout } from "./components/Layout";
 import { PageLoader } from "./components/PageState";
@@ -24,7 +24,7 @@ export default function App() {
             <Route path="/register" element={<AuthPage mode="register" />} />
             <Route element={<Layout />}>
               <Route index element={<DashboardPage />} />
-              <Route path="machines" element={<Navigate to="/" replace />} />
+              <Route path="machines" element={<ProcessPage />} />
               <Route path="machines/:id" element={<ProcessPage />} />
               <Route path="alerts" element={<AlertsPage />} />
               <Route path="reports" element={<ReportsPage />} />

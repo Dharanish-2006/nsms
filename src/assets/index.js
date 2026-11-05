@@ -32,6 +32,7 @@ import loadGauge from "./images/load-gauge.svg";
 import alertMachine from "./images/alert-machine.svg";
 import settingsPassword from "./images/settings-password.svg";
 import settingsPhone from "./images/settings-phone.svg";
+import settingsThreshold from "./images/settings-threshold.svg";
 import settingsLogout from "./images/settings-logout.svg";
 import shellerCard from "./images/sheller-card.svg";
 import shellerRail from "./images/sheller-rail.svg";
@@ -75,6 +76,7 @@ export const images = {
   alertMachine,
   settingsPassword,
   settingsPhone,
+  settingsThreshold,
   settingsLogout,
 };
 

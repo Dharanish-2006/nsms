@@ -2,9 +2,10 @@ import { icons, images } from "../assets";
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { Field } from "../components/Field";
+import { ThresholdPanel } from "../components/ThresholdPanel";
 import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
-import { fmtPhone } from "../lib/format";
+import { fmt, fmtPhone } from "../lib/format";
 const clean = (s) => s.replace(/\s|-/g, "").replace(/^\+?91/, "");
 function PasswordPanel() {
   const { changePassword } = useAuth();
@@ -275,6 +276,51 @@ function PendingPanel() {
     </section>
   );
 }
+function ThresholdCard() {
+  const { thresholds } = useData();
+  const { user } = useAuth();
+  const [editing, setEditing] = useState(false);
+  const pf =
+    thresholds.find((t) => t.param === "powerFactor" && t.machineId === "all") ??
+    thresholds.find((t) => t.param === "powerFactor");
+  const range = (lo, hi) => `${fmt(lo)} – ${fmt(hi)}`;
+  const critical = pf && pf.critical !== null ? range(0, pf.critical) : "No limit";
+  const warning =
+    pf && pf.warning !== null ? range(pf.critical ?? 0, pf.warning) : "No limit";
+  return (
+    <>
+      <section className="settings-panel panel threshold-card">
+        <img src={images.settingsThreshold} alt="" />
+        <div>
+          <h2>Threshold Settings</h2>
+          <p>Set value ranges for Power Factor alerts.</p>
+        </div>
+        <div className="threshold-chips">
+          <div className="threshold-chip critical">
+            <span aria-hidden="true">⚠</span>
+            <div>
+              <strong>Critical</strong>
+              <span>{critical}</span>
+            </div>
+          </div>
+          <div className="threshold-chip warning">
+            <span aria-hidden="true">ⓘ</span>
+            <div>
+              <strong>Warning</strong>
+              <span>{warning}</span>
+            </div>
+          </div>
+        </div>
+        {user?.role === "admin" && (
+          <button className="edit-btn" onClick={() => setEditing(!editing)}>
+            {editing ? "Close" : "✎ Edit"}
+          </button>
+        )}
+      </section>
+      {editing && <ThresholdPanel />}
+    </>
+  );
+}
 export default function SettingsPage() {
   const { user, logout } = useAuth();
   return (
@@ -287,6 +333,7 @@ export default function SettingsPage() {
       </div>
       <PasswordPanel />
       <PhonePanel />
+      <ThresholdCard />
       {user?.role === "admin" && <PendingPanel />}
       <section className="settings-panel panel logout-panel">
         <img src={images.settingsLogout} alt="" />
