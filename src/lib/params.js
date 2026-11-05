@@ -4,7 +4,7 @@ export const PARAMS = {
     unit: "",
     dir: "below",
     decimals: 2,
-    get: (m) => (m.on ? m.pf : null),
+    get: (m) => (m.on && m.type !== "sortex" ? m.pf : null),
   },
 };
 export const fmtParam = (p, v) =>

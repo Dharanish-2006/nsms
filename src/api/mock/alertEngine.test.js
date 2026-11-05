@@ -58,4 +58,9 @@ describe("alert evaluation", () => {
     const active = evaluate([machine({ pf: 0.75 })], [pfLimit], new Map(), 2000);
     expect(evaluate([machine({ pf: 0.75 })], [], active, 3000).size).toBe(0);
   });
+
+  it("never raises power factor alerts for a colour sorter", () => {
+    const sortex = machine({ id: "s1", type: "sortex", pf: 0.5 });
+    expect(evaluate([sortex], [pfLimit], new Map(), 2000).size).toBe(0);
+  });
 });

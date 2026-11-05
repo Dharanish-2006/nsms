@@ -90,7 +90,7 @@ Keep them fast. It backs off automatically when they fail.
 }
 ```
 
-- `type` is one of `sheller | whitener | polisher | sortex`; it only picks the picture.
+- `type` is one of `sheller | whitener | sortex`; it picks the picture. Machines of type `sortex` have no power factor or load factor: the UI hides them and the backend must not raise power factor alerts for them.
 - `serverTime` is the server's clock. The UI compares it with `updatedAt` to decide
   whether a machine is "unknown" (no data for 2 minutes), so it never relies on the
   viewer's clock.

@@ -37,8 +37,6 @@ import settingsLogout from "./images/settings-logout.svg";
 import shellerCard from "./images/sheller-card.svg";
 import shellerRail from "./images/sheller-rail.svg";
 import whitener from "./images/whitener.svg";
-import polisherCard from "./images/polisher-card.svg";
-import polisherRail from "./images/polisher-rail.svg";
 import sortex from "./images/sortex.svg";
 
 export const icons = {
@@ -84,7 +82,6 @@ export const images = {
 const machineArt = {
   sheller: { card: shellerCard, rail: shellerRail },
   whitener: { card: whitener, rail: whitener },
-  polisher: { card: polisherCard, rail: polisherRail },
   sortex: { card: sortex, rail: sortex },
 };
 export const machineImage = (type, variant = "card") =>

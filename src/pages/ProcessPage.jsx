@@ -13,6 +13,7 @@ import {
   istStamp12,
   istTime,
 } from "../lib/format";
+import { hasPowerQuality } from "../lib/machine";
 import { statusOf } from "../lib/status";
 function InfoCard({ title, icon, children }) {
   return (
@@ -49,6 +50,7 @@ export default function ProcessPage() {
     return <Navigate to={machines[0] ? `/machines/${machines[0].id}` : "/"} replace />;
   const status = statusOf(m, lastUpdate);
   const on = status === "on";
+  const pq = hasPowerQuality(m);
   const na = "N/A";
   const hour = istHour(lastUpdate);
   const rangeLabel = RANGES.find((r) => r.hours === windowHrs)?.short ?? "Last 24 hrs";
@@ -61,7 +63,7 @@ export default function ProcessPage() {
       ["Measurement", "Value", "Unit"],
       ["Status", status.toUpperCase(), ""],
       ["Average current", on ? m.current.toFixed(2) : na, "A"],
-      ["Power factor", on ? m.pf.toFixed(3) : na, ""],
+      ...(pq ? [["Power factor", on ? m.pf.toFixed(3) : na, ""]] : []),
       ["Active power", on ? m.kw.toFixed(2) : na, "kW"],
       ["Reactive power", on ? m.kvar.toFixed(2) : na, "kVAR"],
       ["Apparent power", on ? m.kva.toFixed(2) : na, "kVA"],
@@ -124,24 +126,26 @@ export default function ProcessPage() {
         </section>
 
         <div className="analysis-grid">
-          <article className="info-card load-card">
-            <div className="load-visual">
-              <img src={images.loadGauge} alt="" />
-              <div>
-                <span>Load factor</span>
-                <strong>
-                  {on ? Math.round(m.loadFactor) : 0}
-                  <small>%</small>
-                </strong>
+          {pq && (
+            <article className="info-card load-card">
+              <div className="load-visual">
+                <img src={images.loadGauge} alt="" />
+                <div>
+                  <span>Load factor</span>
+                  <strong>
+                    {on ? Math.round(m.loadFactor) : 0}
+                    <small>%</small>
+                  </strong>
+                </div>
               </div>
-            </div>
-            <div className="data-list compact">
-              <Row
-                k={`Average Load Factor (${rangeLabel})`}
-                v={`${on ? Math.round(m.loadFactor) : 0} %`}
-              />
-            </div>
-          </article>
+              <div className="data-list compact">
+                <Row
+                  k={`Average Load Factor (${rangeLabel})`}
+                  v={`${on ? Math.round(m.loadFactor) : 0} %`}
+                />
+              </div>
+            </article>
+          )}
 
           <InfoCard title="Operating performance" icon={icons.cardPerformance}>
             <div className="data-list compact">
@@ -150,10 +154,12 @@ export default function ProcessPage() {
                 k={`Running duration (${rangeLabel})`}
                 v={on ? fmtDuration(m.runSec) : na}
               />
-              <Row
-                k={`Average power factor (${rangeLabel})`}
-                v={on && m.avgPfRun ? `${fmt(m.avgPfRun)} PF` : na}
-              />
+              {pq && (
+                <Row
+                  k={`Average power factor (${rangeLabel})`}
+                  v={on && m.avgPfRun ? `${fmt(m.avgPfRun)} PF` : na}
+                />
+              )}
             </div>
           </InfoCard>
 

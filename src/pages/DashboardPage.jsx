@@ -7,6 +7,7 @@ import { ConsumptionBars } from "../components/Charts";
 import { AssetIcon, StatusBadge } from "../components/Icon";
 import { useData } from "../context/DataContext";
 import { fmt, fmtDuration } from "../lib/format";
+import { hasPowerQuality } from "../lib/machine";
 const todayKwh = (m) => m.hourlyKwh.reduce((a, b) => a + b, 0);
 // "Actual usage" is the energy used in the machine's current run.
 const RANGES = [
@@ -20,6 +21,7 @@ function MachineCard({ m, now, onOpen }) {
   const on = status === "on";
   const kwh = todayKwh(m);
   const actual = actualKwh(m);
+  const pq = hasPowerQuality(m);
   return (
     <button
       className="machine-card"
@@ -37,7 +39,7 @@ function MachineCard({ m, now, onOpen }) {
         </div>
       </div>
 
-      <div className="machine-stats">
+      <div className={pq ? "machine-stats" : "machine-stats no-pq"}>
         <div className="machine-stat">
           <span>Status</span>
           <StatusBadge status={status} />
@@ -49,23 +51,27 @@ function MachineCard({ m, now, onOpen }) {
           </span>
           <strong>{m.todaySec > 0 ? fmtDuration(m.todaySec) : "--"}</strong>
         </div>
-        <div className="machine-stat">
-          <span className="stat-title">
-            <b className="line-icon gauge" />
-            Power Factor
-          </span>
-          <strong>{on ? fmt(m.pf) : "N/A"}</strong>
-        </div>
-        <div className="machine-stat">
-          <span className="stat-title">
-            <b className="line-icon battery" />
-            Load Factor
-          </span>
-          <strong>{on ? Math.round(m.loadFactor) : 0} %</strong>
-          <div className="load-track">
-            <i style={{ width: `${on ? Math.min(m.loadFactor, 100) : 0}%` }} />
-          </div>
-        </div>
+        {pq && (
+          <>
+            <div className="machine-stat">
+              <span className="stat-title">
+                <b className="line-icon gauge" />
+                Power Factor
+              </span>
+              <strong>{on ? fmt(m.pf) : "N/A"}</strong>
+            </div>
+            <div className="machine-stat">
+              <span className="stat-title">
+                <b className="line-icon battery" />
+                Load Factor
+              </span>
+              <strong>{on ? Math.round(m.loadFactor) : 0} %</strong>
+              <div className="load-track">
+                <i style={{ width: `${on ? Math.min(m.loadFactor, 100) : 0}%` }} />
+              </div>
+            </div>
+          </>
+        )}
         <div className="machine-stat">
           <span className="stat-title">
             <b className="bolt">ϟ</b>Power Consumed
