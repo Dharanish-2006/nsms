@@ -222,6 +222,12 @@ async function api(req, res, url) {
     case "GET /machines":
       if (failing) return json(res, 500, { message: "boom" });
       return json(res, 200, { serverTime: Date.now(), machines: defs.map(machine) });
+    case "GET /machines/usage": {
+      const days = { week: 7, month: 30 }[url.searchParams.get("range")];
+      if (!days) return json(res, 422, { message: "Unknown range.", code: "validation" });
+      const consumedKwh = defs.reduce((s, d) => s + d.kw * 10 * days, 0);
+      return json(res, 200, { consumedKwh, actualKwh: consumedKwh * 0.94 });
+    }
     case "GET /alerts":
       if (failing) return json(res, 500, { message: "boom" });
       return json(res, 200, alerts());

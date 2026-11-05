@@ -61,6 +61,9 @@ export const httpApi = {
   machines: {
     /** -> { serverTime, machines: [...] } */
     list: (plant, opts) => request("/machines", { ...opts, query: { plant } }),
+    /** range: "week" | "month" -> { consumedKwh, actualKwh } totals for the plant */
+    usage: (plant, range, opts) =>
+      request("/machines/usage", { ...opts, query: { plant, range } }),
     /** -> [{ t, pf, current, kw }] oldest first */
     trend: (id, hours, opts) =>
       request(`/machines/${enc(id)}/trend`, { ...opts, query: { hours } }),

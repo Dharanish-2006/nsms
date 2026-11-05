@@ -2544,3 +2544,47 @@ h1 {
   border-radius: 0 2px 2px 0;
   background: currentColor;
 }
+
+.range-radios {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+}
+.range-radios label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  padding: 0 18px;
+  border: 1px solid #c3ccbc;
+  border-radius: 20px;
+  background: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.range-radios label.selected {
+  color: #14502b;
+  border-color: #1e6b3c;
+  background: #e3f0e5;
+}
+.range-radios input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  cursor: pointer;
+}
+.range-radios label:has(input:focus-visible) {
+  outline: 2px solid #1e6b3c;
+  outline-offset: 2px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
