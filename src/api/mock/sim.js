@@ -3,7 +3,7 @@ export const PLANTS = ["Plant 1"];
 export const MACHINES = [
   {
     id: "sheller-1",
-    name: "Sheller 1",
+    name: "Sheller",
     plant: "Plant 1",
     type: "sheller",
     ratedKw: 36,

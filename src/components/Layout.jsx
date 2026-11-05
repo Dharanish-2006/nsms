@@ -10,7 +10,7 @@ import { ErrorPanel, PageLoader } from "./PageState";
 
 const navItems = [
   { label: "Dashboard", to: "/", icon: icons.navDashboard },
-  { label: "History", to: "/machines", icon: icons.navReports },
+  { label: "Reports", to: "/machines", icon: icons.navReports },
   { label: "Alerts", to: "/alerts", icon: icons.navAlerts },
   { label: "Settings", to: "/settings", icon: icons.navSettings },
 ];
