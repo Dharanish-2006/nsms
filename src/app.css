@@ -1,0 +1,448 @@
+/* Application styles that build on the base styles in index.css. */
+
+a {
+  color: inherit;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+:focus-visible {
+  outline: 2px solid #1e6b3c;
+  outline-offset: 2px;
+}
+
+/* nav */
+.nav-item {
+  position: relative;
+  text-decoration: none;
+}
+.nav-badge {
+  margin-left: auto;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: #fff;
+  background: #d5413b;
+  font-family:
+    "Geist Variable",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Arial,
+    sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+}
+.chip-wrap {
+  position: relative;
+}
+.chip-menu {
+  top: 48px;
+  width: 190px;
+}
+
+/* dashboard hero select (was a <label> in the prototype) */
+.hero-select {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(100%, 380px);
+}
+.hero-select > span {
+  font-family:
+    "Geist Variable",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Arial,
+    sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.7px;
+}
+
+/* auth */
+.auth-card input {
+  font-family: inherit;
+}
+.auth-switch a,
+.primary-button.as-link {
+  color: #14502b;
+  font-family:
+    "Geist Variable",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Arial,
+    sans-serif;
+  font-weight: 600;
+  text-decoration: none;
+}
+.primary-button.as-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+  color: #fff;
+}
+.auth-card.register > p {
+  margin-bottom: 18px;
+}
+.account-type > div button.selected {
+  color: #14502b;
+  background: white;
+  box-shadow: 0 1px 3px #17201918;
+}
+.account-type > div button:first-child:not(.selected) {
+  color: #46534b;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* native selects styled like the prototype's dropdown buttons */
+select {
+  height: 43px;
+  padding: 0 12px;
+  border: 1px solid #c3ccbc;
+  border-radius: 10px;
+  background: white;
+  color: #172019;
+  font: inherit;
+  font-size: 14px;
+}
+select:disabled {
+  color: #617068;
+  background: #f3f5f0;
+}
+.select-button {
+  height: 46px;
+}
+.filters select {
+  width: 100%;
+}
+
+/* charts */
+.svg-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.design-note code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: #ecefea;
+}
+
+/* alerts */
+.alert-row.picked {
+  box-shadow: 0 0 0 2px #1e6b3c33;
+}
+.alert-row.warning {
+  border-color: #e7a82b;
+}
+.threshold-bar i {
+  margin-left: 0;
+}
+.empty-state {
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #46534b;
+}
+.threshold-scroll {
+  overflow-x: auto;
+}
+.threshold-table.editable {
+  min-width: 820px;
+}
+.threshold-table.editable .table-head,
+.threshold-table.editable .table-row {
+  grid-template-columns: 1.5fr 1.2fr 0.7fr 0.7fr 0.6fr 1fr;
+  gap: 8px;
+}
+.dir {
+  color: #617068;
+  font-family:
+    "Geist Variable",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Arial,
+    sans-serif;
+  font-weight: 400;
+}
+.row-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.row-actions button,
+.ghost-button {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid #c3ccbc;
+  border-radius: 8px;
+  background: white;
+  font-size: 12px;
+}
+.threshold-form {
+  padding: 16px 20px 20px;
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid #dce2d6;
+}
+.threshold-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.threshold-form-row input {
+  width: 130px;
+  height: 43px;
+  padding: 0 12px;
+  border: 1px solid #c3ccbc;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+}
+.ghost-button {
+  height: 44px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+.form-error {
+  color: #c92520;
+  font-size: 12px;
+}
+
+/* reports */
+.report-table {
+  min-width: 760px;
+}
+.report-table .table-head,
+.report-table .table-row {
+  grid-template-columns: 1.3fr 0.8fr 1fr 1fr 1fr 0.8fr;
+  gap: 8px;
+  min-height: 54px;
+}
+.report-table .table-row a {
+  color: #14502b;
+  font-family:
+    "Geist Variable",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Arial,
+    sans-serif;
+  font-weight: 600;
+  text-decoration: none;
+}
+.total-row {
+  background: #f3f5f0;
+  font-family:
+    "Geist Variable",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Arial,
+    sans-serif;
+  font-weight: 600;
+}
+.page-heading .primary-button {
+  white-space: nowrap;
+}
+
+/* settings */
+.ok-text {
+  margin-left: 12px;
+  color: #14502b;
+  font-size: 13px;
+}
+.phone-edit {
+  height: 42px;
+  flex: 1;
+  padding: 0 12px;
+  border: 1px solid #c3ccbc;
+  border-radius: 10px;
+  font: inherit;
+}
+.pending-panel {
+  padding: 24px 34px;
+}
+.pending-panel h2 {
+  margin: 0 0 8px;
+  font-family:
+    "Geist Variable",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Arial,
+    sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+}
+.pending-panel .phone-row:first-of-type {
+  border-top: 0;
+}
+
+/* ---- production additions ---- */
+
+/* Minimal reset (box sizing, default margins, form controls inherit the page font). */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+body,
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+ul,
+ol,
+dl,
+dd {
+  margin: 0;
+}
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+}
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -48px;
+  z-index: 100;
+  padding: 10px 16px;
+  border-radius: 8px;
+  color: #fff;
+  background: #14502b;
+  text-decoration: none;
+}
+.skip-link:focus {
+  top: 12px;
+}
+
+.banner {
+  margin: 12px 32px 0;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.banner.demo {
+  color: #5b4300;
+  background: #fdf1cf;
+}
+.banner.offline {
+  color: #8f1d17;
+  background: #fde4e2;
+}
+
+.page-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 240px;
+  color: #46534b;
+}
+.spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid #cfe0d3;
+  border-top-color: #1e6b3c;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+.error-panel,
+.not-found {
+  padding: 28px;
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+.error-panel p,
+.not-found p {
+  color: #46534b;
+}
+.fullscreen-message {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+}
+.demo-hint {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #5b4300;
+  background: #fdf1cf;
+  font-size: 13px;
+}
+
+.primary-button.download {
+  white-space: nowrap;
+}
+
+/* The download button must never clip its label. */
+.primary-button.download {
+  min-width: max-content;
+  padding-inline: 22px;
+}
+
+/* On narrow screens the illustration cannot sit beside the text without covering it. */
+@media (max-width: 900px) {
+  .auth-mill {
+    display: none;
+  }
+  .company-panel {
+    min-height: 0;
+    padding-bottom: 32px;
+  }
+}
+
+.machine-banner > .status-badge {
+  flex-shrink: 0;
+}
