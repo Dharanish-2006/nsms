@@ -68,15 +68,6 @@ const defs = [
     pf: 0.79,
     rated: 22,
   },
-  // {
-  //   id: "polisher",
-  //   name: "Polisher",
-  //   type: "polisher",
-  //   on: false,
-  //   kw: 0,
-  //   pf: 0,
-  //   rated: 15,
-  // },
 ];
 
 const wobble = (v, a) => v + (Math.random() - 0.5) * a;
@@ -120,7 +111,7 @@ function alerts() {
   for (const t of thresholds) {
     for (const d of defs) {
       if (t.machineId !== "all" && t.machineId !== d.id) continue;
-      if (t.param !== "powerFactor" || !d.on) continue;
+      if (t.param !== "powerFactor" || !d.on || d.type === "sortex") continue;
       const m = machine(d);
       const sev = m.pf < t.critical ? "critical" : m.pf < t.warning ? "warning" : null;
       if (!sev) continue;

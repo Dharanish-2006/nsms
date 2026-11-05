@@ -38,18 +38,6 @@ export const MACHINES = [
     schedule: () => true,
   },
   {
-    id: "polisher",
-    name: "Polisher",
-    plant: "Plant 1",
-    type: "polisher",
-    ratedKw: 15,
-    baseKw: 9,
-    basePf: 0.9,
-    baseTotalKwh: 9120.7,
-    baseRuntimeHrs: 1010,
-    schedule: () => false,
-  },
-  {
     id: "sortex-1",
     name: "Colour Sortex 1",
     plant: "Plant 1",

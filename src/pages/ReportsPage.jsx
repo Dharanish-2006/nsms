@@ -9,6 +9,7 @@ import {
   istDayKey,
   istStamp,
 } from "../lib/format";
+import { hasPowerQuality } from "../lib/machine";
 import { statusOf } from "../lib/status";
 export default function ReportsPage() {
   const { machines, alerts, plant, lastUpdate } = useData();
@@ -17,7 +18,8 @@ export default function ReportsPage() {
     return {
       m,
       kwh,
-      avgPf: m.avgPfRun,
+      avgPf: hasPowerQuality(m) ? m.avgPfRun : null,
+      pq: hasPowerQuality(m),
       active: alerts.filter((a) => a.machineId === m.id && a.status === "active").length,
     };
   });
@@ -36,13 +38,13 @@ export default function ReportsPage() {
         "Load factor (%)",
         "Active alerts",
       ],
-      ...rows.map(({ m, kwh, avgPf, active }) => [
+      ...rows.map(({ m, kwh, avgPf, pq, active }) => [
         m.name,
         statusOf(m, lastUpdate).toUpperCase(),
         fmtDuration(m.todaySec),
         kwh.toFixed(1),
-        avgPf ? avgPf.toFixed(3) : "N/A",
-        m.on ? Math.round(m.loadFactor) : 0,
+        pq ? (avgPf ? avgPf.toFixed(3) : "N/A") : "--",
+        pq ? (m.on ? Math.round(m.loadFactor) : 0) : "--",
         active,
       ]),
       ["Total", "", "", total.toFixed(1), "", "", ""],
@@ -72,7 +74,7 @@ export default function ReportsPage() {
               <span>AVG PF (RUN)</span>
               <span>ALERTS</span>
             </div>
-            {rows.map(({ m, kwh, avgPf, active }) => (
+            {rows.map(({ m, kwh, avgPf, pq, active }) => (
               <div className="table-row" key={m.id}>
                 <span>
                   <Link to={`/machines/${m.id}`}>{m.name}</Link>
@@ -82,7 +84,7 @@ export default function ReportsPage() {
                 </span>
                 <span>{m.todaySec > 0 ? fmtDuration(m.todaySec) : "--"}</span>
                 <span>{kwh > 0 ? `${fmt(kwh, 1)} kWh` : "--"}</span>
-                <span>{avgPf ? fmt(avgPf, 3) : "N/A"}</span>
+                <span>{pq ? (avgPf ? fmt(avgPf, 3) : "N/A") : "--"}</span>
                 <span>{active ? `${active} active` : "None"}</span>
               </div>
             ))}

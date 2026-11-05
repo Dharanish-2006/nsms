@@ -2683,3 +2683,30 @@ h1 {
     flex: 1 1 100%;
   }
 }
+
+.machine-stats.no-pq {
+  grid-template-columns: 0.8fr 1.1fr 1.1fr 1.1fr;
+}
+
+.eye-button {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  color: #617068;
+  background: transparent;
+  cursor: pointer;
+}
+.eye-button:hover {
+  color: #14502b;
+  background: #ecefea;
+}
+.eye-button:focus-visible {
+  outline: 2px solid #1e6b3c;
+}
+.form-grid:has(> :only-child) {
+  grid-template-columns: 1fr;
+}
