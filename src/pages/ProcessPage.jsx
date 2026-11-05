@@ -104,21 +104,23 @@ export default function ProcessPage() {
             </p>
           </div>
           <StatusBadge status={status} />
-          <select
-            className="select-button"
-            aria-label="Time range"
-            value={windowHrs}
-            onChange={(e) => setWindowHrs(Number(e.target.value))}
-          >
-            {RANGES.map((r) => (
-              <option key={r.hours} value={r.hours}>
-                {r.label}
-              </option>
-            ))}
-          </select>
-          <button className="primary-button download" onClick={download}>
-            ↓ &nbsp; Download report
-          </button>
+          <div className="banner-actions">
+            <select
+              className="select-button"
+              aria-label="Time range"
+              value={windowHrs}
+              onChange={(e) => setWindowHrs(Number(e.target.value))}
+            >
+              {RANGES.map((r) => (
+                <option key={r.hours} value={r.hours}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+            <button className="primary-button download" onClick={download}>
+              ↓ &nbsp; Download report
+            </button>
+          </div>
         </section>
 
         <div className="analysis-grid">
