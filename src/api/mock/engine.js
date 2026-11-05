@@ -11,9 +11,6 @@ const PH_KEY = "rmm.mock.phones";
 
 const DEFAULT_THRESHOLDS = [
   { id: "t1", param: "powerFactor", machineId: "all", warning: 0.9, critical: 0.8 },
-  { id: "t2", param: "avgCurrent", machineId: "sheller-1", warning: 38, critical: 45 },
-  { id: "t3", param: "activePower", machineId: "all", warning: 28, critical: 32 },
-  { id: "t4", param: "freshness", machineId: "all", warning: 120, critical: null },
 ];
 const DEFAULT_PHONES = [
   { id: "p1", digits: "9000000001", label: "Primary contact" },
@@ -25,7 +22,9 @@ let lastTick = 0;
 let alertMap = new Map();
 
 export const plants = () => [...PLANTS];
-export const getThresholds = () => load(TH_KEY, DEFAULT_THRESHOLDS);
+// Only power factor is supported; drop limits saved earlier for removed parameters.
+export const getThresholds = () =>
+  load(TH_KEY, DEFAULT_THRESHOLDS).filter((t) => t.param === "powerFactor");
 export const setThresholds = (list) => save(TH_KEY, list);
 export const getPhones = () => load(PH_KEY, DEFAULT_PHONES);
 export const setPhones = (list) => save(PH_KEY, list);

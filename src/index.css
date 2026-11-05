@@ -2518,3 +2518,29 @@ h1 {
 .usage-panel .energy-value {
   width: auto;
 }
+
+.line-icon.battery {
+  width: 30px;
+  height: 17px;
+  margin: 3px 6px 0 0;
+  border: 2.5px solid currentColor;
+  border-radius: 3px;
+}
+.line-icon.battery::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  right: 8px;
+  border-radius: 1px;
+  background: currentColor;
+}
+.line-icon.battery::after {
+  content: "";
+  position: absolute;
+  right: -7px;
+  top: 3px;
+  width: 3px;
+  height: 8px;
+  border-radius: 0 2px 2px 0;
+  background: currentColor;
+}
