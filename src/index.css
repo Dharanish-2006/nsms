@@ -2588,3 +2588,98 @@ h1 {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* History (process analysis) layout fixes */
+.machine-banner {
+  flex-wrap: wrap;
+}
+.machine-banner > div {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.machine-banner > .status-badge {
+  margin-right: 0;
+}
+.analysis-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
+  align-items: start;
+}
+.data-list > div > span {
+  min-width: 0;
+}
+.data-list strong {
+  white-space: nowrap;
+}
+.machine-rail strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 1180px) and (min-width: 901px) {
+  .machine-rail {
+    padding: 28px 12px 24px 16px;
+  }
+  .machine-rail button {
+    gap: 8px;
+    padding: 5px 8px;
+  }
+  .machine-rail img {
+    width: 32px;
+  }
+  .machine-rail strong {
+    font-size: 13px;
+  }
+}
+@media (max-width: 1100px) {
+  .brand strong {
+    font-size: 15px;
+  }
+  .brand > div {
+    min-width: 0;
+  }
+}
+@media (max-width: 900px) {
+  .topbar {
+    height: auto;
+    min-height: 68px;
+    padding: 10px 16px;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+  }
+  .topbar-divider {
+    display: none;
+  }
+  .topbar > strong,
+  .plant-chip {
+    white-space: nowrap;
+  }
+  .updated {
+    font-size: 13px;
+  }
+}
+.banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-left: auto;
+}
+@media (max-width: 520px) {
+  .banner-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+  .banner-actions .select-button,
+  .banner-actions .download {
+    width: 100%;
+  }
+}
+.machine-banner > .banner-actions {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+@media (max-width: 520px) {
+  .machine-banner > .banner-actions {
+    flex: 1 1 100%;
+  }
+}
