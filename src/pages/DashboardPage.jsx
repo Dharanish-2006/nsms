@@ -1,5 +1,6 @@
 import { icons, images, machineImage } from "../assets";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "../api";
 import { useNavigate } from "react-router-dom";
 import { statusOf } from "../lib/status";
 import { ConsumptionBars } from "../components/Charts";
@@ -8,6 +9,11 @@ import { useData } from "../context/DataContext";
 import { fmt, fmtDuration } from "../lib/format";
 const todayKwh = (m) => m.hourlyKwh.reduce((a, b) => a + b, 0);
 // "Actual usage" is the energy used in the machine's current run.
+const RANGES = [
+  { id: "day", label: "Last day" },
+  { id: "week", label: "Last week" },
+  { id: "month", label: "Last month" },
+];
 const actualKwh = (m) => (m.runKwh > 0 ? m.runKwh : 0);
 function MachineCard({ m, now, onOpen }) {
   const status = statusOf(m, now);
@@ -83,6 +89,29 @@ export default function DashboardPage() {
   const [menu, setMenu] = useState(false);
   const total = machines.reduce((s, m) => s + todayKwh(m), 0);
   const actualTotal = machines.reduce((s, m) => s + actualKwh(m), 0);
+  const [range, setRange] = useState("day");
+  // Totals for the longer ranges come from the API; "day" is summed from the
+  // live machine readings above so it always matches the cards below.
+  const [past, setPast] = useState({ key: "", totals: null });
+  const pastKey = `${plant}:${range}`;
+  useEffect(() => {
+    if (range === "day") return undefined;
+    const controller = new AbortController();
+    api.machines
+      .usage(plant, range, { signal: controller.signal })
+      .then((totals) => setPast({ key: pastKey, totals }))
+      .catch(() => setPast({ key: pastKey, totals: null }));
+    return () => controller.abort();
+  }, [plant, range, pastKey]);
+  const loading = range !== "day" && past.key !== pastKey;
+  const shown =
+    range === "day"
+      ? { consumedKwh: total, actualKwh: actualTotal }
+      : past.key === pastKey
+        ? past.totals
+        : null;
+  const value = (v) =>
+    loading ? "…" : v === undefined ? "--" : Math.round(v).toLocaleString("en-IN");
   return (
     <>
       <section className="hero">
@@ -126,12 +155,28 @@ export default function DashboardPage() {
         <img className="mill-art" src={images.heroMill} alt="Rice mill illustration" />
       </section>
 
-      <section className="usage-panel" aria-label="Plant metrics">
+      <fieldset className="range-radios">
+        <legend className="sr-only">Time range</legend>
+        {RANGES.map((r) => (
+          <label key={r.id} className={range === r.id ? "selected" : ""}>
+            <input
+              type="radio"
+              name="usage-range"
+              value={r.id}
+              checked={range === r.id}
+              onChange={() => setRange(r.id)}
+            />
+            {r.label}
+          </label>
+        ))}
+      </fieldset>
+
+      <section className="usage-panel" aria-label="Plant metrics" aria-busy={loading}>
         <article>
           <h2>POWER CONSUMED</h2>
           <div className="energy-value">
             <span className="energy-icon">ϟ</span>
-            <strong>{Math.round(total).toLocaleString("en-IN")}</strong>
+            <strong>{value(shown?.consumedKwh)}</strong>
             <span>kWh</span>
             <ConsumptionBars />
           </div>
@@ -140,7 +185,7 @@ export default function DashboardPage() {
           <h2>ACTUAL USAGE</h2>
           <div className="energy-value">
             <b className="line-icon layers usage-icon" />
-            <strong>{Math.round(actualTotal).toLocaleString("en-IN")}</strong>
+            <strong>{value(shown?.actualKwh)}</strong>
             <span>kWh</span>
           </div>
         </article>

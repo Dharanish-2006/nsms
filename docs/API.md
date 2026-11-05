@@ -47,12 +47,13 @@ Rate-limit login and registration on the server.
 
 ## Plants, machines, alerts (any signed-in user)
 
-| Method | Path                          | Response                                                                       |
-| ------ | ----------------------------- | ------------------------------------------------------------------------------ |
-| GET    | `/plants`                     | `["Plant 1"]`                                                                  |
-| GET    | `/machines?plant=Plant 1`     | `{ serverTime, machines: [machine] }`                                          |
-| GET    | `/machines/:id/trend?hours=6` | `[{ t, pf, current, kw }]`, oldest first                                       |
-| GET    | `/alerts?plant=Plant 1`       | `[alert]`, active first (critical, then newest), then recovered (newest first) |
+| Method | Path                                       | Response                                                                                                                |
+| ------ | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/plants`                                  | `["Plant 1"]`                                                                                                           |
+| GET    | `/machines?plant=Plant 1`                  | `{ serverTime, machines: [machine] }`                                                                                   |
+| GET    | `/machines/usage?plant=&range=week\|month` | `{ consumedKwh, actualKwh }` plant totals for the last 7 / 30 days (the dashboard computes "last day" from `hourlyKwh`) |
+| GET    | `/machines/:id/trend?hours=6`              | `[{ t, pf, current, kw }]`, oldest first                                                                                |
+| GET    | `/alerts?plant=Plant 1`                    | `[alert]`, active first (critical, then newest), then recovered (newest first)                                          |
 
 The app calls `/machines` and `/alerts` every `VITE_POLL_INTERVAL_MS` (5 s).
 Keep them fast. It backs off automatically when they fail.

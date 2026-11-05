@@ -1,4 +1,5 @@
 import { ApiError } from "../client";
+import { istDayKey } from "../../lib/format";
 import { tokenStore } from "../token";
 import {
   getPhones,
@@ -11,7 +12,9 @@ import {
   setPhones,
   setThresholds,
 } from "./engine";
+import { MACHINES } from "./sim";
 import { hash, load, save, uid } from "./storage";
+import { RANGE_DAYS, usageTotals } from "./usage";
 
 // Demo backend that lives entirely in the browser. Passwords are only hashed
 // with plain SHA-256 and stored in localStorage: this is NOT secure and exists
@@ -206,6 +209,13 @@ export const mockApi = {
     async list(plant) {
       await currentUser();
       return listMachines(plant);
+    },
+    async usage(plant, range) {
+      await currentUser();
+      const days = RANGE_DAYS[range];
+      if (!days) fail(422, "Unknown range.", "validation");
+      const defs = MACHINES.filter((m) => !plant || m.plant === plant);
+      return usageTotals(defs, days, istDayKey(Date.now()));
     },
     async trend(id, hours) {
       await currentUser();
