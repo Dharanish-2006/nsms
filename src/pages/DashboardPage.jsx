@@ -52,7 +52,7 @@ function MachineCard({ m, now, onOpen }) {
         </div>
         <div className="machine-stat">
           <span className="stat-title">
-            <b className="line-icon layers" />
+            <b className="line-icon battery" />
             Load Factor
           </span>
           <strong>{on ? Math.round(m.loadFactor) : 0} %</strong>

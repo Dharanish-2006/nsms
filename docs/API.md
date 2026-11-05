@@ -115,15 +115,14 @@ Keep them fast. It backs off automatically when they fail.
 }
 ```
 
-`param`: `powerFactor | avgCurrent | activePower | freshness`.
+`param`: `powerFactor`.
 `severity`: `critical | warning`. `status`: `active | recovered`.
 `key` must be stable for the same threshold and machine.
 
 Alerts are evaluated **by the backend** (so they fire even when nobody has the page
 open, and so SMS can be sent to the phone numbers below). The rules:
-power factor alerts when **below** its limit; current, active power and data
-freshness (seconds since `updatedAt`) alert when **above**. Electrical limits are
-skipped while a machine is off. Critical wins over warning.
+power factor alerts when **below** its limit and is skipped while a machine is
+off. Critical wins over warning.
 
 ## Thresholds and phone numbers
 

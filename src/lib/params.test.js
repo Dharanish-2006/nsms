@@ -5,15 +5,13 @@ import { statusOf } from "./status";
 
 describe("parameters", () => {
   it("formats limits with their unit, or says there is none", () => {
-    expect(fmtParam("avgCurrent", 38)).toBe("38.0 A");
     expect(fmtParam("powerFactor", 0.9)).toBe("0.90");
-    expect(fmtParam("freshness", null)).toBe("No limit");
+    expect(fmtParam("powerFactor", null)).toBe("No limit");
   });
 
   it("ignores electrical readings while a machine is off", () => {
-    const off = { on: false, pf: 0.5, current: 99, kw: 99, updatedAt: 0 };
+    const off = { on: false, pf: 0.5, updatedAt: 0 };
     expect(PARAMS.powerFactor.get(off)).toBeNull();
-    expect(PARAMS.avgCurrent.get(off)).toBeNull();
   });
 });
 

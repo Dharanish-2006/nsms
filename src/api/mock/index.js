@@ -32,7 +32,7 @@ const checkTarget = (channel, target) => {
   if (channel !== "email" && channel !== "phone")
     fail(422, "Unknown channel.", "validation");
 };
-const PARAMS = ["powerFactor", "avgCurrent", "activePower", "freshness"];
+const PARAMS = ["powerFactor"];
 
 let seeding = null;
 function ensureSeed() {
