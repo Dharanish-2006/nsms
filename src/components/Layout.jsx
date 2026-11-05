@@ -10,7 +10,7 @@ import { ErrorPanel, PageLoader } from "./PageState";
 
 const navItems = [
   { label: "Dashboard", to: "/", icon: icons.navDashboard },
-  { label: "Reports", to: "/reports", icon: icons.navReports },
+  { label: "History", to: "/reports", icon: icons.navReports },
   { label: "Alerts", to: "/alerts", icon: icons.navAlerts },
   { label: "Settings", to: "/settings", icon: icons.navSettings },
 ];
@@ -136,7 +136,7 @@ function Topbar() {
       </div>
       <div className="updated">
         <i />
-        {lastUpdate ? `Last updated ${istTime(lastUpdate)} IST` : "Waiting for data…"}
+        {lastUpdate ? `Last updated ${istTime(lastUpdate)}` : "Waiting for data…"}
       </div>
     </header>
   );

@@ -52,7 +52,7 @@ let phones = [{ id: "p1", digits: "9000000001", label: "Primary contact" }];
 const defs = [
   {
     id: "sheller-1",
-    name: "Sheller 1",
+    name: "Sheller",
     type: "sheller",
     on: true,
     kw: 26,
@@ -68,15 +68,15 @@ const defs = [
     pf: 0.79,
     rated: 22,
   },
-  {
-    id: "polisher",
-    name: "Polisher",
-    type: "polisher",
-    on: false,
-    kw: 0,
-    pf: 0,
-    rated: 15,
-  },
+  // {
+  //   id: "polisher",
+  //   name: "Polisher",
+  //   type: "polisher",
+  //   on: false,
+  //   kw: 0,
+  //   pf: 0,
+  //   rated: 15,
+  // },
 ];
 
 const wobble = (v, a) => v + (Math.random() - 0.5) * a;

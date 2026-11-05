@@ -144,3 +144,15 @@ for the others critical ≥ warning.
 
 `phone`: `{ id, digits: "9000000001", label }`. `digits` is exactly 10 digits
 (Indian mobile, no country code). Reject duplicates with 409.
+
+
+
+
+
+
+2 cmp
+
+day
+week
+mont
+

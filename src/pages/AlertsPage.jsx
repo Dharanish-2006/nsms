@@ -252,10 +252,10 @@ export default function AlertsPage() {
     <div className="content-page standard-page">
       <div className="page-heading">
         <div>
-          <h1>Alerts &amp; Thresholds</h1>
+          <h1>Alerts</h1>
           <p>What needs attention now, and the limits that trigger it.</p>
         </div>
-        <div className="segmented" role="tablist">
+        {/* <div className="segmented" role="tablist">
           <button
             role="tab"
             aria-selected={tab === "alerts"}
@@ -272,7 +272,7 @@ export default function AlertsPage() {
           >
             Thresholds
           </button>
-        </div>
+        </div> */}
       </div>
 
       {tab === "thresholds" ? (
@@ -341,25 +341,20 @@ export default function AlertsPage() {
                       {a.status === "recovered"
                         ? `recovered ${istHm(a.recoveredAt ?? a.since)}`
                         : `since ${istHm(a.since)}`}{" "}
-                      IST
+                      
                     </small>
                   </span>
                   <span className="reading">
                     <small>READING</small>
                     <strong>{fmtParam(a.param, a.reading)}</strong>
                   </span>
-                  <span className="threshold-bar">
-                    <i style={{ marginLeft: `${markerPct(a, t)}%` }} />
-                  </span>
-                  <span className={`severity ${kind}`}>
-                    {kind[0].toUpperCase() + kind.slice(1)}
-                  </span>
+            
                 </button>
               );
             })}
           </div>
 
-          {selected && selMachine && (
+          {/* {selected && selMachine && (
             <section className="selected-alert panel">
               <img src={images.alertMachine} alt="" />
               <div>
@@ -399,7 +394,7 @@ export default function AlertsPage() {
                 </div>
               )}
             </section>
-          )}
+          )} */}
         </>
       )}
     </div>

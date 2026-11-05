@@ -63,10 +63,12 @@ function LoginForm() {
         value={username}
         onChange={setUsername}
         autoComplete="username"
-      />
+        placeholder={"email or phone number"}
+        />
       <Field
         label="Password"
         type="password"
+        placeholder={"********"}
         icon={icons.fieldLock}
         value={password}
         onChange={setPassword}
@@ -167,14 +169,10 @@ function RegisterForm() {
         </div>
       </div>
       <div className="form-grid">
-        <Field
-          label="Full name"
-          value={f.fullName}
-          onChange={set("fullName")}
-          error={errors.fullName}
-        />
+
         <Field
           label="Username"
+          placeholder={"your name"}
           value={f.username}
           onChange={set("username")}
           error={errors.username}
@@ -184,6 +182,7 @@ function RegisterForm() {
       <OtpVerify
         channel="email"
         label="Email"
+        
         icon={icons.fieldMail}
         value={f.email}
         onChange={set("email")}

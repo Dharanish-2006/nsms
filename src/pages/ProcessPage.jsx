@@ -105,9 +105,10 @@ export default function ProcessPage() {
             value={windowHrs}
             onChange={(e) => setWindowHrs(Number(e.target.value))}
           >
+            <option value={24}>Last Month</option>
+            <option value={24}>Last Week</option>
             <option value={24}>Last 24 hours</option>
             <option value={12}>Last 12 hours</option>
-            <option value={6}>Last 6 hours</option>
           </select>
           <button className="primary-button download" onClick={download}>
             ↓ &nbsp; Download report
