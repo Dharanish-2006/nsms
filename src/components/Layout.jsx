@@ -17,7 +17,7 @@ const navItems = [
 
 function titleFor(path) {
   if (path.startsWith("/machines")) return "Process Analysis";
-  if (path.startsWith("/alerts")) return "Alerts & Thresholds";
+  if (path.startsWith("/alerts")) return "Alerts";
   if (path.startsWith("/reports")) return "Reports";
   if (path.startsWith("/settings")) return "Settings";
   return "Dashboard";
