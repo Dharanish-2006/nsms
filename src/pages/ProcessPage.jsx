@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { AssetIcon, StatusBadge } from "../components/Icon";
 import { useData } from "../context/DataContext";
+import runtime_icon from "../assets/images/runtime-icon.svg";
 import {
   downloadCsv,
   fmt,
@@ -102,8 +103,24 @@ export default function ProcessPage() {
           <div>
             <h1>{m.name}</h1>
             <p>
-              {m.plant} · SLEC MFM384 meter · Updated {istTime(m.updatedAt)} IST
+              {m.plant} · 15 HP · Updated {istTime(m.updatedAt)} AM
             </p>
+            <Row
+              k="Motor ON Time "
+              v={m.runStart ? <small> {istStamp12(m.runStart)} </small> : na}
+            />
+            <Row
+              k="Motor OFF Time "
+              v={
+                on ? (
+                  <small> RUNNING </small>
+                ) : m.lastStop ? (
+                  <small> istStamp12(m.lastStop) </small>
+                ) : (
+                  na
+                )
+              }
+            />
           </div>
           <StatusBadge status={status} />
           <div className="banner-actions">
@@ -147,37 +164,38 @@ export default function ProcessPage() {
             </article>
           )}
 
-          <InfoCard title="Operating performance" icon={icons.cardPerformance}>
+          {pq && (
+            <article className="info-card load-card">
+              <div className="load-visual">
+                <img src={images.powerfactor} alt="" />
+                <div>
+                  <span>Power factor</span>
+                  <strong>{0.85}</strong>
+                </div>
+              </div>
+              <div className="data-list compact">
+                <Row k={`Average Power Factor (${rangeLabel})`} v={`0.85`} />
+              </div>
+            </article>
+          )}
+          <article className="info-card load-card">
+            <div className="load-visual">
+              <img src={runtime_icon} alt="" />
+              <div>
+                <span>Runtime</span>
+                <Row
+                v={on ? fmtDuration(m.runSec) : na}
+              /> 
+              </div>
+            </div>
+
             <div className="data-list compact">
-              <Row k="Total runtime" v={fmtDuration(m.totalRuntimeSec)} />
               <Row
-                k={`Running duration (${rangeLabel})`}
+                k={`Total RunTime  (${rangeLabel})`}
                 v={on ? fmtDuration(m.runSec) : na}
               />
-              {pq && (
-                <Row
-                  k={`Average power factor (${rangeLabel})`}
-                  v={on && m.avgPfRun ? `${fmt(m.avgPfRun)} PF` : na}
-                />
-              )}
             </div>
-          </InfoCard>
-
-          <InfoCard title="Motor information" icon={icons.cardMotor}>
-            <div className="data-list">
-              <Row k="Motor name" v={m.name} />
-              <Row k="Motor ON" v={m.runStart ? istStamp12(m.runStart) : na} />
-              <Row
-                k="Motor OFF (last stop)"
-                v={on ? "RUNNING" : m.lastStop ? istStamp12(m.lastStop) : na}
-              />
-              <Row k="Motor status" v={<StatusBadge status={status} />} />
-            </div>
-            <p className="success-note">
-              ◷ &nbsp; Offline machines show Unknown, never OFF, unless the system
-              confirms the stop.
-            </p>
-          </InfoCard>
+          </article>
         </div>
       </div>
     </div>

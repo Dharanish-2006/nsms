@@ -83,22 +83,25 @@ export default function AlertsPage() {
               className={`alert-row ${kind} ${selected?.key === a.key ? "picked" : ""}`}
               onClick={() => setSelectedKey(a.key)}
             >
-              <span className="alert-symbol">{kind === "recovered" ? "✓" : "△"}</span>
+            <span className="alert-symbol">{kind === "recovered" ? "✓" : "△"}</span>
+              
               <span className="alert-name">
                 <strong>
                   {a.machineName} · {PARAMS[a.param].label}
                 </strong>
-                <small>
-                  {a.plant} ·{" "}
-                  {a.status === "recovered"
-                    ? `recovered ${istWhen(a.recoveredAt ?? a.since)}`
-                    : istWhen(a.since)}
-                </small>
+              </span>
+
+              <span className="alert-row">  
+                {a.plant} ·{" "}
+                {a.status === "recovered"
+                  ? `recovered ${istWhen(a.recoveredAt ?? a.since)}`
+                  : istWhen(a.since)}
               </span>
               <span className="reading">
                 <small>READING</small>
                 <strong>{fmtParam(a.param, a.reading)}</strong>
               </span>
+
             </button>
           );
         })}
