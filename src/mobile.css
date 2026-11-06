@@ -43,7 +43,7 @@ svg {
   min-height: 76px;
   padding: 14px 18px;
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto 110px;
+  grid-template-columns: 42px minmax(0, 1fr) minmax(0, 1fr) minmax(120px, auto);
   align-items: center;
   gap: 16px;
   border: 1px solid #dce2d6;
@@ -72,14 +72,25 @@ svg {
   color: #617068;
   font-size: 12px;
 }
-.alert-list .severity {
-  justify-self: end;
-  font-size: 12px;
-  font-weight: 600;
-}
 .alert-list .reading {
+  align-items: center;
+  justify-self: center;
+  text-align: center;
+}
+.alert-list .alert-time {
+  display: flex;
+  flex-direction: column;
   align-items: flex-end;
+  gap: 2px;
   text-align: right;
+  font-size: 13px;
+  color: #617068;
+  white-space: nowrap;
+}
+.alert-list .alert-time small {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 .alert-list .reading strong {
   font-size: 22px;
@@ -96,7 +107,7 @@ svg {
   .alert-list .alert-row {
     grid-template-columns: 38px minmax(0, 1fr) auto;
     grid-template-areas:
-      "icon name sev"
+      "icon name time"
       "icon read read";
     gap: 6px 12px;
     padding: 12px;
@@ -110,17 +121,19 @@ svg {
   .alert-list .alert-name {
     grid-area: name;
   }
-  .alert-list .severity {
-    grid-area: sev;
+  .alert-list .alert-time {
+    grid-area: time;
     align-self: start;
+    font-size: 12px;
   }
   .alert-list .reading {
     grid-area: read;
     flex-direction: row;
     align-items: baseline;
-    justify-content: flex-start;
+    justify-content: center;
+    justify-self: stretch;
     gap: 8px;
-    text-align: left;
+    text-align: center;
   }
   .alert-list .reading strong {
     font-size: 20px;

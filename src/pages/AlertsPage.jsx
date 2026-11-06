@@ -93,24 +93,16 @@ export default function AlertsPage() {
                 <strong>
                   {a.machineName} · {PARAMS[a.param].label}
                 </strong>
-                <small>
-                  {a.plant} ·{" "}
-                  {recovered
-                    ? `recovered ${istWhen(a.recoveredAt ?? a.since)}`
-                    : `since ${istWhen(a.since)}`}
-                </small>
+                <small>{a.plant}</small>
               </div>
-              <span className={`severity ${kind}`}>
-                {recovered
-                  ? "Recovered"
-                  : a.severity === "critical"
-                    ? "Critical"
-                    : "Warning"}
-              </span>
               <div className="reading">
                 <small>READING</small>
                 <strong>{fmtParam(a.param, a.reading)}</strong>
               </div>
+              <time className="alert-time">
+                <small>{recovered ? "Recovered" : "Since"}</small>
+                <span>{istWhen(recovered ? (a.recoveredAt ?? a.since) : a.since)}</span>
+              </time>
             </article>
           );
         })}
