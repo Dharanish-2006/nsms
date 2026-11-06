@@ -8,12 +8,13 @@ import { AssetIcon, StatusBadge } from "../components/Icon";
 import { useData } from "../context/DataContext";
 import { fmt, fmtDuration } from "../lib/format";
 import { hasPowerQuality } from "../lib/machine";
+import loadfactor_img from "../assets/images/load-gauge.svg"
 const todayKwh = (m) => m.hourlyKwh.reduce((a, b) => a + b, 0);
 // "Actual usage" is the energy used in the machine's current run.
 const RANGES = [
-  { id: "day", label: "Last day" },
-  { id: "week", label: "Last week" },
-  { id: "month", label: "Last month" },
+  { id: "day", label: "Today" },
+  { id: "week", label: "This week" },
+  { id: "month", label: "This month" },
 ];
 const actualKwh = (m) => (m.runKwh > 0 ? m.runKwh : 0);
 function MachineCard({ m, now, onOpen }) {
@@ -62,7 +63,7 @@ function MachineCard({ m, now, onOpen }) {
             </div>
             <div className="machine-stat">
               <span className="stat-title">
-                <b className="line-icon battery" />
+                <img src={loadfactor_img} height={25} width={20} />
                 Load Factor
               </span>
               <strong>{on ? Math.round(m.loadFactor) : 0} %</strong>
@@ -80,7 +81,7 @@ function MachineCard({ m, now, onOpen }) {
         </div>
         <div className="machine-stat">
           <span className="stat-title">
-            <b className="line-icon layers" />
+            <b className="bolt">ϟ</b>
             Actual Usage
           </span>
           <strong>{actual > 0 ? `${fmt(actual, 1)} kWh` : "-- kWh"}</strong>
@@ -190,7 +191,7 @@ export default function DashboardPage() {
         <article>
           <h2>ACTUAL USAGE</h2>
           <div className="energy-value">
-            <b className="line-icon layers usage-icon" />
+            <span className="energy-icon">ϟ</span>
             <strong>{value(shown?.actualKwh)}</strong>
             <span>kWh</span>
           </div>
