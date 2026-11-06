@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { AutoReportPanel } from "../components/AutoReportPanel";
 import { StatusBadge } from "../components/Icon";
+import { MotorRating } from "../components/MotorRating";
 import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
 import {
@@ -12,11 +13,13 @@ import {
   istStamp,
 } from "../lib/format";
 import { hasPowerQuality } from "../lib/machine";
+import { kwToHp } from "../lib/motor";
 import { statusOf } from "../lib/status";
 
-
 export default function ReportsPage() {
-  const { machines, alerts, plant, lastUpdate } = useData();
+  const { machines, alerts, plant, lastUpdate, saveMotorRating } = useData();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const rows = machines.map((m) => {
     const kwh = m.hourlyKwh.reduce((a, b) => a + b, 0);
     return {
@@ -35,6 +38,7 @@ export default function ReportsPage() {
       [],
       [
         "Machine",
+        "Motor (HP)",
         "Status",
         "Runtime today",
         "Energy today (kWh)",
@@ -44,6 +48,7 @@ export default function ReportsPage() {
       ],
       ...rows.map(({ m, kwh, avgPf, pq, active }) => [
         m.name,
+        m.ratedKw ? kwToHp(m.ratedKw) : "--",
         statusOf(m, lastUpdate).toUpperCase(),
         fmtDuration(m.todaySec),
         kwh.toFixed(1),
@@ -51,7 +56,7 @@ export default function ReportsPage() {
         pq ? (m.on ? Math.round(m.loadFactor) : 0) : "--",
         active,
       ]),
-      ["Total", "", "", total.toFixed(1), "", "", ""],
+      ["Total", "", "", "", total.toFixed(1), "", "", ""],
     ]);
   return (
     <div className="content-page standard-page">
@@ -74,6 +79,7 @@ export default function ReportsPage() {
             <div className="report-table">
               <div className="table-head">
                 <span>MACHINE</span>
+                <span>MOTOR</span>
                 <span>STATUS</span>
                 <span>RUNTIME TODAY</span>
                 <span>ENERGY TODAY</span>
@@ -85,6 +91,7 @@ export default function ReportsPage() {
                   <span>
                     <Link to={`/machines/${m.id}`}>{m.name}</Link>
                   </span>
+                  <MotorRating machine={m} canEdit={isAdmin} onSave={saveMotorRating} />
                   <span>
                     <StatusBadge status={statusOf(m, lastUpdate)} />
                   </span>
@@ -96,6 +103,7 @@ export default function ReportsPage() {
               ))}
               <div className="table-row total-row">
                 <span>Plant total</span>
+                <span />
                 <span />
                 <span />
                 <span>{fmt(total, 1)} kWh</span>

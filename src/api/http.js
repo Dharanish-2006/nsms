@@ -67,6 +67,9 @@ export const httpApi = {
     /** -> [{ t, pf, current, kw }] oldest first */
     trend: (id, hours, opts) =>
       request(`/machines/${enc(id)}/trend`, { ...opts, query: { hours } }),
+    /** Admin only. patch: { ratedKw } -> the updated machine */
+    update: (id, patch) =>
+      request(`/machines/${enc(id)}`, { method: "PUT", body: patch }),
   },
 
   alerts: {

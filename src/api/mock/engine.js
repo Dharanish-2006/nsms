@@ -8,6 +8,7 @@ import { load, save } from "./storage";
 
 const TH_KEY = "rmm.mock.thresholds";
 const PH_KEY = "rmm.mock.phones";
+const RATING_KEY = "rmm.mock.ratings"; // machine id -> ratedKw edited by an admin
 
 const DEFAULT_THRESHOLDS = [
   { id: "t1", param: "powerFactor", machineId: "all", warning: 0.9, critical: 0.8 },
@@ -68,7 +69,10 @@ export function reevaluate(now = Date.now()) {
 /** Move the simulation forward to "now". Cheap to call repeatedly. */
 export function advance(now = Date.now()) {
   if (!machines) {
-    machines = MACHINES.map((d) => createInitial(d, now));
+    const ratings = load(RATING_KEY, {});
+    machines = MACHINES.map((d) =>
+      createInitial(ratings[d.id] ? { ...d, ratedKw: ratings[d.id] } : d, now),
+    );
     lastTick = now;
   }
   const dt = Math.min((now - lastTick) / 1000, 10);
@@ -85,6 +89,21 @@ export function listMachines(plant) {
     serverTime: Date.now(),
     machines: machines.filter((m) => !plant || m.def.plant === plant).map(snapshot),
   };
+}
+
+/** Change a machine's rated power. Returns the machine, or null if unknown. */
+export function setRatedKw(id, ratedKw) {
+  advance();
+  const i = machines.findIndex((x) => x.def.id === id);
+  if (i < 0) return null;
+  save(RATING_KEY, { ...load(RATING_KEY, {}), [id]: ratedKw });
+  const m = machines[i];
+  machines[i] = {
+    ...m,
+    def: { ...m.def, ratedKw },
+    loadFactor: m.on ? (m.kw / ratedKw) * 100 : 0,
+  };
+  return snapshot(machines[i]);
 }
 
 export function machineTrend(id, hours) {

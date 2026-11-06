@@ -10,6 +10,7 @@ import {
   plants,
   reevaluate,
   setPhones,
+  setRatedKw,
   setThresholds,
 } from "./engine";
 import { MACHINES } from "./sim";
@@ -227,6 +228,13 @@ export const mockApi = {
     async trend(id, hours) {
       await currentUser();
       return machineTrend(id, hours) ?? fail(404, "Machine not found.", "not_found");
+    },
+    async update(id, patch) {
+      await requireAdmin();
+      const kw = patch?.ratedKw;
+      if (!Number.isFinite(kw) || kw <= 0 || kw > 1000 * 0.7457)
+        fail(422, "Enter a motor rating above 0.", "validation");
+      return setRatedKw(id, kw) ?? fail(404, "Machine not found.", "not_found");
     },
   },
 

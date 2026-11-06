@@ -223,13 +223,55 @@ select:disabled {
 
 /* reports */
 .report-table {
-  min-width: 760px;
+  min-width: 840px;
 }
 .report-table .table-head,
 .report-table .table-row {
-  grid-template-columns: 1.3fr 0.8fr 1fr 1fr 1fr 0.8fr;
+  grid-template-columns: 1.2fr 1.3fr 0.8fr 1fr 1fr 0.9fr 0.8fr;
   gap: 8px;
   min-height: 54px;
+}
+.motor-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 6px 0;
+}
+.motor-btn {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid #c3ccbc;
+  border-radius: 8px;
+  background: white;
+  font-size: 12px;
+  cursor: pointer;
+}
+.motor-btn.primary {
+  border-color: #14502b;
+  color: white;
+  background: #14502b;
+}
+.motor-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.motor-btn:focus-visible,
+.motor-edit input:focus-visible {
+  outline: 2px solid #1e6b3c;
+  outline-offset: 2px;
+}
+.motor-edit input {
+  width: 68px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #c3ccbc;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+}
+.motor-error {
+  flex-basis: 100%;
 }
 .report-table .table-row a {
   color: #14502b;
