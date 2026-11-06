@@ -91,7 +91,7 @@ export const httpApi = {
     remove: (id) => request(`/phones/${enc(id)}`, { method: "DELETE" }),
   },
 
-  /** -> { alertsEnabled, autoReports } ; PUT (admin) saves and returns the same shape */
+  /** -> { alertsEnabled, autoReports, reportFrequency } ; PUT (admin) saves and returns the same shape */
   notifications: {
     get: () => request("/settings/notifications"),
     save: (n) => request("/settings/notifications", { method: "PUT", body: n }),

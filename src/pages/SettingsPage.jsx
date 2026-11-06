@@ -255,7 +255,7 @@ function NotificationPanel() {
       <div className="settings-title">
         <div>
           <h2>Notifications</h2>
-          <p>Choose what the system sends automatically.</p>
+          <p>Choose whether alert messages are sent.</p>
         </div>
         <span className="admin-only">▣ Admins only</span>
       </div>
@@ -271,19 +271,6 @@ function NotificationPanel() {
               checked={prefs.alertsEnabled}
               disabled={!admin}
               onChange={() => toggle("alertsEnabled")}
-            />
-            <i aria-hidden="true" />
-          </label>
-          <label className="toggle-row">
-            <span>
-              Automatic reports
-              <small>Send the plant report automatically on schedule.</small>
-            </span>
-            <input
-              type="checkbox"
-              checked={prefs.autoReports}
-              disabled={!admin}
-              onChange={() => toggle("autoReports")}
             />
             <i aria-hidden="true" />
           </label>

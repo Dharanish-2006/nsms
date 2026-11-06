@@ -23,7 +23,12 @@ import { RANGE_DAYS, usageTotals } from "./usage";
 
 const USERS_KEY = "rmm.mock.users";
 const NOTIFY_KEY = "rmm.mock.notifications";
-const DEFAULT_NOTIFY = { alertsEnabled: true, autoReports: false };
+const DEFAULT_NOTIFY = {
+  alertsEnabled: true,
+  autoReports: false,
+  reportFrequency: "day",
+};
+const FREQUENCIES = ["day", "week", "month"];
 const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_MAX_TRIES = 5;
 const otps = new Map(); // `${channel}:${target}` -> { code, expires, tries }
@@ -278,13 +283,16 @@ export const mockApi = {
   notifications: {
     async get() {
       await currentUser();
-      return load(NOTIFY_KEY, DEFAULT_NOTIFY);
+      return { ...DEFAULT_NOTIFY, ...load(NOTIFY_KEY, {}) };
     },
     async save(n) {
       await requireAdmin();
+      if (!FREQUENCIES.includes(n.reportFrequency))
+        fail(422, "Choose day, week or month.", "validation");
       const row = {
         alertsEnabled: Boolean(n.alertsEnabled),
         autoReports: Boolean(n.autoReports),
+        reportFrequency: n.reportFrequency,
       };
       save(NOTIFY_KEY, row);
       return row;

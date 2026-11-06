@@ -149,9 +149,9 @@ for the others critical ≥ warning.
 | GET    | `/settings/notifications` |               | `notifications` (any)       |
 | PUT    | `/settings/notifications` | notifications | 200 `notifications` (admin) |
 
-`notifications`: `{ alertsEnabled: boolean, autoReports: boolean }`. When
+`notifications`: `{ alertsEnabled: boolean, autoReports: boolean, reportFrequency: "day" | "week" | "month" }`. When
 `alertsEnabled` is false the backend must not send alert messages; when
-`autoReports` is true it sends the scheduled report automatically.
+`autoReports` is true it sends the report automatically every `reportFrequency`.
 
 `phone`: `{ id, digits: "9000000001", label }`. `digits` is exactly 10 digits
 (Indian mobile, no country code). Reject duplicates with 409.

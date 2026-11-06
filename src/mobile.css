@@ -474,3 +474,54 @@ svg {
     padding: 18px;
   }
 }
+
+/* ---------- Reports: automatic report sidebar ---------- */
+.reports-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.auto-report {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.auto-report h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+.auto-report p {
+  margin: 0 0 12px;
+  color: #617068;
+  font-size: 13px;
+}
+.auto-report .toggle-row {
+  margin: 0;
+  padding: 12px 0;
+  border-top: 1px solid #dce2d6;
+}
+.auto-report-when {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid #dce2d6;
+  font-size: 13px;
+  font-weight: 600;
+}
+.auto-report-when select {
+  width: 100%;
+}
+.auto-report select:disabled,
+.auto-report input:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+@media (max-width: 900px) {
+  .reports-layout {
+    grid-template-columns: 1fr;
+  }
+}
