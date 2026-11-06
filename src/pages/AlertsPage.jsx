@@ -79,7 +79,7 @@ export default function AlertsPage() {
               </span>
               <div className="alert-name">
                 <strong>
-                  {a.machineName} · {PARAMS[a.param].label}
+                  {a.machineName} Load Factor
                 </strong>
                 <small>{a.plant}</small>
               </div>

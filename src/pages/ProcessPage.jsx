@@ -1,11 +1,12 @@
 import { api } from "../api";
 import { images, machineImage } from "../assets";
-import { useState ,useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { StatusBadge } from "../components/Icon";
 import { useData } from "../context/DataContext";
 import runtime_icon from "../assets/images/runtime-icon.svg";
 import { useAuth } from "../context/AuthContext";
+// import power from "../assets/images/"
 import {
   downloadCsv,
   fmtDuration,
@@ -144,7 +145,7 @@ export default function ProcessPage() {
   return (
     <div className="content-page process-page">
       <aside className="machine-rail">
-      <AutoReportPanel/>
+        <AutoReportPanel />
         <span>MACHINES · {plant.toUpperCase()}</span>
         {machines.map((x) => (
           <button
@@ -242,6 +243,40 @@ export default function ProcessPage() {
                 k={`Total Runtime (${rangeLabel})`}
                 v={on ? fmtDuration(m.runSec) : na}
               />
+            </div>
+          </article>
+          <article className="info-card load-card">
+            <div className="load-visual">
+              {/* <img src={runtime_icon} alt="" /> */}
+              <span className="energy-icon">ϟ</span>
+
+              <div>
+                <strong style={{ fontSize: 20, padding: 0 }}>
+                  Units Consumed
+                  <br />
+                  423 kwh
+                </strong>
+              </div>
+
+              <hr
+                style={{
+                  height: "70px",
+                  border: "none",
+                  borderLeft: "1px solid #dce3d8",
+                  margin: "0 0px",
+                }}
+              />
+
+              <div>
+                <strong style={{ fontSize: 20 }}>
+                  Actual Usage
+                  <br />
+                  246 kwh
+                </strong>
+              </div>
+            </div>
+            <div className="data-list compact">
+              <Row k={`Energy usage in {${rangeLabel}}`} />
             </div>
           </article>
         </div>
