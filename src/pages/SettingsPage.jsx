@@ -224,6 +224,79 @@ function PhonePanel() {
     </section>
   );
 }
+function NotificationPanel() {
+  const { user } = useAuth();
+  const admin = user?.role === "admin";
+  const [prefs, setPrefs] = useState(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    api.notifications
+      .get()
+      .then((n) => !cancelled && setPrefs(n))
+      .catch((err) => !cancelled && setError(err.message));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const toggle = async (key) => {
+    const next = { ...prefs, [key]: !prefs[key] };
+    setPrefs(next); // optimistic; rolled back if the server refuses
+    try {
+      setPrefs(await api.notifications.save(next));
+      setError("");
+    } catch (err) {
+      setPrefs(prefs);
+      setError(err.message);
+    }
+  };
+  return (
+    <section className="panel notify-panel">
+      <div className="settings-title">
+        <div>
+          <h2>Notifications</h2>
+          <p>Choose what the system sends automatically.</p>
+        </div>
+        <span className="admin-only">▣ Admins only</span>
+      </div>
+      {prefs && (
+        <>
+          <label className="toggle-row">
+            <span>
+              Alerts
+              <small>Send alert messages to the saved phone numbers.</small>
+            </span>
+            <input
+              type="checkbox"
+              checked={prefs.alertsEnabled}
+              disabled={!admin}
+              onChange={() => toggle("alertsEnabled")}
+            />
+            <i aria-hidden="true" />
+          </label>
+          <label className="toggle-row">
+            <span>
+              Automatic reports
+              <small>Send the plant report automatically on schedule.</small>
+            </span>
+            <input
+              type="checkbox"
+              checked={prefs.autoReports}
+              disabled={!admin}
+              onChange={() => toggle("autoReports")}
+            />
+            <i aria-hidden="true" />
+          </label>
+        </>
+      )}
+      {error && (
+        <small className="form-error" role="alert">
+          {error}
+        </small>
+      )}
+    </section>
+  );
+}
 function PendingPanel() {
   const [pending, setPending] = useState([]);
   const [error, setError] = useState("");
@@ -333,6 +406,7 @@ export default function SettingsPage() {
       </div>
       <PasswordPanel />
       <PhonePanel />
+      <NotificationPanel />
       <ThresholdCard />
       {user?.role === "admin" && <PendingPanel />}
       <section className="settings-panel panel logout-panel">

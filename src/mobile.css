@@ -427,3 +427,50 @@ svg {
     font-size: 10px;
   }
 }
+
+/* ---------- Notifications panel ---------- */
+.notify-panel {
+  padding: 24px 34px;
+}
+.notify-panel .settings-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.notify-panel h2 {
+  margin: 0;
+  font-weight: 600;
+  font-size: 18px;
+}
+.notify-panel .settings-title p {
+  margin: 3px 0 12px;
+}
+.notify-panel .toggle-row {
+  margin: 0;
+  padding: 14px 0;
+  border-top: 1px solid #dce2d6;
+}
+.notify-panel .toggle-row > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.notify-panel .toggle-row small {
+  color: #617068;
+  font-size: 12px;
+  font-weight: 400;
+}
+.notify-panel .toggle-row input:disabled,
+.notify-panel .toggle-row input:disabled + i {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.notify-panel .toggle-row input {
+  /* the invisible checkbox fills the row; keep the visible switch in flow */
+  z-index: 1;
+}
+@media (max-width: 760px) {
+  .notify-panel {
+    padding: 18px;
+  }
+}

@@ -22,6 +22,8 @@ import { RANGE_DAYS, usageTotals } from "./usage";
 // production builds (VITE_USE_MOCK=false).
 
 const USERS_KEY = "rmm.mock.users";
+const NOTIFY_KEY = "rmm.mock.notifications";
+const DEFAULT_NOTIFY = { alertsEnabled: true, autoReports: false };
 const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_MAX_TRIES = 5;
 const otps = new Map(); // `${channel}:${target}` -> { code, expires, tries }
@@ -270,6 +272,22 @@ export const mockApi = {
     async remove(id) {
       await requireAdmin();
       setPhones(getPhones().filter((x) => x.id !== id));
+    },
+  },
+
+  notifications: {
+    async get() {
+      await currentUser();
+      return load(NOTIFY_KEY, DEFAULT_NOTIFY);
+    },
+    async save(n) {
+      await requireAdmin();
+      const row = {
+        alertsEnabled: Boolean(n.alertsEnabled),
+        autoReports: Boolean(n.autoReports),
+      };
+      save(NOTIFY_KEY, row);
+      return row;
     },
   },
 };

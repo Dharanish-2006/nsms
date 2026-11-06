@@ -142,6 +142,17 @@ off. Critical wins over warning.
 Validate on the server: at least one limit set; for `powerFactor` critical ≤ warning;
 for the others critical ≥ warning.
 
+## Notification settings
+
+| Method | Path                      | Body          | Response                    |
+| ------ | ------------------------- | ------------- | --------------------------- |
+| GET    | `/settings/notifications` |               | `notifications` (any)       |
+| PUT    | `/settings/notifications` | notifications | 200 `notifications` (admin) |
+
+`notifications`: `{ alertsEnabled: boolean, autoReports: boolean }`. When
+`alertsEnabled` is false the backend must not send alert messages; when
+`autoReports` is true it sends the scheduled report automatically.
+
 `phone`: `{ id, digits: "9000000001", label }`. `digits` is exactly 10 digits
 (Indian mobile, no country code). Reject duplicates with 409.
 

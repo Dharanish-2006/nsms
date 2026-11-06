@@ -90,4 +90,10 @@ export const httpApi = {
         : request("/phones", { method: "POST", body: p }),
     remove: (id) => request(`/phones/${enc(id)}`, { method: "DELETE" }),
   },
+
+  /** -> { alertsEnabled, autoReports } ; PUT (admin) saves and returns the same shape */
+  notifications: {
+    get: () => request("/settings/notifications"),
+    save: (n) => request("/settings/notifications", { method: "PUT", body: n }),
+  },
 };
