@@ -8,7 +8,15 @@ export default function AlertsPage() {
   const [machineF, setMachineF] = useState("all");
   const [sevF, setSevF] = useState("all");
   const [statusF, setStatusF] = useState("active");
-  const [selectedKey, setSelectedKey] = useState(null);
+
+  const counts = useMemo(() => {
+    const active = alerts.filter((a) => a.status === "active");
+    return {
+      critical: active.filter((a) => a.severity === "critical").length,
+      warning: active.filter((a) => a.severity === "warning").length,
+    };
+  }, [alerts]);
+
   const filtered = useMemo(
     () =>
       alerts.filter(
@@ -19,23 +27,21 @@ export default function AlertsPage() {
       ),
     [alerts, machineF, sevF, statusF],
   );
-  const selected = filtered.find((a) => a.key === selectedKey) ?? filtered[0];
 
   return (
-    <div className="content-page standard-page">
+    <div className="content-page standard-page alerts-page">
       <div className="page-heading">
-        <h1>Alerts</h1>
-        <span className="segmented">
-          <button type="button" className="selected" disabled>
-            Alerts
-          </button>
-        </span>
+        <div>
+          <h1>Alerts</h1>
+          <p>{plant} · readings outside their limits</p>
+        </div>
+        <div className="alert-summary" aria-label="Active alert counts">
+          <span className="chip critical">{counts.critical} critical</span>
+          <span className="chip warning">{counts.warning} warning</span>
+        </div>
       </div>
 
       <div className="filters">
-        <select aria-label="Plant" disabled>
-          <option>{plant}</option>
-        </select>
         <select
           aria-label="Machine"
           value={machineF}
@@ -76,33 +82,36 @@ export default function AlertsPage() {
           </div>
         )}
         {filtered.map((a) => {
-          const kind = a.status === "recovered" ? "recovered" : a.severity;
+          const recovered = a.status === "recovered";
+          const kind = recovered ? "recovered" : a.severity;
           return (
-            <button
-              key={a.key}
-              className={`alert-row ${kind} ${selected?.key === a.key ? "picked" : ""}`}
-              onClick={() => setSelectedKey(a.key)}
-            >
-            <span className="alert-symbol">{kind === "recovered" ? "✓" : "△"}</span>
-              
-              <span className="alert-name">
+            <article key={a.key} className={`alert-row ${kind}`}>
+              <span className="alert-symbol" aria-hidden="true">
+                {recovered ? "✓" : "△"}
+              </span>
+              <div className="alert-name">
                 <strong>
                   {a.machineName} · {PARAMS[a.param].label}
                 </strong>
+                <small>
+                  {a.plant} ·{" "}
+                  {recovered
+                    ? `recovered ${istWhen(a.recoveredAt ?? a.since)}`
+                    : `since ${istWhen(a.since)}`}
+                </small>
+              </div>
+              <span className={`severity ${kind}`}>
+                {recovered
+                  ? "Recovered"
+                  : a.severity === "critical"
+                    ? "Critical"
+                    : "Warning"}
               </span>
-
-              <span className="alert-row">  
-                {a.plant} ·{" "}
-                {a.status === "recovered"
-                  ? `recovered ${istWhen(a.recoveredAt ?? a.since)}`
-                  : istWhen(a.since)}
-              </span>
-              <span className="reading">
+              <div className="reading">
                 <small>READING</small>
                 <strong>{fmtParam(a.param, a.reading)}</strong>
-              </span>
-
-            </button>
+              </div>
+            </article>
           );
         })}
       </div>

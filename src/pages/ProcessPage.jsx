@@ -1,34 +1,20 @@
-import { icons, images, machineImage } from "../assets";
+import { images, machineImage } from "../assets";
 import { useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
-import { AssetIcon, StatusBadge } from "../components/Icon";
+import { StatusBadge } from "../components/Icon";
 import { useData } from "../context/DataContext";
 import runtime_icon from "../assets/images/runtime-icon.svg";
 import {
   downloadCsv,
-  fmt,
   fmtDuration,
   istDay,
   istHour,
   istStamp,
   istStamp12,
-  istTime,
 } from "../lib/format";
 import { hasPowerQuality } from "../lib/machine";
 import { statusOf } from "../lib/status";
-function InfoCard({ title, icon, children }) {
-  return (
-    <article className="info-card">
-      <h3>
-        <span>
-          <AssetIcon src={icon} size={20} />
-        </span>
-        {title}
-      </h3>
-      {children}
-    </article>
-  );
-}
+
 const Row = ({ k, v }) => (
   <div>
     <span>{k}</span>
@@ -103,23 +89,12 @@ export default function ProcessPage() {
           <div>
             <h1>{m.name}</h1>
             <p>
-              {m.plant} · 15 HP · Updated {istTime(m.updatedAt)} AM
+              {m.plant} · 15 HP · Updated {istStamp12(m.updatedAt)}
             </p>
-            <Row
-              k="Motor ON Time "
-              v={m.runStart ? <small> {istStamp12(m.runStart)} </small> : na}
-            />
+            <Row k="Motor ON Time " v={m.runStart ? istStamp12(m.runStart) : na} />
             <Row
               k="Motor OFF Time "
-              v={
-                on ? (
-                  <small> RUNNING </small>
-                ) : m.lastStop ? (
-                  <small> istStamp12(m.lastStop) </small>
-                ) : (
-                  na
-                )
-              }
+              v={on ? "RUNNING" : m.lastStop ? istStamp12(m.lastStop) : na}
             />
           </div>
           <StatusBadge status={status} />
@@ -183,15 +158,12 @@ export default function ProcessPage() {
               <img src={runtime_icon} alt="" />
               <div>
                 <span>Runtime</span>
-                <Row
-                v={on ? fmtDuration(m.runSec) : na}
-              /> 
+                <strong>{on ? fmtDuration(m.runSec) : na}</strong>
               </div>
             </div>
-
             <div className="data-list compact">
               <Row
-                k={`Total RunTime  (${rangeLabel})`}
+                k={`Total Runtime (${rangeLabel})`}
                 v={on ? fmtDuration(m.runSec) : na}
               />
             </div>

@@ -5,6 +5,7 @@ import "@fontsource-variable/geist";
 import App from "./App";
 import "./index.css";
 import "./app.css";
+import "./mobile.css";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
