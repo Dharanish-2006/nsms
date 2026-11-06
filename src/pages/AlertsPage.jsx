@@ -9,14 +9,6 @@ export default function AlertsPage() {
   const [sevF, setSevF] = useState("all");
   const [statusF, setStatusF] = useState("active");
 
-  const counts = useMemo(() => {
-    const active = alerts.filter((a) => a.status === "active");
-    return {
-      critical: active.filter((a) => a.severity === "critical").length,
-      warning: active.filter((a) => a.severity === "warning").length,
-    };
-  }, [alerts]);
-
   const filtered = useMemo(
     () =>
       alerts.filter(
@@ -34,10 +26,6 @@ export default function AlertsPage() {
         <div>
           <h1>Alerts</h1>
           <p>{plant} · readings outside their limits</p>
-        </div>
-        <div className="alert-summary" aria-label="Active alert counts">
-          <span className="chip critical">{counts.critical} critical</span>
-          <span className="chip warning">{counts.warning} warning</span>
         </div>
       </div>
 

@@ -16,25 +16,6 @@ svg {
 }
 
 /* ---------- Alerts page ---------- */
-.alert-summary {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.alert-summary .chip {
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-}
-.alert-summary .chip.critical {
-  color: #b42318;
-  background: #fce9e7;
-}
-.alert-summary .chip.warning {
-  color: #8b4b00;
-  background: #fff1d6;
-}
 .alerts-page .filters {
   max-width: 640px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
