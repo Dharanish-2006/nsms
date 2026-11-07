@@ -488,3 +488,5 @@ html {
 .machine-banner > .status-badge {
   flex-shrink: 0;
 }
+
+.machine-banner p .motor-cell { display: inline-flex; vertical-align: middle; }
