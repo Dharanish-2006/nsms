@@ -1,7 +1,6 @@
 import hmac
 
 from django.conf import settings
-from django.db import IntegrityError
 from rest_framework import serializers
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -12,7 +11,7 @@ from apps.common.errors import ApiError
 from apps.common.permissions import IsPlantOwner
 
 from .access import accessible_plants
-from .models import Gateway, Plant
+from .services import register_unverified
 
 
 class PlantListView(APIView):
@@ -52,23 +51,11 @@ class GatewayProvisionView(APIView):
         s = ProvisionSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         serial = s.validated_data["serial"]
-        if Gateway.objects.filter(serial_number__iexact=serial).exists():
+        gateway, created = register_unverified(serial, s.validated_data.get("name", ""))
+        if not created:
             raise ApiError(
-                "This gateway is already registered. Ask the administrator for a new key.",
-                409,
-                "already_registered",
+                "This gateway is already registered. Ask the administrator for a new key.", 409, "already_registered"
             )
-        plant, _ = Plant.objects.get_or_create(name=settings.DEFAULT_PLANT_NAME)
-        gateway = Gateway(
-            name=s.validated_data.get("name", "").strip() or serial,
-            plant=plant,
-            serial_number=serial,
-            verified=False,
-        )
-        try:
-            gateway.save()
-        except IntegrityError:
-            raise ApiError("This gateway is already registered.", 409, "already_registered") from None
         return Response(
             {"gatewayId": str(gateway.pk), "apiKey": gateway._first_key, "status": "awaiting_verification"},
             status=201,

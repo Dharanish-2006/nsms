@@ -95,3 +95,24 @@ def disconnect(admin, assignment_id, remarks=""):
     AdminAuditLog.record(admin, Action.GATEWAY_DISCONNECTED, "assignment", a.pk, remarks)
     _after_commit(a.gateway_id, a.user_id)
     return a
+
+
+def register_unverified(serial, name=""):
+    """Create a gateway that announced itself (serial number only). It starts unverified, so it
+    cannot be assigned or send data until an admin verifies it. Returns (gateway, created);
+    `gateway._first_key` is set only when created."""
+    from django.conf import settings
+
+    from .models import Plant
+
+    gateway = Gateway.objects.filter(serial_number__iexact=serial).first()
+    if gateway is not None:
+        return gateway, False
+    plant, _ = Plant.objects.get_or_create(name=settings.DEFAULT_PLANT_NAME)
+    gateway = Gateway(name=(name or "").strip() or serial, plant=plant, serial_number=serial, verified=False)
+    try:
+        with transaction.atomic():
+            gateway.save()
+    except IntegrityError:  # two first messages at once: the other one won
+        return Gateway.objects.get(serial_number__iexact=serial), False
+    return gateway, True

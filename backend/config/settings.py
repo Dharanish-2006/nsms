@@ -219,3 +219,7 @@ GATEWAY_PROVISION_KEY = os.environ.get("GATEWAY_PROVISION_KEY", "")
 DEFAULT_PLANT_NAME = os.environ.get("DEFAULT_PLANT_NAME", "Plant 1")
 # A verified gateway may create machines for meters it reports; this caps the junk a bad one can make.
 MAX_AUTO_MACHINES_PER_GATEWAY = env_int("MAX_AUTO_MACHINES_PER_GATEWAY", 32)
+
+# AWS IoT Core: the IoT Rule that forwards device messages to POST /api/iot/ingest proves itself
+# with this shared secret (header X-IoT-Secret). Empty = that endpoint is off.
+IOT_RULE_SECRET = os.environ.get("IOT_RULE_SECRET", "")

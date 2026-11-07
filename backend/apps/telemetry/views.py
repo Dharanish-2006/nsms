@@ -1,3 +1,6 @@
+import hmac
+import logging
+import re
 from datetime import date as date_cls, timedelta
 from math import ceil
 
@@ -19,6 +22,7 @@ from apps.common.permissions import IsPlantOwner
 from apps.common.timeutil import local_day_start, to_ms
 from apps.plants.access import accessible_machines, window_q
 from apps.plants.models import Gateway, Machine
+from apps.plants.services import register_unverified
 
 from .consolidate import day_bounds
 from .ingest import ingest
@@ -26,6 +30,8 @@ from .models import HourlyReport, Reading
 from .payloads import build_payloads
 from .publish import publish_ingest, publish_machine_change
 
+logger = logging.getLogger(__name__)
+SERIAL_RE = re.compile(r"^[A-Za-z0-9._-]{4,64}$")
 RESERVED_MACHINE_IDS = {"usage"}  # would collide with /machines/usage
 RANGE_DAYS = {"week": 7, "month": 30}
 TREND_MAX_HOURS = 72
@@ -42,6 +48,17 @@ def health(request):
 
 
 # --- Gateway ingestion ------------------------------------------------------
+def _store(gateway, data, request):
+    """Shared by the HTTPS and the AWS IoT paths: store, publish live, and answer."""
+    result = ingest(gateway, data, ip=BaseThrottle().get_ident(request) or None)
+    publish_ingest(gateway, result)
+    body = {"accepted": result.accepted, "rejected": result.rejected, "unknownMeters": result.unknown_meters}
+    # Nothing usable at all: tell the sender plainly (4xx = do not retry this data).
+    if result.accepted == 0 and result.rejected:
+        return Response({"message": "No valid readings in the request.", "code": "validation", **body}, status=422)
+    return Response(body, status=202)
+
+
 class IngestView(APIView):
     """POST /api/ingest: the endpoint the industrial gateway (or an AWS IoT Core rule /
     API Gateway in front of it) pushes readings to. Authenticated by `X-Gateway-Key`."""
@@ -59,18 +76,50 @@ class IngestView(APIView):
         if not gateway.verified:
             raise ApiError("This gateway is waiting for the administrator to verify it.", 403, "gateway_not_verified")
 
-        result = ingest(gateway, request.data, ip=BaseThrottle().get_ident(request) or None)
-        publish_ingest(gateway, result)
+        return _store(gateway, request.data, request)
 
-        body = {
-            "accepted": result.accepted,
-            "rejected": result.rejected,
-            "unknownMeters": result.unknown_meters,
-        }
-        # Nothing usable at all: tell the gateway plainly (4xx = do not retry this data).
-        if result.accepted == 0 and result.rejected:
-            return Response({"message": "No valid readings in the request.", "code": "validation", **body}, status=422)
-        return Response(body, status=202)
+
+class IotIngestView(APIView):
+    """POST /api/iot/ingest: where an AWS IoT Core rule delivers what gateways publish over MQTT.
+
+    The gateway publishes to `mill/<serial>/readings`; IoT Core authenticates it with its own
+    certificate and its policy only lets it publish under its own serial, so the rule can trust
+    the topic. The rule forwards `{"serial": topic(2), "readings": [...]}` with the shared secret
+    in `X-IoT-Secret`. A serial we have not seen is registered as an unverified gateway, exactly
+    like self-registration over HTTPS. See docs/AWS-IOT.md.
+    """
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        expected = settings.IOT_RULE_SECRET
+        if not expected:
+            raise ApiError("AWS IoT ingest is turned off.", 404, "not_found")
+        body = request.data if isinstance(request.data, dict) else {}
+
+        # AWS asks the endpoint to confirm itself once, before a rule may use it. That request
+        # carries no secret; log the token so the operator can confirm it with the AWS CLI.
+        token = body.get("confirmationToken")
+        if token and "readings" not in body:
+            logger.warning("AWS IoT destination confirmation token: %s", token)
+            return Response({"status": "confirmation-logged"})
+
+        given = request.headers.get("X-IoT-Secret", "")
+        if not hmac.compare_digest(given.encode(), expected.encode()):
+            raise ApiError("Invalid IoT rule secret.", 401, "invalid_iot_secret")
+
+        serial = body.get("serial")
+        if not isinstance(serial, str) or not SERIAL_RE.match(serial):
+            raise ApiError("A valid gateway serial is required.", 422, "validation")
+        gateway, created = register_unverified(serial)
+        if created:
+            logger.info("Gateway %s registered itself over MQTT; waiting for verification.", serial)
+        if not gateway.enabled:
+            raise ApiError("This gateway is disabled.", 403, "gateway_disabled")
+        if not gateway.verified:
+            raise ApiError("This gateway is waiting for the administrator to verify it.", 403, "gateway_not_verified")
+        return _store(gateway, {"readings": body.get("readings")}, request)
 
 
 # --- Machines ---------------------------------------------------------------

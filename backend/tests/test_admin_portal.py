@@ -181,24 +181,30 @@ def test_dashboard_counts(admin_client, operator, other_user, gateway, second_ga
 
 # --- the previous owner's data stays theirs ---------------------------------------------
 def test_new_owner_does_not_see_the_previous_owners_hours(admin_client, anon, operator, other_user, gateway, machines):
-    day = timezone.localtime().replace(hour=1, minute=0, second=0, microsecond=0)
-    # Only meaningful if "now" is later than 01:00 IST; the data is stamped in the past
-    if timezone.now() - day < timedelta(hours=3):
-        pytest.skip("needs a few hours of today to have passed")
-    aid = assign(admin_client, operator, gateway).json()["id"]
-    admin_client.post(f"{P}/assignments/{aid}/connect")
-    GatewayAssignment.objects.filter(pk=aid).update(connected_at=day - timedelta(hours=2))
     from apps.plants.models import ConnectionPeriod
 
-    ConnectionPeriod.objects.filter(assignment_id=aid).update(start=day - timedelta(hours=2))
-    t = day + timedelta(minutes=10)
-    push(anon, gateway, [{"meterId": "1", "ts": ms(t), "kw": 30, "pf": 0.9, "kwh": 100},
-                         {"meterId": "1", "ts": ms(t + timedelta(minutes=10)), "kw": 30, "pf": 0.9, "kwh": 105}])  # fmt: skip
+    now = timezone.now()
+    aid = assign(admin_client, operator, gateway).json()["id"]
+    admin_client.post(f"{P}/assignments/{aid}/connect")
+    started = now - timedelta(minutes=40)
+    GatewayAssignment.objects.filter(pk=aid).update(connected_at=started)
+    ConnectionPeriod.objects.filter(assignment_id=aid).update(start=started)
+    # 30 minutes of the first owner's data, stamped a few minutes ago
+    push(anon, gateway, [{"meterId": "1", "ts": ms(now - timedelta(minutes=30)), "kw": 30, "pf": 0.9, "kwh": 100},
+                         {"meterId": "1", "ts": ms(now - timedelta(minutes=10)), "kw": 30, "pf": 0.9, "kwh": 110}])  # fmt: skip
     assert client_for(operator).get("/api/machines/usage?range=week").json()["consumedKwh"] > 0
 
     admin_client.post(f"{P}/assignments/{aid}/disconnect")
     new = assign(admin_client, other_user, gateway).json()["id"]
     admin_client.post(f"{P}/assignments/{new}/connect")  # connects "now": after the data above
+    # the new owner's period starts now; the hour filter is whole-hour, so move the old data
+    # one clear hour back to test the boundary honestly
+    from apps.telemetry.models import HourlyReport
+
+    keep = HourlyReport.objects.order_by("hour").first()
+    HourlyReport.objects.exclude(pk=keep.pk).delete()
+    HourlyReport.objects.filter(pk=keep.pk).update(hour=timezone.now().replace(minute=0, second=0, microsecond=0) - timedelta(hours=3))
+    ConnectionPeriod.objects.filter(assignment_id=aid).update(start=now - timedelta(hours=4), end=now - timedelta(hours=2))
     theirs = client_for(other_user)
     assert theirs.get("/api/machines/usage?range=week").json() == {"consumedKwh": 0, "actualKwh": 0}
     row = next(m for m in theirs.get("/api/reports/daily").json()["machines"] if m["machineId"] == "sheller-1")
@@ -258,3 +264,40 @@ def test_rotating_a_key_is_audited_and_works(admin_client, anon, gateway, machin
     assert push(anon, gateway, [{"meterId": "1", "kw": 5}], key=r.json()["apiKey"]).status_code == 202
     assert AdminAuditLog.objects.filter(action="gateway_key_rotated").count() == 1
     assert "apiKey" not in admin_client.get(f"{P}/gateways").json()[0]  # shown once only
+
+
+# --- AWS IoT Core (MQTT) ---------------------------------------------------------------
+@override_settings(IOT_RULE_SECRET="rule-secret")
+def test_iot_rule_delivers_mqtt_readings(anon, admin_client, operator):
+    H = {"HTTP_X_IOT_SECRET": "rule-secret"}
+    msg = {"serial": "SN-MQTT-0001", "readings": [{"meterId": "1", "kw": 12.5, "pf": 0.9}]}
+    assert anon.post("/api/iot/ingest", msg, format="json").status_code == 401
+    assert anon.post("/api/iot/ingest", msg, format="json", HTTP_X_IOT_SECRET="nope").status_code == 401
+
+    # First message from an unknown serial: it appears for the admin, unverified, data not stored
+    r = anon.post("/api/iot/ingest", msg, format="json", **H)
+    assert r.status_code == 403 and r.json()["code"] == "gateway_not_verified"
+    gw = admin_client.get(f"{P}/gateways?verified=false").json()
+    assert [g["serialNumber"] for g in gw] == ["SN-MQTT-0001"]
+    assert Machine.objects.count() == 0
+
+    admin_client.post(f"{P}/gateways/{gw[0]['id']}/verify")
+    r = anon.post("/api/iot/ingest", msg, format="json", **H)
+    assert r.status_code == 202 and r.json()["accepted"] == 1
+    assert Machine.objects.get(gateway__serial_number="SN-MQTT-0001").meter_id == "1"
+
+    # Bad serials and bad bodies are refused
+    assert anon.post("/api/iot/ingest", {"serial": "x", "readings": []}, format="json", **H).status_code == 422
+    assert anon.post("/api/iot/ingest", {"serial": "SN-MQTT-0001", "readings": "no"}, format="json", **H).status_code == 422
+
+
+@override_settings(IOT_RULE_SECRET="rule-secret")
+def test_iot_destination_confirmation_is_logged_not_trusted(anon, caplog):
+    with caplog.at_level("WARNING"):
+        r = anon.post("/api/iot/ingest", {"confirmationToken": "tok-123", "enableUrl": "https://x"}, format="json")
+    assert r.status_code == 200 and "tok-123" in caplog.text
+    assert Gateway.objects.count() == 0  # nothing created by it
+
+
+def test_iot_ingest_is_off_without_a_secret(anon):
+    assert anon.post("/api/iot/ingest", {"serial": "SN-MQTT-0001", "readings": []}, format="json").status_code == 404

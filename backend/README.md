@@ -88,6 +88,13 @@ installed); only then can it be assigned and can it send data. A serial can regi
 device gets a new key from the admin (`rotate-key`). Leave `GATEWAY_PROVISION_KEY` empty to turn this off.
 Nothing here depends on the gateway model: any device that can send an HTTPS POST with a header will do.
 
+## MQTT gateways (AWS IoT Core)
+
+Gateways that speak MQTT (typical for Modbus gateways) publish to AWS IoT Core; an IoT Rule forwards
+each message to `POST /api/iot/ingest` (header `X-IoT-Secret`, set `IOT_RULE_SECRET`). Registration and
+verification work the same way as above. Setup, policy, rule and the Selec MFM384 register mapping are
+in [`../docs/AWS-IOT.md`](../docs/AWS-IOT.md).
+
 ## Two kinds of user
 
 **Plant owners** (`role: user`) are the customers. They register, wait for approval, then monitor the gateways
