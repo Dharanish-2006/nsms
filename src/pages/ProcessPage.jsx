@@ -5,7 +5,6 @@ import { AutoReportPanel } from "../components/AutoReportPanel";
 import { StatusBadge } from "../components/Icon";
 import { useData } from "../context/DataContext";
 import runtime_icon from "../assets/images/runtime-icon.svg";
-import { useAuth } from "../context/AuthContext";
 import { MotorRating } from "../components/MotorRating";
 // import power from "../assets/images/"
 import {
@@ -35,7 +34,6 @@ export default function ProcessPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { machines, plant, lastUpdate, saveMotorRating } = useData();
-  const { user } = useAuth();
   const [windowHrs, setWindowHrs] = useState(24);
   const m = machines.find((x) => x.id === id);
   if (!m)
@@ -94,13 +92,8 @@ export default function ProcessPage() {
           <div>
             <h1>{m.name}</h1>
             <p>
-              {m.plant} ·{" "}
-              <MotorRating
-                machine={m}
-                canEdit={user?.role === "admin"}
-                onSave={saveMotorRating}
-              />{" "}
-              · Updated {istStamp12(m.updatedAt)}
+              {m.plant} · <MotorRating machine={m} canEdit onSave={saveMotorRating} /> ·
+              Updated {istStamp12(m.updatedAt)}
             </p>
             <Row k="Motor ON Time " v={m.runStart ? istStamp12(m.runStart) : na} />
             <Row

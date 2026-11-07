@@ -58,8 +58,8 @@ Rate-limit login and registration on the server.
 The app calls `/machines` and `/alerts` every `VITE_POLL_INTERVAL_MS` (5 s).
 Keep them fast. It backs off automatically when they fail.
 
-Admins can change a motor's rating from the Reports page: `PUT /machines/:id` with
-`{ "ratedKw": 37.285 }` (admin only, 403 otherwise) returns the updated `machine`. The UI shows and
+Any signed-in user can change the rating of a machine they can see, from the Reports and machine pages: `PUT /machines/:id` with
+`{ "ratedKw": 37.285 }` (404 for a machine they cannot see) returns the updated `machine`. The UI shows and
 edits horsepower and converts at 1 HP = 0.7457 kW, so `ratedKw` stays the stored value and
 `loadFactor` is recomputed from it.
 

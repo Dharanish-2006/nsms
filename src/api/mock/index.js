@@ -230,7 +230,7 @@ export const mockApi = {
       return machineTrend(id, hours) ?? fail(404, "Machine not found.", "not_found");
     },
     async update(id, patch) {
-      await requireAdmin();
+      await currentUser();
       const kw = patch?.ratedKw;
       if (!Number.isFinite(kw) || kw <= 0 || kw > 1000 * 0.7457)
         fail(422, "Enter a motor rating above 0.", "validation");

@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { AutoReportPanel } from "../components/AutoReportPanel";
 import { StatusBadge } from "../components/Icon";
 import { MotorRating } from "../components/MotorRating";
-import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
 import {
   downloadCsv,
@@ -18,8 +17,6 @@ import { statusOf } from "../lib/status";
 
 export default function ReportsPage() {
   const { machines, alerts, plant, lastUpdate, saveMotorRating } = useData();
-  const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
   const rows = machines.map((m) => {
     const kwh = m.hourlyKwh.reduce((a, b) => a + b, 0);
     return {
@@ -91,7 +88,7 @@ export default function ReportsPage() {
                   <span>
                     <Link to={`/machines/${m.id}`}>{m.name}</Link>
                   </span>
-                  <MotorRating machine={m} canEdit={isAdmin} onSave={saveMotorRating} />
+                  <MotorRating machine={m} canEdit onSave={saveMotorRating} />
                   <span>
                     <StatusBadge status={statusOf(m, lastUpdate)} />
                   </span>
