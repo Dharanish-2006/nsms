@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useData } from "../context/DataContext";
 import { istWhen } from "../lib/format";
-import { fmtParam, PARAMS } from "../lib/params";
+import { fmtParam } from "../lib/params";
 
 export default function AlertsPage() {
   const { alerts, machines, plant } = useData();
@@ -78,9 +78,7 @@ export default function AlertsPage() {
                 {recovered ? "✓" : "△"}
               </span>
               <div className="alert-name">
-                <strong>
-                  {a.machineName} Load Factor
-                </strong>
+                <strong>{a.machineName} Load Factor</strong>
                 <small>{a.plant}</small>
               </div>
               <div className="reading">
