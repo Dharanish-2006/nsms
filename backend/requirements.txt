@@ -1,0 +1,13 @@
+Django>=5.2,<5.3
+djangorestframework>=3.16,<4
+channels>=4.2,<5
+daphne>=4.1,<5
+channels-redis>=4.2,<5
+dj-database-url>=2.2
+whitenoise>=6.7
+django-cors-headers>=4.4
+python-dotenv>=1.0
+# Production database driver (SQLite is used when DATABASE_URL is not set)
+psycopg[binary]>=3.2
+# Only needed when SMS_BACKEND=sns
+boto3>=1.34

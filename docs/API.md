@@ -161,6 +161,36 @@ for the others critical ≥ warning.
 `phone`: `{ id, digits: "9000000001", label }`. `digits` is exactly 10 digits
 (Indian mobile, no country code). Reject duplicates with 409.
 
+## Backend additions (Django, `backend/`)
+
+Everything above is implemented as written. The backend adds the pieces below; see
+`backend/README.md` for setup and deployment.
+
+**Gateway ingest.** `POST /api/ingest` with header `X-Gateway-Key: gw_…`.
+Body `{"readings":[{"meterId":"1","ts":1762400000000,"kw":26.1,"pf":0.93,"kwh":1042.7}]}`
+(a single reading object is also accepted). Only `meterId` and `kw` are required; `ts` may be epoch
+seconds, epoch ms or ISO 8601 (defaults to now). Optional: `kva kvar current voltage frequency
+kwh kvarh kvah on`. Reply `202 {accepted, rejected:[{index,error}], unknownMeters}`; `4xx` means
+fix the data (do not retry), `5xx` / network errors mean retry (duplicates are ignored).
+
+**Gateways and assignment (admin).** `GET/POST /gateways`, `GET/PUT/DELETE /gateways/:id`,
+`POST /gateways/:id/rotate-key` (the key is returned once, on create and rotate, never again),
+`GET/PUT/POST /gateways/:id/users` (`PUT {userIds:[…]}` replaces the set, `POST {userId}` adds one),
+`DELETE /gateways/:id/users/:userId`. A regular user's `GET /gateways` lists only their own, with no
+key or user list. Users only ever see the machines, plants and alerts of gateways assigned to them.
+Admins also get `POST /machines`, `PUT/DELETE /machines/:id` to register meters on a gateway.
+
+**Reports.** `GET /reports/daily?plant=&date=YYYY-MM-DD` returns the consolidated per-machine day
+(energy, running energy, runtime, average/max power, average power factor).
+`usage`: `consumedKwh` is all metered energy over the last 7 / 30 IST days (today included);
+`actualKwh` is the part used while the machine was running.
+
+**Realtime.** WebSocket `/api/live/`: send `{"type":"auth","token":"…"}` first, then receive
+`snapshot`, `machines`, `alert` and `alerts` messages (details in
+`backend/apps/telemetry/consumers.py`). The REST endpoints keep working, so polling is a fallback.
+
+**Health.** `GET /api/healthz` (no auth) for load balancer checks.
+
 2 cmp
 
 day

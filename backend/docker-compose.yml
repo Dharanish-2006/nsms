@@ -1,0 +1,45 @@
+# Local stack that mirrors production: PostgreSQL + Redis + the app + the maintenance worker.
+#   cp .env.example .env   (set DJANGO_SECRET_KEY)
+#   docker compose up --build
+#   docker compose exec web python manage.py createsuperuser
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: nsms
+      POSTGRES_USER: nsms
+      POSTGRES_PASSWORD: nsms-local-only
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nsms"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+
+  web:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://nsms:nsms-local-only@db:5432/nsms
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_started}
+    ports: ["8000:8000"]
+
+  # Daily-report consolidation, raw-data pruning and token clean-up, every 5 minutes.
+  worker:
+    build: .
+    command: python manage.py run_maintenance --loop 300
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://nsms:nsms-local-only@db:5432/nsms
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      web: {condition: service_started}
+
+volumes:
+  pgdata:
