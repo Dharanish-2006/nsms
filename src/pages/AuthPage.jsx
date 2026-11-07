@@ -84,6 +84,14 @@ function LoginForm() {
     </form>
   );
 }
+/** Which field a server error message belongs to (the server sends one plain message). */
+function fieldFor(message) {
+  if (/password/i.test(message)) return "password";
+  if (/mobile|phone/i.test(message)) return "mobile";
+  if (/email/i.test(message)) return "email";
+  return "username";
+}
+
 function RegisterForm() {
   const { register } = useAuth();
   const [f, setF] = useState({
@@ -129,7 +137,7 @@ function RegisterForm() {
       ...(usePhone ? { phoneToken } : {}),
     });
     setBusy(false);
-    if (err) return setErrors({ username: err });
+    if (err) return setErrors({ [fieldFor(err)]: err, form: err });
     setDone(true);
   };
   if (done)
@@ -239,6 +247,11 @@ function RegisterForm() {
         error={errors.confirm}
         autoComplete="new-password"
       />
+      {errors.form && (
+        <small className="form-error" role="alert">
+          {errors.form}
+        </small>
+      )}
       <button className="primary-button" type="submit" disabled={busy}>
         {busy ? "Creating…" : "Create account"}
       </button>
