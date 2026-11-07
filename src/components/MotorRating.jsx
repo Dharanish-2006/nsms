@@ -8,6 +8,8 @@ export function MotorRating({ machine, canEdit, onSave }) {
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useState(null); // HP awaiting confirmation
+  const [saved, setSaved] = useState(false);
 
   const start = () => {
     setText(hp === null ? "" : String(hp));
@@ -16,9 +18,10 @@ export function MotorRating({ machine, canEdit, onSave }) {
   };
   const cancel = () => {
     setEditing(false);
+    setPending(null);
     setError("");
   };
-  const submit = async (e) => {
+  const submit = (e) => {
     e.preventDefault();
     const value = parseHp(text);
     if (value === null) {
@@ -29,11 +32,18 @@ export function MotorRating({ machine, canEdit, onSave }) {
       cancel();
       return;
     }
+    setError("");
+    setPending(value);
+  };
+  const confirm = async () => {
     setBusy(true);
     setError("");
     try {
-      await onSave(machine.id, hpToKw(value));
+      await onSave(machine.id, hpToKw(pending));
       setEditing(false);
+      setPending(null);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -45,6 +55,11 @@ export function MotorRating({ machine, canEdit, onSave }) {
     return (
       <span className="motor-cell">
         <span>{hp === null ? "--" : `${hp} HP`}</span>
+        {saved && (
+          <small className="motor-saved" role="status">
+            Saved
+          </small>
+        )}
         {canEdit && (
           <button
             type="button"
@@ -54,6 +69,40 @@ export function MotorRating({ machine, canEdit, onSave }) {
           >
             Edit
           </button>
+        )}
+      </span>
+    );
+  }
+  if (pending !== null) {
+    return (
+      <span
+        className="motor-cell motor-edit"
+        role="alertdialog"
+        aria-label="Confirm HP change"
+      >
+        <span>
+          Change {machine.name} from {hp === null ? "--" : hp} HP to <b>{pending} HP</b>?
+        </span>
+        <button
+          type="button"
+          className="motor-btn primary"
+          onClick={confirm}
+          disabled={busy}
+        >
+          {busy ? "Saving" : "Confirm"}
+        </button>
+        <button
+          type="button"
+          className="motor-btn"
+          onClick={() => setPending(null)}
+          disabled={busy}
+        >
+          Back
+        </button>
+        {error && (
+          <small className="form-error motor-error" role="alert">
+            {error}
+          </small>
         )}
       </span>
     );
