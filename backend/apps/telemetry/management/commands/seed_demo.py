@@ -30,7 +30,8 @@ class Command(BaseCommand):
         parser.add_argument("--new-key", action="store_true", help="issue a new key for an existing demo gateway")
 
     def handle(self, *args, admin_password, new_key, **options):
-        admin_password = admin_password or secrets.token_urlsafe(9)
+        # admin_password = admin_password or secrets.token_urlsafe(9)
+        admin_password = "realadmin@123"
         admin, created = User.objects.get_or_create(
             username="admin",
             defaults=dict(
@@ -39,21 +40,21 @@ class Command(BaseCommand):
             ),  # fmt: skip
         )
         if created:
-            admin.set_password(admin_password)
+            admin.set_password("realadmin@123")
             admin.save()
             self.stdout.write(f"admin user created.  username: admin  password: {admin_password}")
         else:
             self.stdout.write("admin user already exists (password unchanged)")
 
-        user_password = secrets.token_urlsafe(9)
+        user_password = "sam@123"
         operator, created = User.objects.get_or_create(
-            username="asha",
-            defaults=dict(email="asha@example.com", full_name="Asha K", role="user", status="active"),
+            username="sam",
+            defaults=dict(email="sam@example.com", full_name="sam K", role="user", status="active"),
         )
         if created:
             operator.set_password(user_password)
             operator.save()
-            self.stdout.write(f"operator created.     username: asha   password: {user_password}")
+            self.stdout.write(f"operator created.     username: sam   password: {user_password}")
 
         plant, _ = Plant.objects.get_or_create(name="Plant 1")
         gateway = Gateway.objects.filter(name="Plant 1 gateway").first()
