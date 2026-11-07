@@ -15,6 +15,7 @@ from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
 
+from apps.plants.access import connected_owner
 from apps.plants.models import Machine
 
 from .models import Alert, Threshold
@@ -48,9 +49,15 @@ def _severity(threshold, value):
 
 
 def _applicable_thresholds(machine):
-    """{param: Threshold} with machine-specific rows beating the "all" row."""
+    """{param: Threshold} with machine-specific rows beating the "all" row.
+
+    Only the limits of the owner connected to the machine's gateway count; with nobody
+    connected there is nobody to alert, so nothing applies."""
     chosen = {}
-    rows = Threshold.objects.filter(Q(machine=machine) | Q(machine__isnull=True))
+    owner_id = connected_owner(machine.gateway_id)
+    if owner_id is None:
+        return chosen
+    rows = Threshold.objects.filter(Q(machine=machine) | Q(machine__isnull=True), owner_id=owner_id)
     for th in sorted(rows, key=lambda t: t.machine_id is None):  # specific first
         chosen.setdefault(th.param, th)
     return chosen
@@ -127,11 +134,27 @@ def evaluate_machine(machine, state, now=None):
     return events
 
 
-def reevaluate_all():
-    """After thresholds change: re-judge every machine from its latest reading."""
-    from apps.telemetry.models import MachineState
-
+def _reevaluate(states):
     events = []
-    for state in MachineState.objects.select_related("machine__gateway__plant"):
+    for state in states.select_related("machine__gateway__plant"):
         events.extend(evaluate_machine(state.machine, state))
     return events
+
+
+def reevaluate_gateway(gateway_id):
+    """Ownership of a gateway changed: re-judge its machines (and recover alerts that no longer apply)."""
+    from apps.telemetry.models import MachineState
+
+    return _reevaluate(MachineState.objects.filter(machine__gateway_id=gateway_id))
+
+
+def reevaluate_owner(user):
+    """After an owner changes their limits: re-judge the machines they are connected to."""
+    from apps.telemetry.models import MachineState
+
+    return _reevaluate(
+        MachineState.objects.filter(
+            machine__gateway__assignments__user=user,
+            machine__gateway__assignments__status="connected",
+        )
+    )

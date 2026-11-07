@@ -2,11 +2,10 @@ from datetime import date as date_cls, timedelta
 from math import ceil
 
 from django.conf import settings
-from django.db import IntegrityError, connection, transaction
-from django.db.models import Sum
+from django.db import connection
+from django.db.models import Max, Sum
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from django.utils.text import slugify
 from rest_framework import serializers
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -16,16 +15,16 @@ from rest_framework.views import APIView
 from apps.accounts.models import hash_secret
 from apps.alerts.models import Alert
 from apps.common.errors import ApiError
-from apps.common.permissions import AdminWritesMixin
+from apps.common.permissions import IsPlantOwner
 from apps.common.timeutil import local_day_start, to_ms
-from apps.plants.access import accessible_machines
+from apps.plants.access import accessible_machines, window_q
 from apps.plants.models import Gateway, Machine
 
-from .consolidate import consolidate_day
+from .consolidate import day_bounds
 from .ingest import ingest
-from .models import DailyReport, HourlyReport, Reading
+from .models import HourlyReport, Reading
 from .payloads import build_payloads
-from .publish import publish_ingest
+from .publish import publish_ingest, publish_machine_change
 
 RESERVED_MACHINE_IDS = {"usage"}  # would collide with /machines/usage
 RANGE_DAYS = {"week": 7, "month": 30}
@@ -57,6 +56,8 @@ class IngestView(APIView):
             raise ApiError("Invalid gateway key.", 401, "invalid_gateway_key")
         if not gateway.enabled:
             raise ApiError("This gateway is disabled.", 403, "gateway_disabled")
+        if not gateway.verified:
+            raise ApiError("This gateway is waiting for the administrator to verify it.", 403, "gateway_not_verified")
 
         result = ingest(gateway, request.data, ip=BaseThrottle().get_ident(request) or None)
         publish_ingest(gateway, result)
@@ -73,32 +74,18 @@ class IngestView(APIView):
 
 
 # --- Machines ---------------------------------------------------------------
-class MachineSerializer(serializers.Serializer):
-    id = serializers.SlugField(max_length=64, required=False)
-    name = serializers.CharField(max_length=100)
-    type = serializers.ChoiceField(Machine.Type.values)
-    ratedKw = serializers.FloatField(min_value=0, required=False, default=0)
-    gatewayId = serializers.UUIDField()
-    meterId = serializers.CharField(max_length=32)
-    onThresholdKw = serializers.FloatField(min_value=0, required=False, default=0.5)
-    position = serializers.IntegerField(min_value=0, max_value=1000, required=False, default=0)
+class MachineEditSerializer(serializers.Serializer):
+    """What a plant owner may change about their machine. Wiring (gateway, meter) is not theirs."""
+
+    name = serializers.CharField(max_length=100, required=False)
+    type = serializers.ChoiceField(Machine.Type.values, required=False)
+    ratedKw = serializers.FloatField(min_value=0, max_value=100000, required=False)
+    onThresholdKw = serializers.FloatField(min_value=0, required=False)
 
 
-def _one_payload(machine_id):
-    machine = Machine.objects.select_related("gateway__plant", "state").get(pk=machine_id)
-    return build_payloads([machine])[0]
+class MachineListView(APIView):
+    permission_classes = [IsPlantOwner]
 
-
-def _unique_id(name):
-    base = slugify(name)[:55] or "machine"
-    candidate, n = base, 1
-    while candidate in RESERVED_MACHINE_IDS or Machine.objects.filter(pk=candidate).exists():
-        n += 1
-        candidate = f"{base}-{n}"
-    return candidate
-
-
-class MachineListView(AdminWritesMixin, APIView):
     def get(self, request):
         machines = accessible_machines(request.user).select_related("state")
         plant = request.query_params.get("plant")
@@ -107,56 +94,30 @@ class MachineListView(AdminWritesMixin, APIView):
         now = timezone.now()
         return Response({"serverTime": to_ms(now), "machines": build_payloads(machines, now)})
 
-    def post(self, request):
-        """Admin: register a machine on a gateway."""
-        s = MachineSerializer(data=request.data)
-        s.is_valid(raise_exception=True)
-        d = s.validated_data
-        gateway = get_object_or_404(Gateway, pk=d["gatewayId"])
-        machine_id = d.get("id") or _unique_id(d["name"])
-        if machine_id in RESERVED_MACHINE_IDS or Machine.objects.filter(pk=machine_id).exists():
-            raise ApiError("A machine with that id already exists.", 409, "duplicate")
-        try:
-            with transaction.atomic():
-                Machine.objects.create(
-                    id=machine_id, name=d["name"].strip(), type=d["type"], rated_kw=d["ratedKw"],
-                    gateway=gateway, meter_id=d["meterId"].strip(), on_threshold_kw=d["onThresholdKw"],
-                    position=d["position"],
-                )  # fmt: skip
-        except IntegrityError:
-            raise ApiError("That meter is already registered on this gateway.", 409, "meter_in_use") from None
-        return Response(_one_payload(machine_id), status=201)
 
+class MachineDetailView(APIView):
+    permission_classes = [IsPlantOwner]
 
-class MachineDetailView(AdminWritesMixin, APIView):
     def put(self, request, pk):
-        machine = get_object_or_404(Machine, pk=pk)
-        s = MachineSerializer(data=request.data, partial=True)
+        machine = get_object_or_404(accessible_machines(request.user), pk=pk)
+        s = MachineEditSerializer(data=request.data, partial=True)
         s.is_valid(raise_exception=True)
         d = s.validated_data
-        if "gatewayId" in d:
-            machine.gateway = get_object_or_404(Gateway, pk=d["gatewayId"])
-        for src, dst in (
-            ("name", "name"), ("type", "type"), ("ratedKw", "rated_kw"), ("meterId", "meter_id"),
-            ("onThresholdKw", "on_threshold_kw"), ("position", "position"),
-        ):  # fmt: skip
+        for src, dst in (("name", "name"), ("type", "type"), ("ratedKw", "rated_kw"), ("onThresholdKw", "on_threshold_kw")):
             if src in d:
                 setattr(machine, dst, d[src])
-        try:
-            with transaction.atomic():
-                machine.save()
-        except IntegrityError:
-            raise ApiError("That meter is already registered on this gateway.", 409, "meter_in_use") from None
-        return Response(_one_payload(machine.pk))
+        machine.save()
+        machine = Machine.objects.select_related("gateway__plant", "state").get(pk=machine.pk)
+        payload = build_payloads([machine])[0]
+        publish_machine_change(machine)
+        return Response(payload)
 
     patch = put
 
-    def delete(self, request, pk):
-        get_object_or_404(Machine, pk=pk).delete()  # cascades readings and reports
-        return Response(status=204)
-
 
 class UsageView(APIView):
+    permission_classes = [IsPlantOwner]
+
     """Plant totals over the last 7 / 30 IST days (today included).
 
     consumedKwh = all energy metered; actualKwh = the part used while machines were running.
@@ -171,7 +132,9 @@ class UsageView(APIView):
         if plant:
             machines = machines.filter(gateway__plant__name=plant)
         start = local_day_start(timezone.now(), days - 1)
-        totals = HourlyReport.objects.filter(machine__in=machines.values("pk"), hour__gte=start).aggregate(
+        totals = HourlyReport.objects.filter(
+            window_q(request.user), machine__in=machines.values("pk"), hour__gte=start
+        ).aggregate(
             consumed=Sum("kwh"), actual=Sum("run_kwh")
         )
         return Response(
@@ -180,6 +143,8 @@ class UsageView(APIView):
 
 
 class TrendView(APIView):
+    permission_classes = [IsPlantOwner]
+
     """[{t, pf, current, kw}] oldest first, averaged into at most ~360 buckets."""
 
     def get(self, request, pk):
@@ -195,7 +160,10 @@ class TrendView(APIView):
         since = timezone.now() - timedelta(hours=hours)
 
         buckets = {}
-        rows = Reading.objects.filter(machine=machine, ts__gte=since).order_by("ts").values_list(
+        rows = Reading.objects.filter(
+            window_q(request.user, gateway_field="machine__gateway", time_field="ts", pad=timedelta(0)),
+            machine=machine, ts__gte=since,
+        ).order_by("ts").values_list(
             "ts", "kw", "pf", "current", "on"
         )
         for ts, kw, pf, current, on in rows.iterator():
@@ -221,6 +189,8 @@ class TrendView(APIView):
 
 # --- Reports ----------------------------------------------------------------
 class DailyReportView(APIView):
+    permission_classes = [IsPlantOwner]
+
     """GET /api/reports/daily?plant=&date=YYYY-MM-DD : the consolidated report (default: today, IST)."""
 
     def get(self, request):
@@ -240,12 +210,20 @@ class DailyReportView(APIView):
         machines = list(machines)
         ids = [m.pk for m in machines]
 
-        have = set(DailyReport.objects.filter(date=day, machine_id__in=ids).values_list("machine_id", flat=True))
-        # Today is still changing, and past days are built the first time they are asked for.
-        missing = ids if day == today else [i for i in ids if i not in have]
-        if missing:
-            consolidate_day(day, missing)
-        reports = {r.machine_id: r for r in DailyReport.objects.filter(date=day, machine_id__in=ids)}
+        # Built from the hourly rows inside this owner's connection periods, so a previous
+        # owner's hours on the same gateway never show up in their report.
+        start, end = day_bounds(day)
+        agg = (
+            HourlyReport.objects.filter(window_q(request.user), machine_id__in=ids, hour__gte=start, hour__lt=end)
+            .values("machine_id")
+            .annotate(
+                kwh=Sum("kwh"), run_kwh=Sum("run_kwh"), kvarh=Sum("kvarh"), kvah=Sum("kvah"),
+                run_seconds=Sum("run_seconds"), samples=Sum("samples"), sum_kw=Sum("sum_kw"),
+                max_kw=Max("max_kw"), max_current=Max("max_current"),
+                pf_samples=Sum("pf_samples"), sum_pf=Sum("sum_pf"),
+            )
+        )  # fmt: skip
+        reports = {r["machine_id"]: r for r in agg}
         active = {}
         for machine_id in Alert.objects.filter(machine_id__in=ids, status=Alert.Status.ACTIVE).values_list("machine_id", flat=True):
             active[machine_id] = active.get(machine_id, 0) + 1
@@ -253,21 +231,22 @@ class DailyReportView(APIView):
         rows = []
         for m in machines:
             r = reports.get(m.pk)
+            n = (r["samples"] or 0) if r else 0
             rows.append(
                 {
                     "machineId": m.pk,
                     "machineName": m.name,
                     "plant": m.gateway.plant.name,
-                    "kwh": round(r.kwh, 2) if r else 0,
-                    "runKwh": round(r.run_kwh, 2) if r else 0,
-                    "kvarh": round(r.kvarh, 2) if r else 0,
-                    "kvah": round(r.kvah, 2) if r else 0,
-                    "runSeconds": int(r.run_seconds) if r else 0,
-                    "avgKw": round(r.avg_kw, 2) if r else 0,
-                    "maxKw": round(r.max_kw, 2) if r else 0,
-                    "avgPf": round(r.avg_pf, 3) if r and r.avg_pf is not None else None,
-                    "maxCurrent": round(r.max_current, 2) if r else 0,
-                    "samples": r.samples if r else 0,
+                    "kwh": round(r["kwh"] or 0, 2) if r else 0,
+                    "runKwh": round(r["run_kwh"] or 0, 2) if r else 0,
+                    "kvarh": round(r["kvarh"] or 0, 2) if r else 0,
+                    "kvah": round(r["kvah"] or 0, 2) if r else 0,
+                    "runSeconds": int(r["run_seconds"] or 0) if r else 0,
+                    "avgKw": round(r["sum_kw"] / n, 2) if r and n else 0,
+                    "maxKw": round(r["max_kw"] or 0, 2) if r else 0,
+                    "avgPf": round(r["sum_pf"] / r["pf_samples"], 3) if r and r["pf_samples"] else None,
+                    "maxCurrent": round(r["max_current"] or 0, 2) if r else 0,
+                    "samples": n,
                     "activeAlerts": active.get(m.pk, 0),
                 }
             )

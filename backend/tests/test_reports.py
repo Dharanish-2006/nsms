@@ -30,45 +30,45 @@ def feed(anon, gateway, meter="1", start=None, minutes=10, kw=24.0, pf=0.9, kwh0
     return kw * minutes / 60  # kWh covered
 
 
-def test_usage_sums_consumed_and_running_energy(anon, admin_client, gateway, machines):
+def test_usage_sums_consumed_and_running_energy(anon, owner_client, gateway, machines):
     expected = feed(anon, gateway)
-    r = admin_client.get("/api/machines/usage?range=week")
+    r = owner_client.get("/api/machines/usage?range=week")
     assert r.status_code == 200
     assert r.json()["consumedKwh"] == pytest.approx(expected, abs=0.1)
     assert r.json()["actualKwh"] == pytest.approx(expected, abs=0.1)
-    assert admin_client.get("/api/machines/usage?range=month&plant=Plant 1").json()["consumedKwh"] > 0
-    assert admin_client.get("/api/machines/usage?range=month&plant=Nowhere").json() == {"consumedKwh": 0, "actualKwh": 0}
-    r = admin_client.get("/api/machines/usage?range=year")
+    assert owner_client.get("/api/machines/usage?range=month&plant=Plant 1").json()["consumedKwh"] > 0
+    assert owner_client.get("/api/machines/usage?range=month&plant=Nowhere").json() == {"consumedKwh": 0, "actualKwh": 0}
+    r = owner_client.get("/api/machines/usage?range=year")
     assert r.status_code == 422 and r.json()["code"] == "validation"
 
 
-def test_idle_draw_counts_as_consumed_but_not_actual(anon, admin_client, gateway, machines):
+def test_idle_draw_counts_as_consumed_but_not_actual(anon, owner_client, gateway, machines):
     t = timezone.now() - timedelta(minutes=10)
     rows = []
     for i in range(11):  # machine "off" (flag) but the meter still counts a little standby energy
         rows.append({"meterId": "1", "ts": ms(t + timedelta(minutes=i)), "kw": 0.3, "on": False, "kwh": 10 + 0.3 * i / 60})
     push(anon, gateway, rows)
-    body = admin_client.get("/api/machines/usage?range=week").json()
+    body = owner_client.get("/api/machines/usage?range=week").json()
     assert body["consumedKwh"] > 0 and body["actualKwh"] == 0
 
 
-def test_trend_returns_oldest_first_buckets(anon, admin_client, gateway, machines):
+def test_trend_returns_oldest_first_buckets(anon, owner_client, gateway, machines):
     feed(anon, gateway, minutes=30, pf=0.91)
-    r = admin_client.get("/api/machines/sheller-1/trend?hours=1")
+    r = owner_client.get("/api/machines/sheller-1/trend?hours=1")
     assert r.status_code == 200
     points = r.json()
     assert len(points) >= 2
     assert [p["t"] for p in points] == sorted(p["t"] for p in points)
     assert set(points[0]) == {"t", "pf", "current", "kw"}
     assert points[0]["pf"] == pytest.approx(0.91, abs=0.001) and points[0]["kw"] == pytest.approx(24, abs=0.01)
-    assert admin_client.get("/api/machines/sheller-1/trend?hours=0").status_code == 422
-    assert admin_client.get("/api/machines/sheller-1/trend?hours=999").status_code == 422
-    assert admin_client.get("/api/machines/nope/trend").status_code == 404
+    assert owner_client.get("/api/machines/sheller-1/trend?hours=0").status_code == 422
+    assert owner_client.get("/api/machines/sheller-1/trend?hours=999").status_code == 422
+    assert owner_client.get("/api/machines/nope/trend").status_code == 404
 
 
-def test_daily_report_is_consolidated_into_the_database(anon, admin_client, gateway, machines):
+def test_daily_report_is_consolidated_into_the_database(anon, owner_client, gateway, machines):
     expected = feed(anon, gateway, kw=30, pf=0.92)
-    r = admin_client.get("/api/reports/daily")
+    r = owner_client.get("/api/reports/daily")
     assert r.status_code == 200
     body = r.json()
     assert body["date"] == timezone.localdate().isoformat()
@@ -78,14 +78,14 @@ def test_daily_report_is_consolidated_into_the_database(anon, admin_client, gate
     assert row["maxKw"] == 30 and row["runSeconds"] == 600
     idle = next(m for m in body["machines"] if m["machineId"] == "whitener-2")
     assert idle["kwh"] == 0 and idle["avgPf"] is None
+
+    # The nightly roll-up stored for operations is idempotent
+    consolidate_day(timezone.localdate())
+    consolidate_day(timezone.localdate())
     assert DailyReport.objects.filter(machine_id="sheller-1", date=timezone.localdate()).count() == 1
 
-    # Rebuilding is idempotent
-    consolidate_day(timezone.localdate())
-    assert DailyReport.objects.filter(machine_id="sheller-1").count() == 1
-
-    assert admin_client.get("/api/reports/daily?date=2999-01-01").status_code == 422
-    assert admin_client.get("/api/reports/daily?date=garbage").status_code == 422
+    assert owner_client.get("/api/reports/daily?date=2999-01-01").status_code == 422
+    assert owner_client.get("/api/reports/daily?date=garbage").status_code == 422
 
 
 def test_maintenance_prunes_old_raw_readings_but_keeps_reports(anon, gateway, machines, settings):

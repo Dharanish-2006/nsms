@@ -2,10 +2,14 @@
 endpoints and by the WebSocket feed so both always agree."""
 
 from collections import defaultdict
+from datetime import timedelta
 
 from django.utils import timezone
 
 from apps.common.timeutil import local_day_start, to_ms
+
+from apps.plants.access import current_period_starts
+from apps.plants.models import Machine
 
 from .models import HourlyReport
 
@@ -13,8 +17,15 @@ from .models import HourlyReport
 def hourly_rows_today(machine_ids, now):
     """{machine_id: [HourlyReport...]} for the current IST day, in one query."""
     rows = defaultdict(list)
+    machine_ids = list(machine_ids)
     qs = HourlyReport.objects.filter(machine_id__in=machine_ids, hour__gte=local_day_start(now))
+    # Hours before the current owner connected belong to someone else.
+    gateway_of = dict(Machine.objects.filter(pk__in=machine_ids).values_list("pk", "gateway_id"))
+    started = current_period_starts(set(gateway_of.values()))
     for row in qs:
+        begin = started.get(gateway_of.get(row.machine_id))
+        if begin is not None and row.hour <= begin - timedelta(hours=1):
+            continue
         rows[row.machine_id].append(row)
     return rows
 

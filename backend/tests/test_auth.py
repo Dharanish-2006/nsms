@@ -38,10 +38,10 @@ def test_register_approve_login_flow(anon, admin_client):
     r = anon.post("/api/auth/login", {"username": "newbie", "password": "Corr3ct-horse-battery"}, format="json")
     assert r.status_code == 403 and r.json()["code"] == "pending_approval"
 
-    pending = admin_client.get("/api/users?status=pending").json()
+    pending = admin_client.get("/api/admin-portal/users?status=pending").json()
     assert [u["username"] for u in pending] == ["newbie"]
     assert "password" not in pending[0]
-    assert admin_client.post(f"/api/users/{pending[0]['id']}/approve").status_code == 204
+    assert admin_client.post(f"/api/admin-portal/users/{pending[0]['id']}/approve").status_code == 200
 
     r = anon.post("/api/auth/login", {"username": "newbie", "password": "Corr3ct-horse-battery"}, format="json")
     assert r.status_code == 200
@@ -135,19 +135,27 @@ def test_change_password_signs_out_other_sessions(operator):
 
 
 def test_admin_endpoints_reject_regular_users_and_anonymous(user_client, anon, operator):
-    assert user_client.get("/api/users").status_code == 403
-    assert user_client.post(f"/api/users/{operator.pk}/approve").status_code == 403
-    assert user_client.delete(f"/api/users/{operator.pk}").status_code == 403
-    r = anon.get("/api/users")
+    assert user_client.get("/api/admin-portal/users").status_code == 403
+    assert user_client.post(f"/api/admin-portal/users/{operator.pk}/approve").status_code == 403
+    assert user_client.get("/api/admin-portal/dashboard").status_code == 403
+    r = anon.get("/api/admin-portal/users")
     assert r.status_code == 401 and r.json()["code"] == "unauthenticated"
 
 
-def test_reject_request_and_cannot_delete_self(admin_client, admin):
-    pending = make_user("pending-person", status="pending")
-    assert admin_client.delete(f"/api/users/{pending.pk}").status_code == 204
-    assert not User.objects.filter(pk=pending.pk).exists()
-    r = admin_client.delete(f"/api/users/{admin.pk}")
-    assert r.status_code == 400 and r.json()["code"] == "cannot_delete_self"
+def test_rejected_user_cannot_sign_in_and_sees_the_reason(anon, admin_client):
+    assert _register(anon).status_code == 201
+    uid = admin_client.get("/api/admin-portal/users?status=pending").json()[0]["id"]
+    assert admin_client.post(f"/api/admin-portal/users/{uid}/reject", {"reason": "Not a customer"}, format="json").status_code == 200
+    r = anon.post("/api/auth/login", {"username": "newbie", "password": "Corr3ct-horse-battery"}, format="json")
+    assert r.status_code == 403 and r.json()["code"] == "rejected" and "Not a customer" in r.json()["message"]
+    assert User.objects.get(username="newbie").status == "rejected"  # kept, not deleted
+
+
+def test_profile_edit_only_changes_the_name(operator, user_client):
+    r = user_client.patch("/api/auth/me", {"fullName": "Asha K", "role": "admin", "email": "x@y.z"}, format="json")
+    assert r.status_code == 200 and r.json()["fullName"] == "Asha K"
+    operator.refresh_from_db()
+    assert operator.role == "user" and operator.email == "asha@example.com"
 
 
 def test_pending_user_token_is_rejected(db):

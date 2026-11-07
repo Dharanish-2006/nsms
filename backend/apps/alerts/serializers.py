@@ -2,9 +2,9 @@ from rest_framework import serializers
 
 from apps.common.errors import ApiError
 from apps.common.timeutil import to_ms
-from apps.plants.models import Machine
+from apps.plants.access import accessible_machines
 
-from .models import PhoneNumber, Threshold
+from .models import NotificationSettings, PhoneNumber, Threshold
 
 # Unit-less parameters and which direction is "worse" (only "below" exists today).
 RANGE_01 = {"powerFactor"}
@@ -73,14 +73,14 @@ class ThresholdSerializer(serializers.Serializer):
         machine_id = attrs["machineId"]
         attrs["machine"] = None
         if machine_id != "all":
-            machine = Machine.objects.filter(pk=machine_id).first()
+            machine = accessible_machines(self.context["user"]).filter(pk=machine_id).first()
             if machine is None:
                 raise serializers.ValidationError({"machineId": "Unknown machine."})
             attrs["machine"] = machine
         return attrs
 
     def check_unique(self, attrs, exclude_pk=None):
-        qs = Threshold.objects.filter(param=attrs["param"], machine=attrs["machine"])
+        qs = Threshold.objects.filter(owner=self.context["user"], param=attrs["param"], machine=attrs["machine"])
         if exclude_pk:
             qs = qs.exclude(pk=exclude_pk)
         if qs.exists():
@@ -96,8 +96,18 @@ class PhoneSerializer(serializers.Serializer):
     label = serializers.CharField(max_length=60, required=False, allow_blank=True, default="")
 
     def check_unique(self, digits, exclude_pk=None):
-        qs = PhoneNumber.objects.filter(digits=digits)
+        qs = PhoneNumber.objects.filter(owner=self.context["user"], digits=digits)
         if exclude_pk:
             qs = qs.exclude(pk=exclude_pk)
         if qs.exists():
             raise ApiError("That number is already in the list.", 409, "duplicate")
+
+
+def notifications_json(n):
+    return {"alertsEnabled": n.alerts_enabled, "autoReports": n.auto_reports, "reportFrequency": n.report_frequency}
+
+
+class NotificationsSerializer(serializers.Serializer):
+    alertsEnabled = serializers.BooleanField()
+    autoReports = serializers.BooleanField()
+    reportFrequency = serializers.ChoiceField(NotificationSettings.Frequency.values)

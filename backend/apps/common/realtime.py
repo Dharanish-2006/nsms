@@ -1,8 +1,7 @@
 """Publishing to dashboards over Channels groups.
 
 Groups:
-  admin          every machine (admins)
-  gw.<gateway>   machines on one gateway (users it is assigned to)
+  gw.<gateway>   machines on one gateway (the owner connected to it)
   user.<id>      messages for one user (access changed, sign-out)
 """
 
@@ -12,9 +11,6 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
 logger = logging.getLogger(__name__)
-
-ADMIN_GROUP = "admin"
-
 
 def gateway_group(gateway_id):
     return f"gw.{gateway_id}"

@@ -5,10 +5,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 from django.conf import settings
 
-from apps.common.realtime import ADMIN_GROUP, gateway_group, group_send
+from apps.common.realtime import gateway_group, group_send
 from apps.common.sms import send_sms
 
-from .models import PhoneNumber
+from .models import NotificationSettings, PhoneNumber
 from .serializers import alert_json
 
 logger = logging.getLogger(__name__)
@@ -32,19 +32,29 @@ def _send_all(numbers, text):
             logger.exception("SMS to %s failed", digits)
 
 
+def _numbers_for(owner_id):
+    """The owner's SMS numbers, or none if they switched alerts off."""
+    prefs = NotificationSettings.objects.filter(owner_id=owner_id).first()
+    if prefs is not None and not prefs.alerts_enabled:
+        return []
+    return list(PhoneNumber.objects.filter(owner_id=owner_id).values_list("digits", flat=True))
+
+
 def dispatch(events):
     """Call after the transaction that produced `events` has committed."""
     if not events:
         return
-    numbers = None
+    numbers_by_gateway = {}
     for event in events:
         alert = event.alert
-        groups = [ADMIN_GROUP, gateway_group(alert.machine.gateway_id)]
-        group_send(groups, {"type": "alert.event", "kind": event.kind, "alert": alert_json(alert)})
+        gateway_id = alert.machine.gateway_id
+        group_send([gateway_group(gateway_id)], {"type": "alert.event", "kind": event.kind, "alert": alert_json(alert)})
 
         if event.notify:
-            if numbers is None:  # read in this thread; the worker never touches the database
-                numbers = list(PhoneNumber.objects.values_list("digits", flat=True))
+            if gateway_id not in numbers_by_gateway:  # read here; the worker never touches the database
+                owner_id = alert.threshold.owner_id  # the limits that fired belong to the owner to text
+                numbers_by_gateway[gateway_id] = _numbers_for(owner_id)
+            numbers = numbers_by_gateway[gateway_id]
             if numbers:
                 text = _message(alert)
                 if settings.ALERT_SMS_ASYNC:
@@ -53,9 +63,8 @@ def dispatch(events):
                     _send_all(numbers, text)
 
 
-def refresh_all_dashboards():
-    """Thresholds changed: ask every open dashboard to reload its alerts."""
-    from apps.plants.models import Gateway
+def refresh_all_dashboards(user):
+    """Limits changed: ask this owner's open dashboards to reload their alerts."""
+    from apps.plants.access import accessible_gateway_ids
 
-    groups = [ADMIN_GROUP] + [gateway_group(pk) for pk in Gateway.objects.values_list("pk", flat=True)]
-    group_send(groups, {"type": "alerts.refresh"})
+    group_send([gateway_group(pk) for pk in accessible_gateway_ids(user)], {"type": "alerts.refresh"})

@@ -8,10 +8,9 @@ from channels.db import database_sync_to_async
 from channels.testing import WebsocketCommunicator
 from django.utils import timezone
 
-from apps.plants.models import GatewayAssignment
 from config.asgi import application
 
-from .conftest import client_for, make_user, push, token_for
+from .conftest import client_for, connect as connect_owner, make_user, push, token_for
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
@@ -37,13 +36,14 @@ def reading(meter, kw=20.0, pf=0.93, t=None):
     return {"meterId": meter, "ts": int(t.timestamp() * 1000), "kw": kw, "pf": pf}
 
 
-async def test_admin_gets_snapshot_then_live_updates(admin, gateway, machines):
-    ws = await connect(admin)
+async def test_owner_gets_snapshot_then_live_updates(operator, gateway, machines):
+    await database_sync_to_async(connect_owner)(operator, gateway)
+    ws = await connect(operator)
     snap = await ws.receive_json_from()
     assert snap["type"] == "snapshot" and len(snap["machines"]) == 3 and snap["alerts"] == []
     assert snap["serverTime"] > 0
 
-    gateway_client = await api(admin)  # any client may post; the key authenticates it
+    gateway_client = await api(operator)  # any client may post; the key authenticates it
     r = await database_sync_to_async(push)(gateway_client, gateway, [reading("1", kw=31.5)])
     assert r.status_code == 202
 
@@ -54,39 +54,53 @@ async def test_admin_gets_snapshot_then_live_updates(admin, gateway, machines):
     await ws.disconnect()
 
 
-async def test_assigned_user_gets_updates_unassigned_user_does_not(admin, operator, other_user, gateway, machines):
-    await database_sync_to_async(GatewayAssignment.objects.create)(gateway=gateway, user=operator)
-    mine, theirs = await connect(operator), await connect(other_user)
+async def test_connected_owner_gets_updates_others_do_not(admin, operator, other_user, gateway, machines):
+    await database_sync_to_async(connect_owner)(operator, gateway)
+    mine, theirs, boss = await connect(operator), await connect(other_user), await connect(admin)
     assert len((await mine.receive_json_from())["machines"]) == 3
     assert (await theirs.receive_json_from())["machines"] == []
+    assert (await boss.receive_json_from())["machines"] == []  # admins get no machine data
 
     await database_sync_to_async(push)(await api(admin), gateway, [reading("1", kw=12)])
     assert (await mine.receive_json_from(timeout=3))["machines"][0]["kw"] == 12
     assert await theirs.receive_nothing(timeout=0.5)
-    await mine.disconnect()
-    await theirs.disconnect()
+    assert await boss.receive_nothing(timeout=0.5)
+    for ws in (mine, theirs, boss):
+        await ws.disconnect()
 
 
-async def test_new_assignment_reaches_open_dashboard(admin, operator, gateway, machines):
+async def test_connecting_reaches_open_dashboard(admin, operator, gateway, machines):
     ws = await connect(operator)
     assert (await ws.receive_json_from())["machines"] == []
 
-    r = await database_sync_to_async((await api(admin)).post)(
-        f"/api/gateways/{gateway.pk}/users", {"userId": operator.pk}, format="json"
-    )
+    admin_api = await api(admin)
+    post = database_sync_to_async(admin_api.post)
+    r = await post("/api/admin-portal/assignments", {"userId": operator.pk, "gatewayId": str(gateway.pk)}, format="json")
     assert r.status_code == 201
+    # Assigned only reserves the gateway: still nothing to see
+    assert await ws.receive_nothing(timeout=0.5)
+
+    aid = r.json()["id"]
+    r = await post(f"/api/admin-portal/assignments/{aid}/connect")
+    assert r.status_code == 200
     snap = await ws.receive_json_from(timeout=3)  # access changed -> fresh snapshot
     assert snap["type"] == "snapshot" and len(snap["machines"]) == 3
 
     await database_sync_to_async(push)(await api(admin), gateway, [reading("1", kw=9)])
     assert (await ws.receive_json_from(timeout=3))["machines"][0]["kw"] == 9
+
+    r = await post(f"/api/admin-portal/assignments/{aid}/disconnect")
+    assert r.status_code == 200
+    snap = await ws.receive_json_from(timeout=3)
+    assert snap["machines"] == []  # access taken away at once
     await ws.disconnect()
 
 
-async def test_alert_is_pushed_live(admin, gateway, machines, pf_threshold):
-    ws = await connect(admin)
+async def test_alert_is_pushed_live(operator, gateway, machines, pf_threshold):
+    await database_sync_to_async(connect_owner)(operator, gateway)
+    ws = await connect(operator)
     await ws.receive_json_from()
-    await database_sync_to_async(push)(await api(admin), gateway, [reading("3", kw=15, pf=0.7)])
+    await database_sync_to_async(push)(await api(operator), gateway, [reading("3", kw=15, pf=0.7)])
     kinds = {}
     for _ in range(2):
         msg = await ws.receive_json_from(timeout=3)

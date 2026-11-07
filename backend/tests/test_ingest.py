@@ -4,6 +4,7 @@ import pytest
 from django.db.models import Sum
 from django.utils import timezone
 
+from apps.plants.models import Machine
 from apps.alerts.models import Alert, PhoneNumber, Threshold
 from apps.common import sms
 from apps.telemetry.models import HourlyReport, MachineState, Reading
@@ -43,7 +44,7 @@ def test_disabled_gateway_is_refused(anon, gateway, machines):
     assert push(anon, gateway, [reading("1", timezone.now())]).status_code == 403
 
 
-def test_ingest_updates_live_state_and_report(anon, admin_client, gateway, machines, pf_threshold):
+def test_ingest_updates_live_state_and_report(anon, owner_client, gateway, machines, pf_threshold):
     t0 = timezone.now() - timedelta(minutes=10)
     r = push(anon, gateway, [
         reading("1", t0, kw=20, kwh=1000.0),
@@ -52,7 +53,7 @@ def test_ingest_updates_live_state_and_report(anon, admin_client, gateway, machi
     ])
     assert r.status_code == 202 and r.json()["accepted"] == 3
 
-    m = machine_json(admin_client, "sheller-1")
+    m = machine_json(owner_client, "sheller-1")
     assert m["on"] is True
     assert m["kw"] == 26 and m["pf"] == 0.93
     assert m["totalKwh"] == 1000.85
@@ -69,18 +70,18 @@ def test_ingest_updates_live_state_and_report(anon, admin_client, gateway, machi
     assert totals["k"] == pytest.approx(0.85) and totals["s"] == 120
 
 
-def test_serverTime_and_updatedAt_use_the_servers_clock(anon, admin_client, gateway, machines):
+def test_serverTime_and_updatedAt_use_the_servers_clock(anon, owner_client, gateway, machines):
     # a gateway whose clock is 4 minutes behind still looks live
     push(anon, gateway, [reading("1", timezone.now() - timedelta(minutes=4))])
-    body = admin_client.get("/api/machines").json()
+    body = owner_client.get("/api/machines").json()
     m = next(x for x in body["machines"] if x["id"] == "sheller-1")
     assert 0 <= body["serverTime"] - m["updatedAt"] < 5000
 
 
-def test_off_machine_reports_zeroes_and_stop_time(anon, admin_client, gateway, machines):
+def test_off_machine_reports_zeroes_and_stop_time(anon, owner_client, gateway, machines):
     t0 = timezone.now() - timedelta(minutes=5)
     push(anon, gateway, [reading("1", t0, kw=20), reading("1", t0 + timedelta(seconds=30), kw=0.0, pf=0)])
-    m = machine_json(admin_client, "sheller-1")
+    m = machine_json(owner_client, "sheller-1")
     assert m["on"] is False
     assert (m["kw"], m["pf"], m["kva"], m["current"], m["loadFactor"], m["runKwh"], m["runSec"]) == (0,) * 7
     assert m["avgPfRun"] is None and m["runStart"] is None
@@ -88,31 +89,31 @@ def test_off_machine_reports_zeroes_and_stop_time(anon, admin_client, gateway, m
     assert m["todaySec"] == 30  # it ran for the first 30 s interval
 
 
-def test_duplicate_and_late_samples_do_not_double_count(anon, admin_client, gateway, machines):
+def test_duplicate_and_late_samples_do_not_double_count(anon, owner_client, gateway, machines):
     t0 = timezone.now() - timedelta(minutes=5)
     batch = [reading("1", t0, kwh=10.0), reading("1", t0 + timedelta(seconds=60), kwh=10.5)]
     push(anon, gateway, batch)
     push(anon, gateway, batch)  # gateway retried the same batch
     push(anon, gateway, [reading("1", t0 - timedelta(seconds=30), kwh=9.0)])  # arrives late
-    m = machine_json(admin_client, "sheller-1")
+    m = machine_json(owner_client, "sheller-1")
     assert m["totalKwh"] == 10.5 and m["runSec"] == 60
     assert HourlyReport.objects.filter(machine_id="sheller-1").aggregate(k=Sum("kwh"))["k"] == pytest.approx(0.5)
 
 
-def test_energy_falls_back_to_integrating_power_without_counters(anon, admin_client, gateway, machines):
+def test_energy_falls_back_to_integrating_power_without_counters(anon, owner_client, gateway, machines):
     t0 = timezone.now() - timedelta(minutes=5)
     push(anon, gateway, [reading("1", t0, kw=36), reading("1", t0 + timedelta(seconds=100), kw=36)])
-    m = machine_json(admin_client, "sheller-1")
+    m = machine_json(owner_client, "sheller-1")
     assert m["runKwh"] == pytest.approx(36 * 100 / 3600, abs=0.01)
 
 
-def test_counter_glitch_is_ignored(anon, admin_client, gateway, machines):
+def test_counter_glitch_is_ignored(anon, owner_client, gateway, machines):
     t0 = timezone.now() - timedelta(minutes=5)
     push(anon, gateway, [
         reading("1", t0, kw=20, kwh=100.0),
         reading("1", t0 + timedelta(seconds=60), kw=20, kwh=5000.0),  # absurd jump for one minute
     ])
-    m = machine_json(admin_client, "sheller-1")
+    m = machine_json(owner_client, "sheller-1")
     assert m["runKwh"] == pytest.approx(20 / 60, abs=0.01)  # integrated, not the glitch
 
 
@@ -123,13 +124,13 @@ def test_bad_readings_are_rejected_individually(anon, gateway, machines):
         {"meterId": "1", "ts": ms(now), "kw": "abc"},
         {"meterId": "1", "ts": ms(now + timedelta(hours=2)), "kw": 5},
         {"meterId": "1", "ts": ms(now), "kw": 5, "pf": 1.7},
-        reading("99", now),  # not a registered meter
+        reading("99", now),  # a meter we have not seen: registered automatically
     ])
     body = r.json()
-    # `accepted` counts readings stored for registered meters; unknown meters are listed apart
-    assert r.status_code == 202 and body["accepted"] == 1
+    assert r.status_code == 202 and body["accepted"] == 2
     assert [x["index"] for x in body["rejected"]] == [1, 2, 3]
-    assert body["unknownMeters"] == ["99"]
+    assert body["unknownMeters"] == []
+    assert Machine.objects.get(gateway=gateway, meter_id="99").name == "Meter 99"
 
 
 def test_request_with_nothing_valid_is_422(anon, gateway, machines):
@@ -137,16 +138,16 @@ def test_request_with_nothing_valid_is_422(anon, gateway, machines):
     assert r.status_code == 422 and r.json()["rejected"][0]["index"] == 0
 
 
-def test_single_reading_body_and_second_timestamps_are_accepted(anon, admin_client, gateway, machines):
+def test_single_reading_body_and_second_timestamps_are_accepted(anon, owner_client, gateway, machines):
     now = timezone.now()
     r = anon.post("/api/ingest", {"meterId": "1", "ts": int(now.timestamp()), "kw": 12}, format="json", HTTP_X_GATEWAY_KEY=gateway.raw_key)
     assert r.status_code == 202
-    assert machine_json(admin_client, "sheller-1")["kw"] == 12
+    assert machine_json(owner_client, "sheller-1")["kw"] == 12
 
 
-def test_derived_values_are_filled_in(anon, admin_client, gateway, machines):
+def test_derived_values_are_filled_in(anon, owner_client, gateway, machines):
     push(anon, gateway, [{"meterId": "1", "ts": ms(timezone.now()), "kw": 30, "kva": 40}])
-    m = machine_json(admin_client, "sheller-1")
+    m = machine_json(owner_client, "sheller-1")
     assert m["pf"] == 0.75 and m["kva"] == 40 and m["kvar"] == pytest.approx(26.46, abs=0.01) and m["current"] > 0
 
 
@@ -160,11 +161,11 @@ def test_raw_samples_are_thinned_but_state_changes_are_kept(anon, gateway, machi
 
 
 # --- alerts -----------------------------------------------------------------
-def test_low_power_factor_raises_critical_alert_and_sends_sms(anon, admin_client, gateway, machines, pf_threshold):
-    PhoneNumber.objects.create(digits="9000000001", label="Primary")
+def test_low_power_factor_raises_critical_alert_and_sends_sms(anon, owner_client, operator, gateway, machines, pf_threshold):
+    PhoneNumber.objects.create(owner=operator, digits="9000000001", label="Primary")
     now = timezone.now()
     push(anon, gateway, [reading("3", now, kw=15, pf=0.79)])
-    alerts = admin_client.get("/api/alerts?plant=Plant 1").json()
+    alerts = owner_client.get("/api/alerts?plant=Plant 1").json()
     assert len(alerts) == 1
     a = alerts[0]
     assert (a["machineId"], a["param"], a["severity"], a["status"]) == ("whitener-2", "powerFactor", "critical", "active")
@@ -176,53 +177,53 @@ def test_low_power_factor_raises_critical_alert_and_sends_sms(anon, admin_client
     assert len(sms.outbox) == 1
 
 
-def test_warning_then_escalation_then_recovery(anon, admin_client, gateway, machines, pf_threshold):
-    PhoneNumber.objects.create(digits="9000000001")
+def test_warning_then_escalation_then_recovery(anon, owner_client, operator, gateway, machines, pf_threshold):
+    PhoneNumber.objects.create(owner=operator, digits="9000000001")
     t = timezone.now() - timedelta(minutes=1)
     push(anon, gateway, [reading("1", t, pf=0.85)])
-    assert admin_client.get("/api/alerts").json()[0]["severity"] == "warning"
+    assert owner_client.get("/api/alerts").json()[0]["severity"] == "warning"
     assert len(sms.outbox) == 1
 
     push(anon, gateway, [reading("1", t + timedelta(seconds=5), pf=0.75)])
-    assert admin_client.get("/api/alerts").json()[0]["severity"] == "critical"
+    assert owner_client.get("/api/alerts").json()[0]["severity"] == "critical"
     assert len(sms.outbox) == 2  # escalation texts again
 
     push(anon, gateway, [reading("1", t + timedelta(seconds=10), pf=0.95)])
-    a = admin_client.get("/api/alerts").json()[0]
+    a = owner_client.get("/api/alerts").json()[0]
     assert a["status"] == "recovered" and a["recoveredAt"] is not None
     assert len(sms.outbox) == 2  # recovery is not texted
 
 
-def test_off_machines_and_sortex_never_alert(anon, admin_client, gateway, machines, pf_threshold):
+def test_off_machines_and_sortex_never_alert(anon, owner_client, gateway, machines, pf_threshold):
     now = timezone.now()
     push(anon, gateway, [reading("1", now, kw=0.0, pf=0.1), reading("4", now, kw=12, pf=0.5)])
-    assert admin_client.get("/api/alerts").json() == []
+    assert owner_client.get("/api/alerts").json() == []
 
 
-def test_machine_going_off_recovers_its_alert(anon, admin_client, gateway, machines, pf_threshold):
+def test_machine_going_off_recovers_its_alert(anon, owner_client, gateway, machines, pf_threshold):
     t = timezone.now() - timedelta(minutes=1)
     push(anon, gateway, [reading("3", t, pf=0.7)])
     push(anon, gateway, [reading("3", t + timedelta(seconds=10), kw=0.0, pf=0)])
-    assert admin_client.get("/api/alerts").json()[0]["status"] == "recovered"
+    assert owner_client.get("/api/alerts").json()[0]["status"] == "recovered"
 
 
-def test_machine_specific_threshold_overrides_all(anon, admin_client, gateway, machines, pf_threshold):
-    Threshold.objects.create(param="powerFactor", machine=machines["whitener-2"], warning=0.7, critical=0.6)
+def test_machine_specific_threshold_overrides_all(anon, owner_client, operator, gateway, machines, pf_threshold):
+    Threshold.objects.create(owner=operator, param="powerFactor", machine=machines["whitener-2"], warning=0.7, critical=0.6)
     push(anon, gateway, [reading("3", timezone.now(), pf=0.75)])  # below "all" (0.8) but above its own 0.7
-    assert admin_client.get("/api/alerts").json() == []
+    assert owner_client.get("/api/alerts").json() == []
 
 
-def test_changing_thresholds_reevaluates_immediately(anon, admin_client, gateway, machines, django_capture_on_commit_callbacks):
+def test_changing_thresholds_reevaluates_immediately(anon, owner_client, gateway, machines, django_capture_on_commit_callbacks):
     push(anon, gateway, [reading("3", timezone.now(), pf=0.85)])
-    assert admin_client.get("/api/alerts").json() == []
+    assert owner_client.get("/api/alerts").json() == []
     with django_capture_on_commit_callbacks(execute=True):
-        r = admin_client.post("/api/thresholds", {"param": "powerFactor", "machineId": "all", "warning": 0.9, "critical": 0.8}, format="json")
+        r = owner_client.post("/api/thresholds", {"param": "powerFactor", "machineId": "all", "warning": 0.9, "critical": 0.8}, format="json")
     assert r.status_code == 201
-    assert admin_client.get("/api/alerts").json()[0]["severity"] == "warning"
+    assert owner_client.get("/api/alerts").json()[0]["severity"] == "warning"
 
 
-def test_sms_cooldown_suppresses_flapping(anon, gateway, machines, pf_threshold):
-    PhoneNumber.objects.create(digits="9000000001")
+def test_sms_cooldown_suppresses_flapping(anon, owner_client, operator, gateway, machines, pf_threshold):
+    PhoneNumber.objects.create(owner=operator, digits="9000000001")
     t = timezone.now() - timedelta(minutes=2)
     for i, pf in enumerate([0.7, 0.95, 0.7, 0.95, 0.7]):  # flaps across the limit
         push(anon, gateway, [reading("3", t + timedelta(seconds=10 * i), pf=pf)])
@@ -236,8 +237,8 @@ def test_state_row_is_created_per_machine(anon, gateway, machines):
     assert not MachineState.objects.filter(machine_id="whitener-2").exists()
 
 
-def test_hovering_at_a_limit_does_not_text_repeatedly(anon, gateway, machines, pf_threshold):
-    PhoneNumber.objects.create(digits="9000000001")
+def test_hovering_at_a_limit_does_not_text_repeatedly(anon, owner_client, operator, gateway, machines, pf_threshold):
+    PhoneNumber.objects.create(owner=operator, digits="9000000001")
     t = timezone.now() - timedelta(minutes=2)
     # critical -> warning -> critical -> warning -> critical, all within the cool-down
     for i, pf in enumerate([0.78, 0.82, 0.78, 0.82, 0.78]):

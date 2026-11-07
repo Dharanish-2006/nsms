@@ -22,6 +22,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
+from django.utils.text import slugify
 from rest_framework import serializers
 
 from apps.alerts.engine import evaluate_machine
@@ -242,6 +243,24 @@ def _keep_raw(state, s):
     return gap > 0 and state.last_ts is not None and s.ts > state.last_ts and s.on != state.on
 
 
+def _auto_register(gateway, meter_id, machines):
+    """A verified gateway reported a meter we have not seen: register it as a machine so the
+    owner can rename it and set its rating. Capped, so a faulty gateway cannot flood us."""
+    if len(machines) >= settings.MAX_AUTO_MACHINES_PER_GATEWAY:
+        return None
+    base = slugify(f"{gateway.serial_number or gateway.name}-{meter_id}")[:55] or "meter"
+    candidate, n = base, 1
+    while Machine.objects.filter(pk=candidate).exists():
+        n += 1
+        candidate = f"{base}-{n}"
+    machine = Machine.objects.create(
+        id=candidate, name=f"Meter {meter_id}", type=Machine.Type.SHELLER, rated_kw=0,
+        gateway=gateway, meter_id=meter_id, position=len(machines),
+    )  # fmt: skip
+    machines[meter_id] = machine
+    return machine
+
+
 # --- Entry point ------------------------------------------------------------
 @dataclass
 class IngestResult:
@@ -266,7 +285,7 @@ def ingest(gateway, data, now=None, ip=None):
         Gateway.objects.filter(pk=gateway.pk).update(last_seen_at=now, last_ip=ip)
 
         for meter_id, items in by_meter.items():
-            machine = machines.get(meter_id)
+            machine = machines.get(meter_id) or _auto_register(gateway, meter_id, machines)
             if machine is None:
                 result.unknown_meters.append(meter_id)
                 continue

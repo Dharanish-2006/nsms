@@ -14,11 +14,12 @@ class IsAdminRole(BasePermission):
         )
 
 
-class AdminWritesMixin:
-    """Reads are open to any signed-in user (scoped to what they may see);
-    every write needs the admin role."""
+class IsPlantOwner(BasePermission):
+    """Approved plant owners (role "user"). Monitoring, reports, alerts and settings are theirs;
+    admins run the system and have no access to machine data."""
 
-    def get_permissions(self):
-        if self.request.method in ("GET", "HEAD", "OPTIONS"):
-            return super().get_permissions()
-        return [IsAdminRole()]
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user and user.is_authenticated and user.role == "user" and user.status == "active"
+        )

@@ -10,7 +10,4 @@ urlpatterns = [
     path("auth/me", views.MeView.as_view()),
     path("auth/logout", views.LogoutView.as_view()),
     path("auth/change-password", views.ChangePasswordView.as_view()),
-    path("users", views.UserListView.as_view()),
-    path("users/<int:pk>/approve", views.UserApproveView.as_view()),
-    path("users/<int:pk>", views.UserDetailView.as_view()),
 ]

@@ -4,10 +4,17 @@ from .models import Gateway, GatewayAssignment, Machine, Plant
 
 
 class AssignmentInline(admin.TabularInline):
+    """History only. Assigning and connecting go through the Admin Portal, which enforces the
+    rules and writes the audit log."""
+
     model = GatewayAssignment
     extra = 0
-    autocomplete_fields = ["user"]
-    readonly_fields = ["assigned_by", "assigned_at"]
+    can_delete = False
+    fields = ["user", "status", "assigned_at", "connected_at", "disconnected_at"]
+    readonly_fields = fields
+
+    def has_add_permission(self, request, obj=None):
+        return False
 
 
 class MachineInline(admin.TabularInline):
@@ -23,8 +30,8 @@ class PlantAdmin(admin.ModelAdmin):
 
 @admin.register(Gateway)
 class GatewayAdmin(admin.ModelAdmin):
-    list_display = ["name", "plant", "enabled", "api_key_prefix", "last_seen_at"]
-    list_filter = ["plant", "enabled"]
+    list_display = ["name", "serial_number", "plant", "verified", "enabled", "api_key_prefix", "last_seen_at"]
+    list_filter = ["plant", "verified", "enabled"]
     readonly_fields = ["api_key_prefix", "last_seen_at", "last_ip", "created_at"]
     exclude = ["api_key_hash"]
     inlines = [MachineInline, AssignmentInline]
@@ -35,16 +42,6 @@ class GatewayAdmin(admin.ModelAdmin):
         key = getattr(obj, "_first_key", None)
         if key:
             messages.warning(request, f"API key for {obj.name} (shown once, copy it now): {key}")
-
-    def save_formset(self, request, form, formset, change):
-        instances = formset.save(commit=False)
-        for obj in instances:
-            if isinstance(obj, GatewayAssignment) and obj.assigned_by_id is None:
-                obj.assigned_by = request.user
-            obj.save()
-        formset.save_m2m()
-        for obj in formset.deleted_objects:
-            obj.delete()
 
     @admin.action(description="Issue a new API key (the old one stops working)")
     def rotate_keys(self, request, queryset):

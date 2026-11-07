@@ -21,8 +21,9 @@ class User(AbstractUser):
         USER = "user"
 
     class Status(models.TextChoices):
-        ACTIVE = "active"
+        ACTIVE = "active"  # "approved" in the admin document; the API keeps the old name
         PENDING = "pending"
+        REJECTED = "rejected"
 
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=150, blank=True)
@@ -32,6 +33,12 @@ class User(AbstractUser):
     requested_role = models.CharField(max_length=10, choices=Role.choices, default=Role.USER)
     # Fail closed: accounts must be approved before they can sign in.
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    # The admin's decision on the sign-up request (kept, so a rejection is never lost).
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decided_by = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    rejection_reason = models.CharField(max_length=300, blank=True)
 
     objects = UserManager()
 
@@ -89,3 +96,37 @@ class OtpProof(models.Model):
     target = models.CharField(max_length=254)
     token_hash = models.CharField(max_length=64, unique=True)
     expires_at = models.DateTimeField()
+
+
+class AdminAuditLog(models.Model):
+    """Who did what to whom, and when. Append-only: rows are never edited or deleted by the app."""
+
+    class Action(models.TextChoices):
+        USER_APPROVED = "user_approved"
+        USER_REJECTED = "user_rejected"
+        GATEWAY_VERIFIED = "gateway_verified"
+        GATEWAY_KEY_ROTATED = "gateway_key_rotated"
+        GATEWAY_ASSIGNED = "gateway_assigned"
+        GATEWAY_CONNECTED = "gateway_connected"
+        GATEWAY_DISCONNECTED = "gateway_disconnected"
+
+    admin = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="audit_entries"
+    )
+    # Kept as text too, so the entry still reads correctly if the account is later removed.
+    admin_username = models.CharField(max_length=150)
+    action = models.CharField(max_length=30, choices=Action.choices)
+    target_type = models.CharField(max_length=20)  # "user" | "gateway" | "assignment"
+    target_id = models.CharField(max_length=64)
+    remarks = models.CharField(max_length=300, blank=True)
+    timestamp = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ["-timestamp", "-pk"]
+
+    @classmethod
+    def record(cls, admin, action, target_type, target_id, remarks=""):
+        return cls.objects.create(
+            admin=admin, admin_username=admin.username, action=action,
+            target_type=target_type, target_id=str(target_id), remarks=remarks[:300],
+        )  # fmt: skip

@@ -9,7 +9,7 @@ Protocol (JSON text frames)
   client -> {"type":"ping"}  (every ~30 s)  server -> {"type":"pong"}
 
 The token goes in a message rather than the URL so it never lands in access logs.
-A user only receives the machines of gateways assigned to them; admins get everything.
+A plant owner only receives the machines of gateways they are connected to; admins get none.
 Close code 4401 means "not signed in" (bad, expired or revoked token).
 """
 
@@ -22,7 +22,7 @@ from django.utils import timezone
 
 from apps.accounts.authentication import InvalidToken, authenticate_token
 from apps.alerts.views import alerts_for
-from apps.common.realtime import ADMIN_GROUP, gateway_group, user_group
+from apps.common.realtime import gateway_group, user_group
 from apps.common.timeutil import to_ms
 from apps.plants.access import accessible_gateway_ids, accessible_machines
 
@@ -35,10 +35,7 @@ CLOSE_UNAUTHENTICATED = 4401
 
 def _groups_for(user):
     groups = {user_group(user.pk)}
-    if user.role == "admin":
-        groups.add(ADMIN_GROUP)
-    else:
-        groups.update(gateway_group(pk) for pk in accessible_gateway_ids(user))
+    groups.update(gateway_group(pk) for pk in accessible_gateway_ids(user))  # none for admins
     return groups
 
 

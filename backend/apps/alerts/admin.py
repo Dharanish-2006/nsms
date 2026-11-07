@@ -5,12 +5,12 @@ from .models import Alert, PhoneNumber, Threshold
 
 @admin.register(Threshold)
 class ThresholdAdmin(admin.ModelAdmin):
-    list_display = ["param", "machine", "warning", "critical"]
+    list_display = ["owner", "param", "machine", "warning", "critical"]
 
 
 @admin.register(PhoneNumber)
 class PhoneNumberAdmin(admin.ModelAdmin):
-    list_display = ["label", "digits"]
+    list_display = ["owner", "label", "digits"]
 
 
 @admin.register(Alert)

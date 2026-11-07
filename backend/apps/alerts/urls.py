@@ -8,4 +8,5 @@ urlpatterns = [
     path("thresholds/<int:pk>", views.ThresholdDetailView.as_view()),
     path("phones", views.PhoneListView.as_view()),
     path("phones/<int:pk>", views.PhoneDetailView.as_view()),
+    path("settings/notifications", views.NotificationSettingsView.as_view()),
 ]

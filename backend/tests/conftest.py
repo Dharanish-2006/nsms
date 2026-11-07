@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pytest
 from django.core.cache import cache
 from rest_framework.test import APIClient
@@ -5,7 +7,7 @@ from rest_framework.test import APIClient
 from apps.accounts.models import AuthToken, User
 from apps.alerts.models import Threshold
 from apps.common import sms
-from apps.plants.models import Gateway, Machine, Plant
+from apps.plants.models import ConnectionPeriod, Gateway, GatewayAssignment, Machine, Plant
 
 
 @pytest.fixture(autouse=True)
@@ -60,6 +62,13 @@ def admin_client(admin):
 
 
 @pytest.fixture
+def owner_client(operator, gateway):
+    """The plant owner, connected to the gateway: sees its machines, alerts and reports."""
+    connect(operator, gateway)
+    return client_for(operator)
+
+
+@pytest.fixture
 def user_client(operator):
     return client_for(operator)
 
@@ -72,6 +81,14 @@ def plant(db):
 @pytest.fixture
 def gateway(plant):
     gw = Gateway(name="Gateway A", plant=plant)
+    gw.save()
+    gw.raw_key = gw._first_key
+    return gw
+
+
+@pytest.fixture
+def second_gateway(plant):
+    gw = Gateway(name="Gateway B", plant=plant)
     gw.save()
     gw.raw_key = gw._first_key
     return gw
@@ -92,9 +109,19 @@ def machines(gateway):
     }
 
 
+def connect(user, gateway):
+    """Give `user` a connected assignment to `gateway`, as the admin portal would."""
+    from django.utils import timezone
+
+    now = timezone.now()
+    a = GatewayAssignment.objects.create(gateway=gateway, user=user, status="connected", connected_at=now)
+    ConnectionPeriod.objects.create(assignment=a, start=now - timedelta(days=30))
+    return a
+
+
 @pytest.fixture
-def pf_threshold(db):
-    return Threshold.objects.create(param="powerFactor", machine=None, warning=0.9, critical=0.8)
+def pf_threshold(db, operator):
+    return Threshold.objects.create(owner=operator, param="powerFactor", machine=None, warning=0.9, critical=0.8)
 
 
 def push(client, gateway, readings, key=None):

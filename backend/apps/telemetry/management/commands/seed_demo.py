@@ -8,10 +8,11 @@ can be tried straight away:
 import secrets
 
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.alerts.models import Threshold
-from apps.plants.models import Gateway, Machine, Plant
+from apps.plants.models import ConnectionPeriod, Gateway, GatewayAssignment, Machine, Plant
 
 MACHINES = [  # id, name, type, rated kW, meter id
     ("sheller-1", "Sheller", "sheller", 36, "1"),
@@ -73,9 +74,14 @@ class Command(BaseCommand):
                 ),
             )
         Threshold.objects.get_or_create(
-            param="powerFactor", machine=None, defaults={"warning": 0.9, "critical": 0.8}
+            owner=operator, param="powerFactor", machine=None, defaults={"warning": 0.9, "critical": 0.8}
         )
-        gateway.users.add(operator)
+        if not GatewayAssignment.objects.filter(gateway=gateway, status__in=["assigned", "connected"]).exists():
+            now = timezone.now()
+            a = GatewayAssignment.objects.create(
+                gateway=gateway, user=operator, status="connected", connected_at=now
+            )
+            ConnectionPeriod.objects.create(assignment=a, start=now)
 
         if key:
             self.stdout.write(f"gateway key (shown once): {key}")

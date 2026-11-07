@@ -8,6 +8,9 @@ from django.utils import timezone
 from apps.accounts.models import hash_secret
 
 
+LIVE_STATUSES = ("assigned", "connected")
+
+
 class Plant(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
@@ -25,19 +28,17 @@ class Gateway(models.Model):
     name = models.CharField(max_length=100)
     plant = models.ForeignKey(Plant, on_delete=models.PROTECT, related_name="gateways")
     enabled = models.BooleanField(default=True)
+    # Printed on the device. Gateways that register themselves send it; it is how the admin
+    # recognises the box that was just installed.
+    serial_number = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    # A gateway that registered itself is not trusted with data until an admin verifies it.
+    verified = models.BooleanField(default=True)
     # The key itself is shown once, when it is created. We keep only its hash.
     api_key_prefix = models.CharField(max_length=16, editable=False)
     api_key_hash = models.CharField(max_length=64, unique=True, editable=False)
     last_seen_at = models.DateTimeField(null=True, blank=True, editable=False)
     last_ip = models.GenericIPAddressField(null=True, blank=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    users = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
-        through="GatewayAssignment",
-        through_fields=("gateway", "user"),
-        related_name="gateways",
-        blank=True,
-    )
 
     class Meta:
         ordering = ["plant__name", "name"]
@@ -66,18 +67,63 @@ class Gateway(models.Model):
         )
 
 
+    @property
+    def availability(self):
+        """"assigned" while a live (assigned or connected) record holds it, else "available"."""
+        return "assigned" if self.assignments.filter(status__in=LIVE_STATUSES).exists() else "available"
+
+
 class GatewayAssignment(models.Model):
-    """Which users may see a gateway's machines. Admins always see everything."""
+    """A gateway given to an approved user, and whether they are connected to it right now.
+
+    assigned -> connected -> disconnected (-> connected again). A gateway can have only one
+    live (assigned or connected) record; a disconnected one is history and frees the gateway.
+    A user sees a gateway's data only while their record is "connected".
+    """
+
+    class Status(models.TextChoices):
+        ASSIGNED = "assigned"
+        CONNECTED = "connected"
+        DISCONNECTED = "disconnected"
 
     gateway = models.ForeignKey(Gateway, on_delete=models.CASCADE, related_name="assignments")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="gateway_assignments")
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.ASSIGNED)
     assigned_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
     assigned_at = models.DateTimeField(default=timezone.now)
+    connected_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    connected_at = models.DateTimeField(null=True, blank=True)
+    disconnected_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    disconnected_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=["gateway", "user"], name="unique_gateway_user")]
+        ordering = ["-assigned_at", "-pk"]
+        constraints = [
+            # The database itself refuses a second live record for one gateway, even if two
+            # admins click at the same moment.
+            models.UniqueConstraint(
+                fields=["gateway"],
+                condition=models.Q(status__in=["assigned", "connected"]),
+                name="one_live_assignment_per_gateway",
+            )
+        ]
+
+
+class ConnectionPeriod(models.Model):
+    """One stretch of time a user was connected to a gateway. Reports for a user only cover these."""
+
+    assignment = models.ForeignKey(GatewayAssignment, on_delete=models.CASCADE, related_name="periods")
+    start = models.DateTimeField()
+    end = models.DateTimeField(null=True, blank=True)  # null while still connected
+
+    class Meta:
+        ordering = ["start"]
 
 
 class Machine(models.Model):

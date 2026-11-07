@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "apps.plants",
     "apps.telemetry",
     "apps.alerts",
+    "apps.adminportal",
 ]
 
 MIDDLEWARE = [
@@ -148,6 +149,7 @@ REST_FRAMEWORK = {
         "login": "20/min",
         "register": "10/hour",
         "otp": "30/hour",
+        "provision": "30/hour",
     },
 }
 
@@ -211,3 +213,9 @@ LOGGING = {
     "handlers": {"console": {"class": "logging.StreamHandler"}},
     "root": {"handlers": ["console"], "level": "INFO"},
 }
+
+# Gateways register themselves with this shared key (leave empty to turn self-registration off).
+GATEWAY_PROVISION_KEY = os.environ.get("GATEWAY_PROVISION_KEY", "")
+DEFAULT_PLANT_NAME = os.environ.get("DEFAULT_PLANT_NAME", "Plant 1")
+# A verified gateway may create machines for meters it reports; this caps the junk a bad one can make.
+MAX_AUTO_MACHINES_PER_GATEWAY = env_int("MAX_AUTO_MACHINES_PER_GATEWAY", 32)

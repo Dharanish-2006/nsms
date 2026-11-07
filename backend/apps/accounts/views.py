@@ -3,7 +3,6 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.cache import cache
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
-from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -11,7 +10,6 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from apps.common.errors import ApiError
-from apps.common.permissions import IsAdminRole
 from apps.common.realtime import notify_user_access_changed
 
 from . import otp
@@ -61,6 +59,9 @@ class LoginView(PublicView):
             raise ApiError("Wrong username or password.", 401, "invalid_credentials")
         cache.delete(fail_key)
 
+        if user.status == User.Status.REJECTED:
+            reason = f" Reason: {user.rejection_reason}" if user.rejection_reason else ""
+            raise ApiError("Your registration request was not approved." + reason, 403, "rejected")
         if user.status != User.Status.ACTIVE:
             raise ApiError(
                 "Your account is waiting for administrator approval.", 403, "pending_approval"
@@ -136,9 +137,24 @@ class RegisterView(PublicView):
         return Response({"ok": True, "status": "pending"}, status=201)
 
 
+class ProfileSerializer(serializers.Serializer):
+    """The only profile fields a person may edit. Email and phone need verifying, so not here."""
+
+    fullName = serializers.CharField(max_length=150)
+
+
 class MeView(APIView):
     def get(self, request):
         return Response(user_json(request.user))
+
+    def patch(self, request):
+        s = ProfileSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        request.user.full_name = s.validated_data["fullName"].strip()
+        request.user.save(update_fields=["full_name"])
+        return Response(user_json(request.user))
+
+    put = patch
 
 
 class LogoutView(APIView):
@@ -163,41 +179,4 @@ class ChangePasswordView(APIView):
         user.save(update_fields=["password"])
         # Sign the account out everywhere else.
         AuthToken.objects.filter(user=user).exclude(pk=request.auth.pk).delete()
-        return Response(status=204)
-
-
-class UserListView(APIView):
-    permission_classes = [IsAdminRole]
-
-    def get(self, request):
-        users = User.objects.order_by("date_joined", "pk")
-        status = request.query_params.get("status")
-        if status:
-            if status not in User.Status.values:
-                raise ApiError("Unknown status.", 422, "validation")
-            users = users.filter(status=status)
-        return Response([user_json(u) for u in users])
-
-
-class UserApproveView(APIView):
-    permission_classes = [IsAdminRole]
-
-    def post(self, request, pk):
-        user = get_object_or_404(User, pk=pk)
-        user.status = User.Status.ACTIVE
-        user.save(update_fields=["status"])
-        return Response(status=204)
-
-
-class UserDetailView(APIView):
-    permission_classes = [IsAdminRole]
-
-    def delete(self, request, pk):
-        """Reject a sign-up request or remove an account."""
-        user = get_object_or_404(User, pk=pk)
-        if user.pk == request.user.pk:
-            raise ApiError("You cannot remove your own account.", 400, "cannot_delete_self")
-        user_id = user.pk
-        user.delete()  # cascades tokens and gateway assignments
-        notify_user_access_changed(user_id)
         return Response(status=204)

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
-from .models import User
+from .models import AdminAuditLog, User
 
 
 @admin.register(User)
@@ -15,3 +15,20 @@ class UserAdmin(DjangoUserAdmin):
     add_fieldsets = DjangoUserAdmin.add_fieldsets + (
         (None, {"fields": ("email", "full_name", "mobile", "role", "status")}),
     )
+
+
+@admin.register(AdminAuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    """Read-only: the audit trail is append-only."""
+
+    list_display = ("timestamp", "admin_username", "action", "target_type", "target_id", "remarks")
+    list_filter = ("action",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
