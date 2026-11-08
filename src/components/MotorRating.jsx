@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { hpToKw, kwToHp, parseHp } from "../lib/motor";
 
-/** A machine's motor rating in HP. Admins get an inline editor. */
+/** A machine's motor rating in HP, with an inline editor. */
 export function MotorRating({ machine, canEdit, onSave }) {
   const hp = machine.ratedKw ? kwToHp(machine.ratedKw) : null;
   const [editing, setEditing] = useState(false);

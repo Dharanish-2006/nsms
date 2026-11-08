@@ -8,7 +8,7 @@ import { AssetIcon, StatusBadge } from "../components/Icon";
 import { useData } from "../context/DataContext";
 import { fmt, fmtDuration } from "../lib/format";
 import { hasPowerQuality } from "../lib/machine";
-import loadfactor_img from "../assets/images/load-gauge.svg"
+import loadfactor_img from "../assets/images/load-gauge.svg";
 const todayKwh = (m) => m.hourlyKwh.reduce((a, b) => a + b, 0);
 // "Actual usage" is the energy used in the machine's current run.
 const RANGES = [

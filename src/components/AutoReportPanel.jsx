@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { useAuth } from "../context/AuthContext";
 
 const FREQUENCIES = [
   { value: "day", label: "Every day" },
@@ -9,8 +8,6 @@ const FREQUENCIES = [
 ];
 
 export function AutoReportPanel() {
-  const { user } = useAuth();
-  const admin = user?.role === "admin";
   const [prefs, setPrefs] = useState(null);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -38,7 +35,7 @@ export function AutoReportPanel() {
   return (
     <aside className="panel auto-report">
       <h2>Automatic report</h2>
-      <p>Send this report on its own, without anyone pressing a button.</p>
+      <p>Email this report to you on its own, without anyone pressing a button.</p>
       {prefs && (
         <>
           <label className="toggle-row">
@@ -46,7 +43,6 @@ export function AutoReportPanel() {
             <input
               type="checkbox"
               checked={prefs.autoReports}
-              disabled={!admin}
               onChange={() => update({ autoReports: !prefs.autoReports })}
             />
             <i aria-hidden="true" />
@@ -55,7 +51,7 @@ export function AutoReportPanel() {
             <span>Send</span>
             <select
               value={prefs.reportFrequency}
-              disabled={!admin || !prefs.autoReports}
+              disabled={!prefs.autoReports}
               onChange={(e) => update({ reportFrequency: e.target.value })}
             >
               {FREQUENCIES.map((f) => (
@@ -65,7 +61,6 @@ export function AutoReportPanel() {
               ))}
             </select>
           </label>
-          {!admin && <small className="admin-only">▣ Admins only</small>}
         </>
       )}
       {error && (

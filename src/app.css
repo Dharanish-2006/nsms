@@ -489,5 +489,11 @@ html {
   flex-shrink: 0;
 }
 
-.machine-banner p .motor-cell { display: inline-flex; vertical-align: middle; }
-.motor-saved { color: #1f7a3d; font-weight: 600; }
+.machine-banner p .motor-cell {
+  display: inline-flex;
+  vertical-align: middle;
+}
+.motor-saved {
+  color: #1f7a3d;
+  font-weight: 600;
+}

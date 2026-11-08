@@ -67,7 +67,7 @@ export const httpApi = {
     /** -> [{ t, pf, current, kw }] oldest first */
     trend: (id, hours, opts) =>
       request(`/machines/${enc(id)}/trend`, { ...opts, query: { hours } }),
-    /** Admin only. patch: { ratedKw } -> the updated machine */
+    /** patch: { ratedKw } -> the updated machine */
     update: (id, patch) =>
       request(`/machines/${enc(id)}`, { method: "PUT", body: patch }),
   },
@@ -94,7 +94,7 @@ export const httpApi = {
     remove: (id) => request(`/phones/${enc(id)}`, { method: "DELETE" }),
   },
 
-  /** -> { alertsEnabled, autoReports, reportFrequency } ; PUT (admin) saves and returns the same shape */
+  /** -> { alertsEnabled, autoReports, reportFrequency } ; PUT saves and returns the same shape */
   notifications: {
     get: () => request("/settings/notifications"),
     save: (n) => request("/settings/notifications", { method: "PUT", body: n }),

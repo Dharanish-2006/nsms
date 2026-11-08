@@ -102,7 +102,6 @@ function RegisterForm() {
     password: "",
     confirm: "",
   });
-  const [role, setRole] = useState("user");
   const [errors, setErrors] = useState({});
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -132,7 +131,7 @@ function RegisterForm() {
     const err = await register({
       ...rest,
       mobile,
-      role,
+      role: "user", // plant owners register here; admins are created by us
       emailToken,
       ...(usePhone ? { phoneToken } : {}),
     });
@@ -156,26 +155,7 @@ function RegisterForm() {
   return (
     <form className="auth-card register" onSubmit={submit} noValidate>
       <h2>Create account</h2>
-      <p>An administrator approves new accounts.</p>
-      <div className="account-type">
-        <span>Account type</span>
-        <div>
-          <button
-            type="button"
-            className={role === "admin" ? "selected" : ""}
-            onClick={() => setRole("admin")}
-          >
-            Admin
-          </button>
-          <button
-            type="button"
-            className={role === "user" ? "selected" : ""}
-            onClick={() => setRole("user")}
-          >
-            User
-          </button>
-        </div>
-      </div>
+      <p>Plant owners register here. An administrator approves new accounts.</p>
       <div className="form-grid">
         <Field
           label="Username"

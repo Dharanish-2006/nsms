@@ -4,6 +4,7 @@ keep one process looping:  python manage.py run_maintenance --loop 300
   * rebuilds the DailyReport rows for today and the previous days
   * deletes raw readings older than RAW_RETENTION_DAYS
   * deletes expired auth tokens and one-time codes
+  * emails the automatic reports that are due (see apps/alerts/autoreport.py)
 """
 
 import logging
@@ -14,6 +15,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from apps.alerts.autoreport import send_due_reports
 from apps.accounts.models import AuthToken, OtpChallenge, OtpProof
 from apps.telemetry.consolidate import consolidate_day
 from apps.telemetry.models import Reading
@@ -38,7 +40,8 @@ def run_once(days=2):
     AuthToken.objects.filter(expires_at__lte=now).delete()
     OtpChallenge.objects.filter(expires_at__lte=now).delete()
     OtpProof.objects.filter(expires_at__lte=now).delete()
-    return rows, pruned
+    reports = send_due_reports()
+    return rows, pruned, reports
 
 
 class Command(BaseCommand):
@@ -51,8 +54,8 @@ class Command(BaseCommand):
     def handle(self, *args, loop, days, **options):
         while True:
             try:
-                rows, pruned = run_once(days)
-                self.stdout.write(f"daily rows written: {rows}, raw readings pruned: {pruned}")
+                rows, pruned, reports = run_once(days)
+                self.stdout.write(f"daily rows written: {rows}, raw readings pruned: {pruned}, reports sent: {reports}")
             except Exception:  # noqa: BLE001 - keep a looping worker alive
                 logger.exception("Maintenance run failed")
                 if not loop:

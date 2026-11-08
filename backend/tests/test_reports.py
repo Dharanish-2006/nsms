@@ -92,6 +92,6 @@ def test_maintenance_prunes_old_raw_readings_but_keeps_reports(anon, gateway, ma
     settings.RAW_RETENTION_DAYS = 7
     feed(anon, gateway)
     Reading.objects.update(ts=F("ts") - timedelta(days=30))
-    rows, pruned = run_once()
+    rows, pruned, _ = run_once()
     assert pruned > 0 and Reading.objects.count() == 0
     assert DailyReport.objects.filter(machine_id="sheller-1").exists()

@@ -223,3 +223,9 @@ MAX_AUTO_MACHINES_PER_GATEWAY = env_int("MAX_AUTO_MACHINES_PER_GATEWAY", 32)
 # AWS IoT Core: the IoT Rule that forwards device messages to POST /api/iot/ingest proves itself
 # with this shared secret (header X-IoT-Secret). Empty = that endpoint is off.
 IOT_RULE_SECRET = os.environ.get("IOT_RULE_SECRET", "")
+
+# Automatic report emails go out once the local (IST) time passes this hour.
+AUTO_REPORT_HOUR = env_int("AUTO_REPORT_HOUR", 6)
+# Line voltage used ONLY to estimate current when a gateway sends none but sends kVA.
+# Set it to your site's voltage; send real `current` from the meter to avoid estimating.
+NOMINAL_VOLTAGE = float(os.environ.get("NOMINAL_VOLTAGE", "415"))

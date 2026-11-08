@@ -42,6 +42,7 @@ export default function ProcessPage() {
   const on = status === "on";
   const pq = hasPowerQuality(m);
   const na = "N/A";
+  const todayKwh = m.hourlyKwh.reduce((a, b) => a + b, 0);
   const hour = istHour(lastUpdate);
   const rangeLabel = RANGES.find((r) => r.hours === windowHrs)?.short ?? "Last 24 hrs";
   const download = () =>
@@ -149,11 +150,11 @@ export default function ProcessPage() {
                 <img src={images.powerfactor} alt="" />
                 <div>
                   <span>Power factor</span>
-                  <strong>{0.85}</strong>
+                  <strong>{on ? m.pf.toFixed(2) : na}</strong>
                 </div>
               </div>
               <div className="data-list compact">
-                <Row k={`Average Power Factor (${rangeLabel})`} v={`0.85`} />
+                <Row k="Power Factor (now)" v={on ? m.pf.toFixed(2) : na} />
               </div>
             </article>
           )}
@@ -181,7 +182,7 @@ export default function ProcessPage() {
                 <strong style={{ fontSize: 20, padding: 0 }}>
                   Units Consumed
                   <br />
-                  423 kwh
+                  {todayKwh.toFixed(1)} kWh
                 </strong>
               </div>
 
@@ -198,12 +199,12 @@ export default function ProcessPage() {
                 <strong style={{ fontSize: 20 }}>
                   Actual Usage
                   <br />
-                  246 kwh
+                  {(m.runKwh > 0 ? m.runKwh : 0).toFixed(1)} kWh
                 </strong>
               </div>
             </div>
             <div className="data-list compact">
-              <Row k={`Energy usage in {${rangeLabel}}`} />
+              <Row k="Energy usage today" v={`${todayKwh.toFixed(1)} kWh`} />
             </div>
           </article>
         </div>

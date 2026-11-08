@@ -77,9 +77,7 @@ function PasswordPanel() {
   );
 }
 function PhonePanel() {
-  const { user } = useAuth();
   const { phones, savePhone, removePhone } = useData();
-  const admin = user?.role === "admin";
   const [confirmId, setConfirmId] = useState(null);
   const [editId, setEditId] = useState(null);
   const [editVal, setEditVal] = useState("");
@@ -119,7 +117,6 @@ function PhonePanel() {
             <h2>Alert phone numbers</h2>
             <p>These numbers receive alert messages.</p>
           </div>
-          <span className="admin-only">▣ Admins only</span>
         </div>
 
         {phones.map((p) => (
@@ -139,46 +136,44 @@ function PhonePanel() {
                 <small>{p.label}</small>
               </div>
             )}
-            {admin &&
-              (editId === p.id ? (
-                <>
-                  <button
-                    onClick={async () => {
-                      if (!valid(editVal))
-                        return setError("Enter a valid 10-digit number");
-                      const saved = await run(() =>
-                        savePhone({ ...p, digits: clean(editVal) }),
-                      );
-                      if (saved) setEditId(null);
-                    }}
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditId(null);
-                      setError("");
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => {
-                      setEditId(p.id);
-                      setEditVal(p.digits);
-                      setError("");
-                    }}
-                  >
-                    Edit
-                  </button>
-                  <button className="danger" onClick={() => setConfirmId(p.id)}>
-                    Remove
-                  </button>
-                </>
-              ))}
+            {editId === p.id ? (
+              <>
+                <button
+                  onClick={async () => {
+                    if (!valid(editVal)) return setError("Enter a valid 10-digit number");
+                    const saved = await run(() =>
+                      savePhone({ ...p, digits: clean(editVal) }),
+                    );
+                    if (saved) setEditId(null);
+                  }}
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    setEditId(null);
+                    setError("");
+                  }}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => {
+                    setEditId(p.id);
+                    setEditVal(p.digits);
+                    setError("");
+                  }}
+                >
+                  Edit
+                </button>
+                <button className="danger" onClick={() => setConfirmId(p.id)}>
+                  Remove
+                </button>
+              </>
+            )}
           </div>
         ))}
 
@@ -199,22 +194,20 @@ function PhonePanel() {
           </div>
         )}
 
-        {admin && (
-          <div className="add-phone">
-            <span>⌕</span>
-            <input
-              aria-label="New phone number"
-              placeholder="+91  Enter 10-digit number"
-              inputMode="tel"
-              value={newVal}
-              onChange={(e) => setNewVal(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && add()}
-            />
-            <button className="primary-button" onClick={add}>
-              ＋ Add number
-            </button>
-          </div>
-        )}
+        <div className="add-phone">
+          <span>⌕</span>
+          <input
+            aria-label="New phone number"
+            placeholder="+91  Enter 10-digit number"
+            inputMode="tel"
+            value={newVal}
+            onChange={(e) => setNewVal(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && add()}
+          />
+          <button className="primary-button" onClick={add}>
+            ＋ Add number
+          </button>
+        </div>
         {error && (
           <small className="form-error" role="alert">
             {error}
@@ -225,8 +218,6 @@ function PhonePanel() {
   );
 }
 function NotificationPanel() {
-  const { user } = useAuth();
-  const admin = user?.role === "admin";
   const [prefs, setPrefs] = useState(null);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -257,7 +248,6 @@ function NotificationPanel() {
           <h2>Notifications</h2>
           <p>Choose whether alert messages are sent.</p>
         </div>
-        <span className="admin-only">▣ Admins only</span>
       </div>
       {prefs && (
         <>
@@ -269,7 +259,6 @@ function NotificationPanel() {
             <input
               type="checkbox"
               checked={prefs.alertsEnabled}
-              disabled={!admin}
               onChange={() => toggle("alertsEnabled")}
             />
             <i aria-hidden="true" />
@@ -284,61 +273,8 @@ function NotificationPanel() {
     </section>
   );
 }
-function PendingPanel() {
-  const [pending, setPending] = useState([]);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    let cancelled = false;
-    api.users
-      .list("pending")
-      .then((list) => !cancelled && setPending(list))
-      .catch((err) => !cancelled && setError(err.message));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  const act = async (fn, id) => {
-    try {
-      await fn(id);
-      setPending(await api.users.list("pending"));
-      setError("");
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-  if (pending.length === 0 && !error) return null;
-  return (
-    <section className="panel pending-panel">
-      <h2>Accounts waiting for approval</h2>
-      {error && (
-        <small className="form-error" role="alert">
-          {error}
-        </small>
-      )}
-      {pending.map((u) => (
-        <div className="phone-row" key={u.id}>
-          <span className="phone-icon">{u.fullName.slice(0, 1).toUpperCase()}</span>
-          <div>
-            <strong>
-              {u.fullName} · {u.username}
-            </strong>
-            <small>
-              Requested {u.role === "admin" ? "Admin" : "User"} access · {u.email} ·{" "}
-              {u.mobile ? fmtPhone(u.mobile) : "No phone"}
-            </small>
-          </div>
-          <button onClick={() => act(api.users.approve, u.id)}>Approve</button>
-          <button className="danger" onClick={() => act(api.users.reject, u.id)}>
-            Reject
-          </button>
-        </div>
-      ))}
-    </section>
-  );
-}
 function ThresholdCard() {
   const { thresholds } = useData();
-  const { user } = useAuth();
   const [editing, setEditing] = useState(false);
   const pf =
     thresholds.find((t) => t.param === "powerFactor" && t.machineId === "all") ??
@@ -371,18 +307,16 @@ function ThresholdCard() {
             </div>
           </div>
         </div>
-        {user?.role === "admin" && (
-          <button className="edit-btn" onClick={() => setEditing(!editing)}>
-            {editing ? "Close" : "✎ Edit"}
-          </button>
-        )}
+        <button className="edit-btn" onClick={() => setEditing(!editing)}>
+          {editing ? "Close" : "✎ Edit"}
+        </button>
       </section>
       {editing && <ThresholdPanel />}
     </>
   );
 }
 export default function SettingsPage() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   return (
     <div className="content-page standard-page settings-page">
       <div className="page-heading">
@@ -395,7 +329,6 @@ export default function SettingsPage() {
       <PhonePanel />
       <NotificationPanel />
       <ThresholdCard />
-      {user?.role === "admin" && <PendingPanel />}
       <section className="settings-panel panel logout-panel">
         <img src={images.settingsLogout} alt="" />
         <div>

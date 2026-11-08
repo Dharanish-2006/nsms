@@ -24,7 +24,7 @@ import cardElectrical from "./icons/card-electrical.svg";
 import cardEnergy from "./icons/card-energy.svg";
 import cardPerformance from "./icons/card-performance.svg";
 import cardMotor from "./icons/card-motor.svg";
-import powerfactor from "../assets/images/power-factor-icon.svg"
+import powerfactor from "../assets/images/power-factor-icon.svg";
 
 import heroMill from "./images/hero-mill.svg";
 import authMill from "./images/auth-mill.svg";
@@ -77,7 +77,7 @@ export const images = {
   settingsPhone,
   settingsThreshold,
   settingsLogout,
-  powerfactor
+  powerfactor,
 };
 
 /** Picture for each machine `type` the API can return. */

@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from apps.common.permissions import IsPlantOwner
 from apps.plants.access import accessible_machines
 
-from . import engine
+from . import autoreport, engine
 from .dispatch import dispatch, refresh_all_dashboards
 from .models import Alert, NotificationSettings, PhoneNumber, Threshold
 from .serializers import (
@@ -130,12 +130,14 @@ class NotificationSettingsView(OwnerView):
         s = NotificationsSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         d = s.validated_data
-        n, _ = NotificationSettings.objects.update_or_create(
-            owner=request.user,
-            defaults={
-                "alerts_enabled": d["alertsEnabled"],
-                "auto_reports": d["autoReports"],
-                "report_frequency": d["reportFrequency"],
-            },
-        )
+        n, _ = NotificationSettings.objects.get_or_create(owner=request.user)
+        was = (n.auto_reports, n.report_frequency)
+        n.alerts_enabled = d["alertsEnabled"]
+        n.auto_reports = d["autoReports"]
+        n.report_frequency = d["reportFrequency"]
+        if n.auto_reports and (n.auto_reports, n.report_frequency) != was:
+            # Turned on (or the schedule changed): start with the next period, not a report for
+            # a period that has already ended.
+            n.last_report_key = autoreport.current_period(n.report_frequency).key
+        n.save()
         return Response(notifications_json(n))

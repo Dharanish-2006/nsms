@@ -32,7 +32,6 @@ from apps.plants.models import Gateway, Machine
 
 from .models import HourlyReport, MachineState, Reading
 
-NOMINAL_VOLTAGE = 415.0  # used only to estimate current when the gateway sends none
 
 
 # --- Validation -------------------------------------------------------------
@@ -109,7 +108,7 @@ def _complete(d, machine, ts):
         kvar = math.sqrt(max(kva * kva - kw * kw, 0.0))
     current = d.get("current")
     if current is None:
-        current = kva * 1000 / (math.sqrt(3) * (d.get("voltage") or NOMINAL_VOLTAGE)) if kva else 0.0
+        current = kva * 1000 / (math.sqrt(3) * (d.get("voltage") or settings.NOMINAL_VOLTAGE)) if kva else 0.0
     on = d.get("on")
     if on is None:
         on = kw >= machine.on_threshold_kw

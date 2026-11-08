@@ -81,3 +81,6 @@ class NotificationSettings(models.Model):
     alerts_enabled = models.BooleanField(default=True)
     auto_reports = models.BooleanField(default=False)
     report_frequency = models.CharField(max_length=10, choices=Frequency.choices, default=Frequency.DAY)
+    # The period (e.g. "2026-11-07", "2026-W45", "2026-10") whose report was last emailed.
+    # Stops the same report going out twice.
+    last_report_key = models.CharField(max_length=20, blank=True)

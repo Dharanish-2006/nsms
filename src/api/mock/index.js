@@ -251,7 +251,7 @@ export const mockApi = {
       return getThresholds();
     },
     async save(t) {
-      await requireAdmin();
+      await currentUser();
       checkThreshold(t);
       const list = getThresholds();
       const row = { ...t, id: t.id ?? uid() };
@@ -260,7 +260,7 @@ export const mockApi = {
       return row;
     },
     async remove(id) {
-      await requireAdmin();
+      await currentUser();
       setThresholds(getThresholds().filter((x) => x.id !== id));
       reevaluate();
     },
@@ -272,7 +272,7 @@ export const mockApi = {
       return getPhones();
     },
     async save(p) {
-      await requireAdmin();
+      await currentUser();
       if (!/^\d{10}$/.test(p.digits))
         fail(422, "Enter a valid 10-digit number.", "validation");
       const list = getPhones();
@@ -283,7 +283,7 @@ export const mockApi = {
       return row;
     },
     async remove(id) {
-      await requireAdmin();
+      await currentUser();
       setPhones(getPhones().filter((x) => x.id !== id));
     },
   },
@@ -294,7 +294,7 @@ export const mockApi = {
       return { ...DEFAULT_NOTIFY, ...load(NOTIFY_KEY, {}) };
     },
     async save(n) {
-      await requireAdmin();
+      await currentUser();
       if (!FREQUENCIES.includes(n.reportFrequency))
         fail(422, "Choose day, week or month.", "validation");
       const row = {

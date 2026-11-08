@@ -28,6 +28,7 @@ from .consolidate import day_bounds
 from .ingest import ingest
 from .models import HourlyReport, Reading
 from .payloads import build_payloads
+from .reports import owner_report_rows
 from .publish import publish_ingest, publish_machine_change
 
 logger = logging.getLogger(__name__)
@@ -259,46 +260,18 @@ class DailyReportView(APIView):
         machines = list(machines)
         ids = [m.pk for m in machines]
 
-        # Built from the hourly rows inside this owner's connection periods, so a previous
-        # owner's hours on the same gateway never show up in their report.
         start, end = day_bounds(day)
-        agg = (
-            HourlyReport.objects.filter(window_q(request.user), machine_id__in=ids, hour__gte=start, hour__lt=end)
-            .values("machine_id")
-            .annotate(
-                kwh=Sum("kwh"), run_kwh=Sum("run_kwh"), kvarh=Sum("kvarh"), kvah=Sum("kvah"),
-                run_seconds=Sum("run_seconds"), samples=Sum("samples"), sum_kw=Sum("sum_kw"),
-                max_kw=Max("max_kw"), max_current=Max("max_current"),
-                pf_samples=Sum("pf_samples"), sum_pf=Sum("sum_pf"),
-            )
-        )  # fmt: skip
-        reports = {r["machine_id"]: r for r in agg}
+        report_rows = {r["machineId"]: r for r in owner_report_rows(request.user, start, end, machines)}
         active = {}
         for machine_id in Alert.objects.filter(machine_id__in=ids, status=Alert.Status.ACTIVE).values_list("machine_id", flat=True):
             active[machine_id] = active.get(machine_id, 0) + 1
 
         rows = []
         for m in machines:
-            r = reports.get(m.pk)
-            n = (r["samples"] or 0) if r else 0
-            rows.append(
-                {
-                    "machineId": m.pk,
-                    "machineName": m.name,
-                    "plant": m.gateway.plant.name,
-                    "kwh": round(r["kwh"] or 0, 2) if r else 0,
-                    "runKwh": round(r["run_kwh"] or 0, 2) if r else 0,
-                    "kvarh": round(r["kvarh"] or 0, 2) if r else 0,
-                    "kvah": round(r["kvah"] or 0, 2) if r else 0,
-                    "runSeconds": int(r["run_seconds"] or 0) if r else 0,
-                    "avgKw": round(r["sum_kw"] / n, 2) if r and n else 0,
-                    "maxKw": round(r["max_kw"] or 0, 2) if r else 0,
-                    "avgPf": round(r["sum_pf"] / r["pf_samples"], 3) if r and r["pf_samples"] else None,
-                    "maxCurrent": round(r["max_current"] or 0, 2) if r else 0,
-                    "samples": n,
-                    "activeAlerts": active.get(m.pk, 0),
-                }
-            )
+            row = dict(report_rows[m.pk])
+            row.pop("motorHp")  # not part of the daily report payload
+            row["activeAlerts"] = active.get(m.pk, 0)
+            rows.append(row)
         return Response(
             {
                 "date": day.isoformat(),

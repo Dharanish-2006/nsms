@@ -1,13 +1,10 @@
 import { useState } from "react";
-import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
 import { fmtParam, PARAMS } from "../lib/params";
 
 const parseLimit = (s) => (s.trim() === "" ? null : Number(s));
 export function ThresholdPanel() {
   const { thresholds, saveThreshold, removeThreshold, machines } = useData();
-  const { user } = useAuth();
-  const admin = user?.role === "admin";
   const [editId, setEditId] = useState(null);
   const blank = {
     param: "powerFactor",
@@ -79,11 +76,7 @@ export function ThresholdPanel() {
       <div className="threshold-title">
         <div>
           <h3>Threshold settings</h3>
-          <p>
-            {admin
-              ? "Admins can add and edit limits. Alerts use saved values only."
-              : "Only admins can change limits."}
-          </p>
+          <p>Add and edit your alert limits. Alerts use saved values only.</p>
         </div>
       </div>
       <div className="threshold-scroll">
@@ -111,14 +104,10 @@ export function ThresholdPanel() {
                 <span>{fmtParam(t.param, t.critical)}</span>
                 <span className="saved">✓ Saved</span>
                 <span className="row-actions">
-                  {admin && (
-                    <>
-                      <button onClick={() => startEdit(t)}>Edit</button>
-                      <button className="danger" onClick={() => remove(t.id)}>
-                        Delete
-                      </button>
-                    </>
-                  )}
+                  <button onClick={() => startEdit(t)}>Edit</button>
+                  <button className="danger" onClick={() => remove(t.id)}>
+                    Delete
+                  </button>
                 </span>
               </div>
             );
@@ -126,70 +115,68 @@ export function ThresholdPanel() {
         </div>
       </div>
 
-      {admin && (
-        <div className="threshold-form">
-          <strong>{editId ? "Edit threshold" : "Add threshold"}</strong>
-          <div className="threshold-form-row">
-            <select
-              aria-label="Parameter"
-              value={form.param}
-              onChange={(e) => setForm({ ...form, param: e.target.value })}
+      <div className="threshold-form">
+        <strong>{editId ? "Edit threshold" : "Add threshold"}</strong>
+        <div className="threshold-form-row">
+          <select
+            aria-label="Parameter"
+            value={form.param}
+            onChange={(e) => setForm({ ...form, param: e.target.value })}
+          >
+            {Object.keys(PARAMS).map((p) => (
+              <option key={p} value={p}>
+                {PARAMS[p].label}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Applies to"
+            value={form.machineId}
+            onChange={(e) => setForm({ ...form, machineId: e.target.value })}
+          >
+            <option value="all">All machines</option>
+            {machines.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+          <input
+            aria-label="Warning limit"
+            placeholder={`Warning ${PARAMS[form.param].unit}`}
+            inputMode="decimal"
+            value={form.warning}
+            onChange={(e) => setForm({ ...form, warning: e.target.value })}
+          />
+          <input
+            aria-label="Critical limit"
+            placeholder={`Critical ${PARAMS[form.param].unit}`}
+            inputMode="decimal"
+            value={form.critical}
+            onChange={(e) => setForm({ ...form, critical: e.target.value })}
+          />
+          <button className="primary-button" onClick={submit} disabled={busy}>
+            {editId ? "Save changes" : "＋ Add threshold"}
+          </button>
+          {editId && (
+            <button
+              className="ghost-button"
+              onClick={() => {
+                setEditId(null);
+                setForm(blank);
+                setError("");
+              }}
             >
-              {Object.keys(PARAMS).map((p) => (
-                <option key={p} value={p}>
-                  {PARAMS[p].label}
-                </option>
-              ))}
-            </select>
-            <select
-              aria-label="Applies to"
-              value={form.machineId}
-              onChange={(e) => setForm({ ...form, machineId: e.target.value })}
-            >
-              <option value="all">All machines</option>
-              {machines.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-            <input
-              aria-label="Warning limit"
-              placeholder={`Warning ${PARAMS[form.param].unit}`}
-              inputMode="decimal"
-              value={form.warning}
-              onChange={(e) => setForm({ ...form, warning: e.target.value })}
-            />
-            <input
-              aria-label="Critical limit"
-              placeholder={`Critical ${PARAMS[form.param].unit}`}
-              inputMode="decimal"
-              value={form.critical}
-              onChange={(e) => setForm({ ...form, critical: e.target.value })}
-            />
-            <button className="primary-button" onClick={submit} disabled={busy}>
-              {editId ? "Save changes" : "＋ Add threshold"}
+              Cancel
             </button>
-            {editId && (
-              <button
-                className="ghost-button"
-                onClick={() => {
-                  setEditId(null);
-                  setForm(blank);
-                  setError("");
-                }}
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-          {error && (
-            <small className="form-error" role="alert">
-              {error}
-            </small>
           )}
         </div>
-      )}
+        {error && (
+          <small className="form-error" role="alert">
+            {error}
+          </small>
+        )}
+      </div>
     </section>
   );
 }
