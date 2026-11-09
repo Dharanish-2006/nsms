@@ -86,6 +86,9 @@ export const httpApi = {
         method: "POST",
         body: { remarks },
       }),
+    gatewayMachines: (id) => request(`/admin-portal/gateways/${enc(id)}/machines`),
+    configureMachine: (id, body) =>
+      request(`/admin-portal/machines/${enc(id)}`, { method: "PUT", body }),
     auditLog: (query) => request("/admin-portal/audit-log", { query }),
   },
 
@@ -102,7 +105,7 @@ export const httpApi = {
     /** -> [{ t, pf, current, kw }] oldest first */
     trend: (id, hours, opts) =>
       request(`/machines/${enc(id)}/trend`, { ...opts, query: { hours } }),
-    /** patch: { ratedKw } -> the updated machine */
+    /** patch: { ratedKw, onThresholdKw } -> the updated machine (names are set by the admin) */
     update: (id, patch) =>
       request(`/machines/${enc(id)}`, { method: "PUT", body: patch }),
   },

@@ -73,9 +73,10 @@ def test_alerts_are_scoped_to_the_connected_owner(anon, operator, other_user, ga
 
 
 # --- machines: the owner edits their own -----------------------------------------------
-def test_owner_edits_machine_rating_but_not_wiring(owner_client, gateway, machines):
-    r = owner_client.put("/api/machines/sheller-1", {"ratedKw": 37.285, "name": "Sheller One"}, format="json")
-    assert r.status_code == 200 and r.json()["ratedKw"] == 37.285 and r.json()["name"] == "Sheller One"
+def test_owner_edits_machine_rating_but_not_name_or_wiring(owner_client, gateway, machines):
+    r = owner_client.put("/api/machines/sheller-1", {"ratedKw": 37.285, "name": "Sheller One", "type": "sortex"}, format="json")
+    assert r.status_code == 200 and r.json()["ratedKw"] == 37.285
+    assert r.json()["name"] == "Sheller" and r.json()["type"] == "sheller"  # the admin names machines
     r = owner_client.put("/api/machines/sheller-1", {"meterId": "9", "gatewayId": "x"}, format="json")
     assert r.status_code == 200 and Machine.objects.get(pk="sheller-1").meter_id == "1"  # ignored
     assert owner_client.put("/api/machines/sheller-1", {"ratedKw": -1}, format="json").status_code == 422

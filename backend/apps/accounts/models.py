@@ -109,6 +109,7 @@ class AdminAuditLog(models.Model):
         GATEWAY_ASSIGNED = "gateway_assigned"
         GATEWAY_CONNECTED = "gateway_connected"
         GATEWAY_DISCONNECTED = "gateway_disconnected"
+        MACHINE_CONFIGURED = "machine_configured"
 
     admin = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="audit_entries"
@@ -116,7 +117,7 @@ class AdminAuditLog(models.Model):
     # Kept as text too, so the entry still reads correctly if the account is later removed.
     admin_username = models.CharField(max_length=150)
     action = models.CharField(max_length=30, choices=Action.choices)
-    target_type = models.CharField(max_length=20)  # "user" | "gateway" | "assignment"
+    target_type = models.CharField(max_length=20)  # "user" | "gateway" | "assignment" | "machine"
     target_id = models.CharField(max_length=64)
     remarks = models.CharField(max_length=300, blank=True)
     timestamp = models.DateTimeField(default=timezone.now, db_index=True)

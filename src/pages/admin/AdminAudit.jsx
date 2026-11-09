@@ -13,6 +13,7 @@ const ACTIONS = [
   ["gateway_assigned", "Gateway assigned"],
   ["gateway_connected", "Gateway connected"],
   ["gateway_disconnected", "Gateway disconnected"],
+  ["machine_configured", "Machine named"],
 ];
 const label = Object.fromEntries(ACTIONS);
 

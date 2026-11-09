@@ -31,7 +31,9 @@ def accessible_machines(user):
     qs = Machine.objects.select_related("gateway__plant")
     if not _is_owner(user):
         return qs.none()
-    return qs.filter(gateway__assignments__user=user, gateway__assignments__status=CONNECTED)
+    return qs.filter(
+        gateway__assignments__user=user, gateway__assignments__status=CONNECTED, configured=True
+    )
 
 
 def accessible_plants(user):

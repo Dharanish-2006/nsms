@@ -10,7 +10,6 @@ import {
   plants,
   reevaluate,
   setPhones,
-  setMachineDetails,
   setRatedKw,
   setThresholds,
 } from "./engine";
@@ -239,17 +238,6 @@ export const mockApi = {
     },
     async update(id, patch) {
       await currentUser();
-      if (patch && ("name" in patch || "type" in patch)) {
-        const name = patch.name?.trim();
-        if ("name" in patch && (!name || name.length > 100))
-          fail(422, "Enter a name up to 100 characters.", "validation");
-        if ("type" in patch && !["sheller", "whitener", "sortex"].includes(patch.type))
-          fail(422, "Pick a machine type.", "validation");
-        return (
-          setMachineDetails(id, { name, type: patch.type }) ??
-          fail(404, "Machine not found.", "not_found")
-        );
-      }
       const kw = patch?.ratedKw;
       if (!Number.isFinite(kw) || kw <= 0 || kw > 1000 * 0.7457)
         fail(422, "Enter a motor rating above 0.", "validation");

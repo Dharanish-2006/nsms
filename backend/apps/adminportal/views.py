@@ -19,7 +19,7 @@ from apps.common.permissions import IsAdminRole
 from apps.common.realtime import notify_user_access_changed
 from apps.common.timeutil import to_ms
 from apps.plants import services
-from apps.plants.models import LIVE_STATUSES, Gateway, GatewayAssignment
+from apps.plants.models import LIVE_STATUSES, Gateway, GatewayAssignment, Machine
 
 PAGE = 200  # most rows returned by a list
 
@@ -63,6 +63,8 @@ def gateway_row(g, live=None, api_key=None):
         "assignmentId": live.pk if live else None,
         "assignedTo": _person(live.user) if live else None,
         "connection": live.status if live else None,
+        "machineCount": g.machines.count(),
+        "unconfiguredMachines": g.machines.filter(configured=False).count(),
     }
     if api_key:
         data["apiKey"] = api_key  # shown once
@@ -113,6 +115,7 @@ class DashboardView(AdminView):
                 "activeConnections": GatewayAssignment.objects.filter(status=GatewayAssignment.Status.CONNECTED).count(),
                 "availableGateways": sum(1 for g in gateways if g.verified and g.pk not in live),
                 "assignedGateways": len(live),
+                "machinesNeedingSetup": Machine.objects.filter(configured=False).count(),
                 "gateways": [gateway_row(g, live.get(g.pk)) for g in gateways],
             }
         )
@@ -296,3 +299,66 @@ class AuditLogView(AdminView):
                 for e in qs[:limit]
             ]
         )
+
+
+# --- Naming machines -------------------------------------------------------------------
+def machine_row(m):
+    """Configuration only. No readings: those belong to the plant owner."""
+    state = getattr(m, "state", None)
+    return {
+        "id": m.pk,
+        "meterId": m.meter_id,
+        "name": m.name,
+        "type": m.type,
+        "ratedKw": m.rated_kw,
+        "configured": m.configured,
+        "lastSeenAt": to_ms(state.received_at) if state else None,
+    }
+
+
+class GatewayMachinesView(AdminView):
+    """The machines (meters) a gateway has reported, so the admin can name them."""
+
+    def get(self, request, pk):
+        gateway = get_object_or_404(Gateway, pk=pk)
+        machines = gateway.machines.select_related("state").order_by("configured", "position", "meter_id")
+        return Response({"gateway": gateway_row(gateway, _live_by_gateway().get(gateway.pk)), "machines": [machine_row(m) for m in machines]})
+
+
+class MachineConfigureSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=100)
+    type = serializers.ChoiceField(Machine.Type.values)
+    ratedKw = serializers.FloatField(min_value=0, max_value=100000, required=False)
+
+
+class MachineConfigureView(AdminView):
+    """Name a machine and set its type (and optionally its rating). It then becomes visible to the
+    owner connected to its gateway."""
+
+    @transaction.atomic
+    def put(self, request, pk):
+        from apps.alerts.dispatch import dispatch
+        from apps.alerts.engine import reevaluate_gateway
+        from apps.telemetry.publish import publish_machine_change
+
+        machine = get_object_or_404(Machine.objects.select_for_update().select_related("gateway"), pk=pk)
+        s = MachineConfigureSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        name = d["name"].strip()
+        if not name:
+            raise ApiError("Enter a machine name.", 422, "validation")
+        if Machine.objects.filter(gateway=machine.gateway, name__iexact=name).exclude(pk=machine.pk).exists():
+            raise ApiError("Another machine on this gateway already has that name.", 409, "name_in_use")
+        before = f"{machine.name} ({machine.type})" if machine.configured else f"unnamed meter {machine.meter_id}"
+        machine.name, machine.type, machine.configured = name, d["type"], True
+        if "ratedKw" in d:
+            machine.rated_kw = d["ratedKw"]
+        machine.save()
+        AdminAuditLog.record(
+            request.user, AdminAuditLog.Action.MACHINE_CONFIGURED, "machine", machine.pk,
+            f"{before} -> {name} ({machine.type}); gateway {machine.gateway.serial_number or machine.gateway.name}",
+        )  # fmt: skip
+        transaction.on_commit(lambda: (publish_machine_change(machine), dispatch(reevaluate_gateway(machine.gateway_id))))
+        machine = Machine.objects.select_related("state").get(pk=machine.pk)
+        return Response(machine_row(machine))

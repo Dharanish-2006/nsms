@@ -1,3 +1,5 @@
+import { setMachineDetails, setRatedKw } from "./engine";
+import { MACHINES } from "./sim";
 import { load, save, uid } from "./storage";
 
 // Browser-only stand-in for the Admin Portal API (see backend/apps/adminportal).
@@ -44,9 +46,41 @@ function seed() {
     ],
     assignments: [],
     audit: [],
+    machines: seedMachines(now),
   };
 }
-const db = () => load(KEY, null) ?? seed();
+
+// Gateway 1 already has its machines named (they are the demo plant's). Gateway 2's meters have
+// just reported in and wait for the admin to name them.
+function seedMachines(now) {
+  return [
+    ...MACHINES.map((m, i) => ({
+      id: m.id,
+      gatewayId: "gw-1",
+      meterId: String(i + 1),
+      name: m.name,
+      type: m.type,
+      ratedKw: m.ratedKw,
+      configured: true,
+      lastSeenAt: now - 20_000,
+    })),
+    ...["1", "2"].map((n) => ({
+      id: `gw2-m${n}`,
+      gatewayId: "gw-2",
+      meterId: n,
+      name: `Meter ${n}`,
+      type: "sheller",
+      ratedKw: 0,
+      configured: false,
+      lastSeenAt: now - 90_000,
+    })),
+  ];
+}
+const db = () => {
+  const d = load(KEY, null) ?? seed();
+  d.machines ??= seedMachines(Date.now()); // older saved demo data
+  return d;
+};
 const commit = (d) => save(KEY, d);
 
 export function createAdminMock({ users, saveUsers, requireAdmin, fail }) {
@@ -84,6 +118,10 @@ export function createAdminMock({ users, saveUsers, requireAdmin, fail }) {
   });
   const gwRow = (g, l, apiKey) => ({
     ...g,
+    machineCount: db().machines.filter((m) => m.gatewayId === g.id).length,
+    unconfiguredMachines: db().machines.filter(
+      (m) => m.gatewayId === g.id && !m.configured,
+    ).length,
     availability: l ? "assigned" : "available",
     online: g.lastSeenAt !== null && Date.now() - g.lastSeenAt < 120_000,
     assignmentId: l?.id ?? null,
@@ -147,6 +185,7 @@ export function createAdminMock({ users, saveUsers, requireAdmin, fail }) {
         activeConnections: d.assignments.filter((a) => a.status === "connected").length,
         availableGateways: d.gateways.filter((g) => g.verified && !l[g.id]).length,
         assignedGateways: Object.keys(l).length,
+        machinesNeedingSetup: d.machines.filter((m) => !m.configured).length,
         gateways: d.gateways.map((g) => gwRow(g, l[g.id])),
       };
     },
@@ -280,6 +319,62 @@ export function createAdminMock({ users, saveUsers, requireAdmin, fail }) {
       log(d, me, "gateway_disconnected", "assignment", a.id, remarks);
       commit(d);
       return asRow(d, a);
+    },
+    async gatewayMachines(id) {
+      await requireAdmin();
+      const d = db();
+      const g =
+        d.gateways.find((x) => x.id === id) ?? fail(404, "Not found.", "not_found");
+      const rows = d.machines
+        .filter((m) => m.gatewayId === id)
+        .sort(
+          (a, b) =>
+            Number(a.configured) - Number(b.configured) ||
+            a.meterId.localeCompare(b.meterId),
+        )
+        .map(({ gatewayId, ...m }) => (void gatewayId, m));
+      return { gateway: gwRow(g, live(d)[g.id]), machines: rows };
+    },
+    async configureMachine(id, body = {}) {
+      const me = await requireAdmin();
+      const d = db();
+      const m =
+        d.machines.find((x) => x.id === id) ?? fail(404, "Not found.", "not_found");
+      const name = String(body.name ?? "").trim();
+      if (!name || name.length > 100) fail(422, "Enter a machine name.", "validation");
+      if (!["sheller", "whitener", "sortex"].includes(body.type))
+        fail(422, "Pick a machine type.", "validation");
+      if (
+        d.machines.some(
+          (x) =>
+            x.id !== id &&
+            x.gatewayId === m.gatewayId &&
+            x.name.toLowerCase() === name.toLowerCase(),
+        )
+      )
+        fail(
+          409,
+          "Another machine on this gateway already has that name.",
+          "name_in_use",
+        );
+      const before = m.configured
+        ? `${m.name} (${m.type})`
+        : `unnamed meter ${m.meterId}`;
+      Object.assign(m, { name, type: body.type, configured: true });
+      if (Number.isFinite(body.ratedKw) && body.ratedKw >= 0) m.ratedKw = body.ratedKw;
+      setMachineDetails(id, { name, type: body.type }); // keeps the demo owner view in step
+      if (m.ratedKw > 0) setRatedKw(id, m.ratedKw);
+      log(
+        d,
+        me,
+        "machine_configured",
+        "machine",
+        m.id,
+        `${before} -> ${name} (${m.type})`,
+      );
+      commit(d);
+      const { gatewayId, ...row } = m;
+      return (void gatewayId, row);
     },
     async auditLog(query = {}) {
       await requireAdmin();

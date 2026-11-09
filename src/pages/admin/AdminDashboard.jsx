@@ -28,6 +28,13 @@ export default function AdminDashboard() {
             tone={d.unverifiedGateways ? "warn" : ""}
           />
         </Link>
+        <Link to="/admin/gateways">
+          <Stat
+            label="Machines needing a name"
+            value={d.machinesNeedingSetup}
+            tone={d.machinesNeedingSetup ? "warn" : ""}
+          />
+        </Link>
         <Stat label="Available gateways" value={d.availableGateways} />
         <Stat label="Assigned gateways" value={d.assignedGateways} />
         <Link to="/admin/connections">

@@ -5,7 +5,6 @@ import { AutoReportPanel } from "../components/AutoReportPanel";
 import { StatusBadge } from "../components/Icon";
 import { useData } from "../context/DataContext";
 import runtime_icon from "../assets/images/runtime-icon.svg";
-import { MachineDetails } from "../components/MachineDetails";
 import { MotorRating } from "../components/MotorRating";
 // import power from "../assets/images/"
 import {
@@ -34,7 +33,7 @@ const RANGES = [
 export default function ProcessPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { machines, plant, lastUpdate, saveMotorRating, saveMachineDetails } = useData();
+  const { machines, plant, lastUpdate, saveMotorRating } = useData();
   const [windowHrs, setWindowHrs] = useState(24);
   const m = machines.find((x) => x.id === id);
   if (!m)
@@ -92,7 +91,7 @@ export default function ProcessPage() {
         <section className="machine-banner">
           <img src={images.machineBanner} alt="" />
           <div>
-            <MachineDetails machine={m} onSave={saveMachineDetails} />
+            <h1>{m.name}</h1>
             <p>
               {m.plant} · <MotorRating machine={m} canEdit onSave={saveMotorRating} /> ·
               Updated {istStamp12(m.updatedAt)}

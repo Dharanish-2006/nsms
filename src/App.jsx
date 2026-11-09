@@ -18,6 +18,7 @@ const AdminLayout = lazy(() =>
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminGateways = lazy(() => import("./pages/admin/AdminGateways"));
+const AdminGatewayDetail = lazy(() => import("./pages/admin/AdminGatewayDetail"));
 const AdminConnections = lazy(() => import("./pages/admin/AdminConnections"));
 const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 const AdminProfile = lazy(() => import("./pages/admin/AdminProfile"));
@@ -35,6 +36,7 @@ export default function App() {
               <Route index element={<AdminDashboard />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="gateways" element={<AdminGateways />} />
+              <Route path="gateways/:id" element={<AdminGatewayDetail />} />
               <Route path="connections" element={<AdminConnections />} />
               <Route path="audit" element={<AdminAudit />} />
               <Route path="profile" element={<AdminProfile />} />

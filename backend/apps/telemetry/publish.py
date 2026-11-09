@@ -16,7 +16,7 @@ def publish_ingest(gateway, result):
     if not result.machine_ids:
         return
     now = timezone.now()
-    machines = Machine.objects.filter(pk__in=result.machine_ids).select_related("gateway__plant", "state")
+    machines = Machine.objects.filter(pk__in=result.machine_ids, configured=True).select_related("gateway__plant", "state")
     group_send(
         [gateway_group(gateway.pk)],
         {"type": "machines.update", "serverTime": to_ms(now), "machines": build_payloads(machines, now)},
@@ -24,9 +24,9 @@ def publish_ingest(gateway, result):
 
 
 def publish_machine_change(machine):
-    """An owner edited a machine (name, type, rating): refresh the dashboards on that gateway."""
+    """A machine was configured or its rating edited: refresh the dashboards on that gateway."""
     now = timezone.now()
-    machines = Machine.objects.filter(pk=machine.pk).select_related("gateway__plant", "state")
+    machines = Machine.objects.filter(pk=machine.pk, configured=True).select_related("gateway__plant", "state")
     group_send(
         [gateway_group(machine.gateway_id)],
         {"type": "machines.update", "serverTime": to_ms(now), "machines": build_payloads(machines, now)},

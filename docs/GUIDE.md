@@ -131,19 +131,26 @@ due automatic reports. To send reports by hand: `python manage.py send_auto_repo
    serial number against the box you installed and press **Verify**. Unverified gateways cannot send data
    or be assigned.
 4. **Assign** a verified, available gateway to an approved owner. The owner still sees nothing.
-5. **Connect**. From now on the owner sees that gateway's machines, reports and alerts.
-6. **Disconnect** frees the gateway. The owner loses live access but keeps reports for the period they
+5. **Name the machines.** Open the gateway (Admin Portal → Gateways → click its name). It lists every
+   meter that has reported, by **Meter ID** (the Modbus address of the meter). Give each one the name the
+   owner will see (for example "Sheller 1"), its type (Sheller, Whitener, Sortex) and, optionally, its HP.
+   You never see readings here, only configuration. A meter stays **hidden from the owner** (no live
+   values, reports or alerts) until you name it; data it sends meanwhile is kept. The Dashboard counts
+   "Machines needing a name".
+6. **Connect**. From now on the owner sees that gateway's named machines, reports and alerts.
+   (Steps 5 and 6 can be done in either order.)
+7. **Disconnect** frees the gateway. The owner loses live access but keeps reports for the period they
    were connected. A disconnected record can be reconnected, or the gateway assigned to someone else.
-7. **New key** issues a fresh gateway key (replaced or reset device). The old key stops at once and the new
+8. **New key** issues a fresh gateway key (replaced or reset device). The old key stops at once and the new
    one is shown once.
-8. **Audit log** lists every action with admin, time, target and remarks. It cannot be edited.
+9. **Audit log** lists every action with admin, time, target and remarks. It cannot be edited.
 
 ### Plant owner
 
 1. Register on `/register` (email code, optional phone code). Wait for approval.
-2. After the admin connects a gateway, the dashboard shows its machines. Auto-registered machines start
-   as "Meter 1", type sheller, rating 0: open the machine page, press **Rename** to give it a real name and
-   type (Sheller, Whitener, Sortex), and **Edit** to set the **HP** (confirmation required).
+2. After the admin connects a gateway and names its machines, the dashboard shows them. Names and types are
+   set by the admin only. You can set each motor's **HP** with **Edit** on the machine page
+   (confirmation required).
 3. **Settings**: alert limit for power factor, SMS numbers, and **automatic report** (email a CSV daily,
    weekly or monthly). Turning it on or changing the frequency means the first report is for the next period.
 4. **Reports** and each machine page show usage for the periods you were connected.

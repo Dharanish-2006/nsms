@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api";
 import { ErrorPanel } from "../../components/PageState";
+import { Link } from "react-router-dom";
 import { act, useLoad } from "./useLoad";
 import { Confirm, Pill, Table, when } from "./ui";
 
@@ -62,9 +63,23 @@ export default function AdminGateways() {
     const open = (kind) => setDialog({ kind, g });
     return [
       <>
-        <strong>{g.name}</strong>
+        <Link className="adm-link" to={`/admin/gateways/${g.id}`}>
+          <strong>{g.name}</strong>
+        </Link>
         <br />
         <small>{g.serialNumber || "no serial"}</small>
+        <br />
+        <Link className="adm-link" to={`/admin/gateways/${g.id}`}>
+          <small>
+            {g.machineCount} machine{g.machineCount === 1 ? "" : "s"}
+          </small>
+        </Link>
+        {g.unconfiguredMachines > 0 && (
+          <>
+            {" "}
+            <Pill value="warn" label={`${g.unconfiguredMachines} need a name`} />
+          </>
+        )}
       </>,
       <Pill key="v" value={g.verified ? "verified" : "unverified"} />,
       <>

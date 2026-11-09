@@ -142,6 +142,9 @@ class Machine(models.Model):
     # Without an explicit on/off flag from the gateway, a machine is "on" at or above this load.
     on_threshold_kw = models.FloatField(default=0.5)
     position = models.PositiveSmallIntegerField(default=0)  # order on the dashboard
+    # A meter that a gateway reports on its own is registered as "Meter N" and stays hidden from
+    # plant owners until an administrator names it (Admin Portal > Gateways > machines).
+    configured = models.BooleanField(default=True)
 
     class Meta:
         ordering = ["gateway__plant__name", "position", "name"]

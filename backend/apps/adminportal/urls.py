@@ -10,6 +10,8 @@ urlpatterns = [
     path("admin-portal/gateways", views.GatewayListView.as_view()),
     path("admin-portal/gateways/<uuid:pk>/verify", views.GatewayVerifyView.as_view()),
     path("admin-portal/gateways/<uuid:pk>/rotate-key", views.GatewayRotateKeyView.as_view()),
+    path("admin-portal/gateways/<uuid:pk>/machines", views.GatewayMachinesView.as_view()),
+    path("admin-portal/machines/<slug:pk>", views.MachineConfigureView.as_view()),
     path("admin-portal/assignments", views.AssignmentListView.as_view()),
     path("admin-portal/assignments/<int:pk>/connect", views.AssignmentConnectView.as_view()),
     path("admin-portal/assignments/<int:pk>/disconnect", views.AssignmentDisconnectView.as_view()),

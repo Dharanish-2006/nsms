@@ -114,10 +114,9 @@ class IotIngestView(APIView):
 
 # --- Machines ---------------------------------------------------------------
 class MachineEditSerializer(serializers.Serializer):
-    """What a plant owner may change about their machine. Wiring (gateway, meter) is not theirs."""
+    """What a plant owner may change about their machine: its rating and ON threshold. The name,
+    type and wiring are set by the administrator (Admin Portal)."""
 
-    name = serializers.CharField(max_length=100, required=False)
-    type = serializers.ChoiceField(Machine.Type.values, required=False)
     ratedKw = serializers.FloatField(min_value=0, max_value=100000, required=False)
     onThresholdKw = serializers.FloatField(min_value=0, required=False)
 
@@ -142,7 +141,7 @@ class MachineDetailView(APIView):
         s = MachineEditSerializer(data=request.data, partial=True)
         s.is_valid(raise_exception=True)
         d = s.validated_data
-        for src, dst in (("name", "name"), ("type", "type"), ("ratedKw", "rated_kw"), ("onThresholdKw", "on_threshold_kw")):
+        for src, dst in (("ratedKw", "rated_kw"), ("onThresholdKw", "on_threshold_kw")):
             if src in d:
                 setattr(machine, dst, d[src])
         machine.save()

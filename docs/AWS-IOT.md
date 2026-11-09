@@ -136,7 +136,9 @@ subscribe to `mill/#`.
 **7. Approve it in the app.** The bridge first prints `refused: This gateway is waiting for the
 administrator to verify it`. Sign in as admin → Gateways → **Verify** `SIM-GW-0001` → **Assign** it to an
 approved plant owner → **Connect**. The next messages print `stored 4, rejected 0`. Sign in as that owner:
-four machines (`Meter 1`…`Meter 4`) show live values. Data sent before verification is not kept.
+nothing shows yet: the four meters were created as unnamed machines. Open the gateway in the Admin
+Portal (Gateways → click `SIM-GW-0001`), name each meter (Meter ID 1 to 4), and the owner then sees them live.
+Data sent before verification is not kept; data sent before naming is kept.
 
 **Costs.** IoT Core bills per message, and each publish plus its delivery to the bridge counts. At one
 message every 5 s that is about a million messages a month, so use `--interval 30` for long runs and stop
@@ -165,8 +167,17 @@ topic carries the gateway's identity; the body carries one entry per meter:
 | `kwh`, `kvarh`, `kvah` | no | kWh, kvarh, kVAh | Lifetime energy counters. Without `kwh` the server integrates `kw` over time. |
 | `on` | no | true/false | Whether the motor is running. Without it, a machine is "on" at or above its ON threshold. |
 
-Nothing else is needed: no machine name, type or HP. Those are set by the plant owner in the app, and the
-first time a new `meterId` appears the server creates the machine for you as "Meter N".
+Nothing else is needed: no machine name, type or HP. The `meterId` is the machine's permanent identity (its
+history and reports hang on it), and the name is only a label the **administrator** sets in the Admin Portal.
+The first time a new `meterId` appears, the server creates an unnamed machine that stays hidden from the plant
+owner until the admin names it. Never put a name in `meterId`: renaming would then look like a new machine.
+
+**Where `meterId` comes from.** On a Modbus gateway it is the **slave (server) address** of the meter: the
+number set on the meter itself (Selec MFM384: a menu setting, 1 to 247) and used by the gateway to poll it.
+You choose it at installation, one different number per meter on the same RS485 line, and note it on a wiring
+sheet ("1 = sheller, 2 = whitener 1…") that the admin uses when naming. A gateway that cannot put the slave
+address into its MQTT message needs a template or script to add it (Teltonika lets you choose the fields and
+format, or write a Lua script), or the AWS IoT Rule can add it, for example from a per-meter topic.
 
 Send every 5 to 30 seconds. More often costs money without adding information (the server keeps one raw
 sample per machine every `RAW_SAMPLE_INTERVAL_SEC`, though live values and hourly energy use every message).

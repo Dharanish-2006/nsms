@@ -65,6 +65,8 @@ def _applicable_thresholds(machine):
 
 def evaluate_machine(machine, state, now=None):
     """Bring the machine's alerts in line with its latest reading. Returns AlertEvents."""
+    if not machine.configured:  # hidden from the owner until the admin names it: no alerts
+        return []
     now = now or timezone.now()
     cooldown = timedelta(minutes=settings.ALERT_SMS_COOLDOWN_MIN)
     existing = {a.threshold_id: a for a in Alert.objects.filter(machine=machine)}
