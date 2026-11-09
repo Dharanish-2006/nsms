@@ -142,8 +142,8 @@ due automatic reports. To send reports by hand: `python manage.py send_auto_repo
 
 1. Register on `/register` (email code, optional phone code). Wait for approval.
 2. After the admin connects a gateway, the dashboard shows its machines. Auto-registered machines start
-   as "Meter 1", type sheller, rating 0: open the machine page and set the name, type and **HP**
-   (confirmation required).
+   as "Meter 1", type sheller, rating 0: open the machine page, press **Rename** to give it a real name and
+   type (Sheller, Whitener, Sortex), and **Edit** to set the **HP** (confirmation required).
 3. **Settings**: alert limit for power factor, SMS numbers, and **automatic report** (email a CSV daily,
    weekly or monthly). Turning it on or changing the frequency means the first report is for the next period.
 4. **Reports** and each machine page show usage for the periods you were connected.

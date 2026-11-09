@@ -147,6 +147,30 @@ the simulator when you are not testing. Check the current free-tier limits on th
 unnecessary (duplicate samples are ignored, so nothing is double counted), so choose one.
 The bridge only sees messages published while it is running, so keep it supervised (the Docker setup restarts it).
 
+## What the gateway sends
+
+One MQTT message per poll, to the topic `mill/<serial>/readings` (the serial is the Thing name). The
+topic carries the gateway's identity; the body carries one entry per meter:
+
+| Field | Required | Unit | Meaning |
+|---|---|---|---|
+| `meterId` | yes | text | The meter's Modbus slave address (`"1"`, `"2"`…). Same id = same machine. |
+| `kw` | yes | kW | Active power now. |
+| `ts` | no | epoch ms | When it was measured. Filled in by the server if missing; send it when you buffer data offline. |
+| `pf` | no | 0 to 1 | Power factor (the sign is ignored). |
+| `kva`, `kvar` | no | kVA, kvar | Apparent and reactive power. |
+| `current` | no | A | Average current. |
+| `voltage` | no | V | Line voltage. Without it the server assumes `NOMINAL_VOLTAGE`. |
+| `frequency` | no | Hz | Line frequency. |
+| `kwh`, `kvarh`, `kvah` | no | kWh, kvarh, kVAh | Lifetime energy counters. Without `kwh` the server integrates `kw` over time. |
+| `on` | no | true/false | Whether the motor is running. Without it, a machine is "on" at or above its ON threshold. |
+
+Nothing else is needed: no machine name, type or HP. Those are set by the plant owner in the app, and the
+first time a new `meterId` appears the server creates the machine for you as "Meter N".
+
+Send every 5 to 30 seconds. More often costs money without adding information (the server keeps one raw
+sample per machine every `RAW_SAMPLE_INTERVAL_SEC`, though live values and hourly energy use every message).
+
 ## Selec MFM384 over Modbus RTU
 
 The gateway polls each meter with **function code 4 (input registers)**, values are 32-bit floats (two

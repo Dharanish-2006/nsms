@@ -8,6 +8,7 @@ import { load, save } from "./storage";
 
 const TH_KEY = "rmm.mock.thresholds";
 const PH_KEY = "rmm.mock.phones";
+const DETAILS_KEY = "rmm.mock.details"; // machine id -> { name, type } edited by the owner
 const RATING_KEY = "rmm.mock.ratings"; // machine id -> ratedKw edited by an admin
 
 const DEFAULT_THRESHOLDS = [
@@ -70,8 +71,12 @@ export function reevaluate(now = Date.now()) {
 export function advance(now = Date.now()) {
   if (!machines) {
     const ratings = load(RATING_KEY, {});
+    const details = load(DETAILS_KEY, {});
     machines = MACHINES.map((d) =>
-      createInitial(ratings[d.id] ? { ...d, ratedKw: ratings[d.id] } : d, now),
+      createInitial(
+        { ...d, ...details[d.id], ...(ratings[d.id] ? { ratedKw: ratings[d.id] } : {}) },
+        now,
+      ),
     );
     lastTick = now;
   }
@@ -103,6 +108,23 @@ export function setRatedKw(id, ratedKw) {
     def: { ...m.def, ratedKw },
     loadFactor: m.on ? (m.kw / ratedKw) * 100 : 0,
   };
+  return snapshot(machines[i]);
+}
+
+/** Rename a machine or change its type. Returns the machine, or null if unknown. */
+export function setMachineDetails(id, { name, type }) {
+  advance();
+  const i = machines.findIndex((x) => x.def.id === id);
+  if (i < 0) return null;
+  const patch = {
+    ...(name === undefined ? {} : { name }),
+    ...(type === undefined ? {} : { type }),
+  };
+  save(DETAILS_KEY, {
+    ...load(DETAILS_KEY, {}),
+    [id]: { ...load(DETAILS_KEY, {})[id], ...patch },
+  });
+  machines[i] = { ...machines[i], def: { ...machines[i].def, ...patch } };
   return snapshot(machines[i]);
 }
 
