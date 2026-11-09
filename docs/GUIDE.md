@@ -3,7 +3,7 @@
 Rice mill energy monitoring. Energy meters → an industrial gateway → AWS → the Django backend → the React
 dashboard. This guide covers setup from zero, how each kind of user works with it, how to connect a
 gateway, and how to go to production. Deeper reference: [`../backend/README.md`](../backend/README.md),
-[`API.md`](API.md), [`AWS-IOT.md`](AWS-IOT.md).
+[`API.md`](API.md), [`AWS-IOT.md`](AWS-IOT.md), and [`DEPLOY.md`](DEPLOY.md) for putting it on a server.
 
 ## 1. Who uses what
 
@@ -38,8 +38,7 @@ admin yourself:
 python manage.py createsuperuser        # username, email, password
 ```
 
-then set the user's `role` to `admin` and `status` to `active` in Django admin (`/admin/` on the backend
-port, for example `http://127.0.0.1:8000/admin/`). Admins are never created from the sign-up form.
+It creates an active **admin** (role and status are set automatically). The Django admin site is at `/django-admin/` on the backend (for example `http://127.0.0.1:8000/django-admin/`); `/admin` is the React Admin Portal. Admins are never created from the sign-up form.
 
 Leave `DATABASE_URL` empty for a local SQLite file. A remote database (for example Neon) makes every
 request slow from a laptop.

@@ -6,3 +6,7 @@ coverage
 .DS_Store
 *.log
 .env*
+deploy/prod.env
+deploy/certs/
+*.pem
+*.private.key

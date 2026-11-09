@@ -1,0 +1,85 @@
+# Whole system on one Linux server: HTTPS (Caddy), React app, Django, worker, PostgreSQL, Redis.
+#
+#   cp deploy/prod.env.example deploy/prod.env      # then fill it in
+#   docker compose --env-file deploy/prod.env -f deploy/docker-compose.prod.yml up -d --build
+#
+# See docs/DEPLOY.md for the full walk-through.
+name: nsms
+
+x-backend: &backend
+  build: ../backend
+  image: nsms-backend
+  env_file: prod.env
+  environment:
+    DATABASE_URL: postgres://nsms:${POSTGRES_PASSWORD}@db:5432/nsms
+    REDIS_URL: redis://redis:6379/0
+  restart: unless-stopped
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: nsms
+      POSTGRES_USER: nsms
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nsms"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+
+  # Django (REST + WebSocket). Runs migrations on start.
+  web:
+    <<: *backend
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_started}
+
+  # Daily reports, pruning, token clean-up and the automatic report emails.
+  worker:
+    <<: *backend
+    command: python manage.py run_maintenance --loop 300
+    depends_on: [web]
+
+  # Optional: store MQTT data straight from AWS IoT Core (no IoT Rule needed).
+  #   docker compose ... --profile bridge up -d
+  # Put the bridge certificate, key and AmazonRootCA1.pem in deploy/certs/ first.
+  bridge:
+    <<: *backend
+    profiles: [bridge]
+    command: >
+      python manage.py iot_bridge
+      --cert /certs/bridge.cert.pem --key /certs/bridge.private.key --ca /certs/AmazonRootCA1.pem
+    volumes: ["./certs:/certs:ro"]
+    depends_on: [web]
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        VITE_COMPANY_NAME: ${COMPANY_NAME:-Your Company Name}
+        VITE_COMPANY_ADDRESS: ${COMPANY_ADDRESS:-Company address, city}
+        VITE_COMPANY_PHONE: ${COMPANY_PHONE:-+91 00000 00000}
+        VITE_COMPANY_EMAIL: ${COMPANY_EMAIL:-info@example.com}
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on: [web, frontend]
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  caddy_data:

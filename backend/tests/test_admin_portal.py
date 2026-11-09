@@ -301,3 +301,24 @@ def test_iot_destination_confirmation_is_logged_not_trusted(anon, caplog):
 
 def test_iot_ingest_is_off_without_a_secret(anon):
     assert anon.post("/api/iot/ingest", {"serial": "SN-MQTT-0001", "readings": []}, format="json").status_code == 404
+
+
+def test_iot_bridge_message_handler(admin_client, db):
+    """What the `iot_bridge` subscriber does with each MQTT message."""
+    from apps.plants.models import Gateway
+    from apps.telemetry.iot import handle_message
+
+    good = b'{"readings": [{"meterId": "1", "kw": 5.0}]}'
+    assert handle_message("other/topic", good).startswith("ignored")
+    assert handle_message("mill/SN-BRIDGE-1/readings", b"not json").startswith("rejected")
+    assert handle_message("mill/SN-BRIDGE-1/readings", b"[1]").startswith("rejected")
+    # first message registers the gateway but is refused until an admin verifies it
+    assert "waiting" in handle_message("mill/SN-BRIDGE-1/readings", good)
+    gw = Gateway.objects.get(serial_number="SN-BRIDGE-1")
+    assert not gw.verified
+    gw.verified = True
+    gw.save()
+    assert handle_message("mill/SN-BRIDGE-1/readings", good).startswith("stored")
+    gw.enabled = False
+    gw.save()
+    assert "disabled" in handle_message("mill/SN-BRIDGE-1/readings", good)

@@ -164,5 +164,6 @@ register a DLT sender/template).
 - A sample older than a machine's newest applied sample is stored (if not a duplicate) but does not change
   live state or reports, so energy recorded out of order is not back-filled.
 - Daily and hourly boundaries are IST (`TIME_ZONE`).
-- No MQTT subscriber is included; use the IoT Core → HTTPS rule above, or add a small consumer that calls
-  `apps.telemetry.ingest.ingest()`.
+- MQTT: either the IoT Core → HTTPS rule above, or `python manage.py iot_bridge` (subscribes to IoT Core
+  itself; handy on a laptop with no public address). The bridge only sees messages published while it runs.
+- Django's own admin site is at `/django-admin/`; `/admin` belongs to the React Admin Portal.

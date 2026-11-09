@@ -1,63 +1,99 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, NavLink, Outlet, useLocation } from "react-router-dom";
+import { icons } from "../../assets";
+import { AssetIcon } from "../../components/Icon";
+import { PageLoader } from "../../components/PageState";
 import { USE_MOCK } from "../../config";
 import { useAuth } from "../../context/AuthContext";
-import { PageLoader } from "../../components/PageState";
+import { istClock, istDate } from "../../lib/format";
 import "./admin.css";
 
 const items = [
-  { label: "Dashboard", to: "/admin", end: true },
-  { label: "User approval", to: "/admin/users" },
-  { label: "Gateways", to: "/admin/gateways" },
-  { label: "Connections", to: "/admin/connections" },
-  { label: "Audit log", to: "/admin/audit" },
-  { label: "Profile", to: "/admin/profile" },
+  { label: "Dashboard", to: "/admin", end: true, icon: icons.navDashboard },
+  { label: "User approval", to: "/admin/users", icon: icons.navAlerts },
+  { label: "Gateways", to: "/admin/gateways", icon: icons.navSettings },
+  { label: "Connections", to: "/admin/connections", icon: icons.navReports },
+  { label: "Audit log", to: "/admin/audit", icon: icons.navReports },
+  { label: "Profile", to: "/admin/profile", icon: icons.navSettings },
 ];
 
-/** Route guard for the Admin Portal: administrators only. */
+function Clock() {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  return (
+    <div className="live-datetime">
+      <strong>{istDate(now)}</strong>
+      <span>{istClock(now)}</span>
+    </div>
+  );
+}
+
+/** Route guard and shell for the Admin Portal: administrators only. */
 export function AdminLayout() {
   const { user, ready, logout } = useAuth();
   const { pathname } = useLocation();
-  const [open, setOpen] = useState(false);
   if (!ready) return <PageLoader label="Checking your session…" />;
   if (!user) return <Navigate to="/login" replace state={{ from: pathname }} />;
   if (user.role !== "admin") return <Navigate to="/" replace />;
   return (
-    <div className="adm-shell">
-      <header className="adm-top">
-        <button className="adm-menu" aria-label="Menu" onClick={() => setOpen(!open)}>
-          ☰
-        </button>
-        <strong>Smart Mill · Admin</strong>
-        <span className="adm-spacer" />
-        <span className="adm-user">{user.fullName || user.username}</span>
-        <button
-          className="adm-btn"
-          onClick={() => window.confirm("Log out of this device?") && logout()}
-        >
-          Log out
-        </button>
-      </header>
-      <nav className={open ? "adm-nav open" : "adm-nav"} aria-label="Admin navigation">
-        {items.map((i) => (
-          <NavLink
-            key={i.to}
-            to={i.to}
-            end={i.end}
-            onClick={() => setOpen(false)}
-            className={({ isActive }) => (isActive ? "active" : "")}
+    <div className="app-shell admin-shell">
+      <aside className="sidebar">
+        <div className="brand">
+          <AssetIcon src={icons.brand} size={48} />
+          <div>
+            <strong>Rice Mill Monitor</strong>
+            <span>Admin portal</span>
+          </div>
+        </div>
+        <nav aria-label="Admin navigation">
+          {items.map((i) => (
+            <NavLink
+              key={i.to}
+              to={i.to}
+              end={i.end}
+              className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}
+            >
+              <AssetIcon src={i.icon} />
+              <span>{i.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+        <div className="account">
+          <div className="account-info">
+            <span className="avatar">
+              {(user.fullName || user.username || "?").slice(0, 2).toUpperCase()}
+            </span>
+            <div>
+              <strong>{user.username}</strong>
+              <span>Admin</span>
+            </div>
+          </div>
+          <button
+            className="logout"
+            onClick={() => window.confirm("Log out of this device?") && logout()}
           >
-            {i.label}
-          </NavLink>
-        ))}
-      </nav>
-      <main className="adm-main">
+            <AssetIcon src={icons.logout} size={18} />
+            Log out
+          </button>
+        </div>
+      </aside>
+      <main id="main">
+        <header className="topbar">
+          <Clock />
+          <span className="topbar-divider" />
+          <strong>Admin Portal</strong>
+        </header>
         {USE_MOCK && (
           <div className="banner demo" role="note">
             Demo mode: data is stored in this browser only.
           </div>
         )}
-        <Outlet />
+        <div className="page admin-page">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

@@ -1,6 +1,5 @@
 import hmac
 import logging
-import re
 from datetime import date as date_cls, timedelta
 from math import ceil
 
@@ -22,17 +21,16 @@ from apps.common.permissions import IsPlantOwner
 from apps.common.timeutil import local_day_start, to_ms
 from apps.plants.access import accessible_machines, window_q
 from apps.plants.models import Gateway, Machine
-from apps.plants.services import register_unverified
 
 from .consolidate import day_bounds
 from .ingest import ingest
+from .iot import gateway_for_serial
 from .models import HourlyReport, Reading
 from .payloads import build_payloads
 from .reports import owner_report_rows
 from .publish import publish_ingest, publish_machine_change
 
 logger = logging.getLogger(__name__)
-SERIAL_RE = re.compile(r"^[A-Za-z0-9._-]{4,64}$")
 RESERVED_MACHINE_IDS = {"usage"}  # would collide with /machines/usage
 RANGE_DAYS = {"week": 7, "month": 30}
 TREND_MAX_HOURS = 72
@@ -110,16 +108,7 @@ class IotIngestView(APIView):
         if not hmac.compare_digest(given.encode(), expected.encode()):
             raise ApiError("Invalid IoT rule secret.", 401, "invalid_iot_secret")
 
-        serial = body.get("serial")
-        if not isinstance(serial, str) or not SERIAL_RE.match(serial):
-            raise ApiError("A valid gateway serial is required.", 422, "validation")
-        gateway, created = register_unverified(serial)
-        if created:
-            logger.info("Gateway %s registered itself over MQTT; waiting for verification.", serial)
-        if not gateway.enabled:
-            raise ApiError("This gateway is disabled.", 403, "gateway_disabled")
-        if not gateway.verified:
-            raise ApiError("This gateway is waiting for the administrator to verify it.", 403, "gateway_not_verified")
+        gateway = gateway_for_serial(body.get("serial"))
         return _store(gateway, {"readings": body.get("readings")}, request)
 
 

@@ -1,0 +1,23 @@
+# One public address for everything. Caddy gets and renews the HTTPS certificate by itself.
+# DOMAIN comes from prod.env (for example mill.example.com); its DNS A record must point at this server.
+{$DOMAIN} {
+	encode gzip
+
+	# REST, the live WebSocket feed (/api/live/) and the AWS IoT HTTPS rule all go to Django.
+	handle /api/* {
+		reverse_proxy web:8000
+	}
+
+	# Django's own admin and its static files (the React Admin Portal is /admin, handled below).
+	handle /django-admin/* {
+		reverse_proxy web:8000
+	}
+	handle /static/* {
+		reverse_proxy web:8000
+	}
+
+	# Everything else is the React app (including /admin, the Admin Portal).
+	handle {
+		reverse_proxy frontend:80
+	}
+}
