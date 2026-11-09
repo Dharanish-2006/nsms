@@ -13,6 +13,7 @@ import {
   setRatedKw,
   setThresholds,
 } from "./engine";
+import { createAdminMock } from "./admin";
 import { MACHINES } from "./sim";
 import { hash, load, save, uid } from "./storage";
 import { RANGE_DAYS, usageTotals } from "./usage";
@@ -60,6 +61,23 @@ function ensureSeed() {
           status: "active",
           passHash: await hash("admin123"),
         },
+        // Demo plant owners so the admin screens have something to show.
+        ...(await Promise.all(
+          [
+            ["meena", "Meena Traders", "active"],
+            ["ravi", "Ravi Rice Mill", "pending"],
+          ].map(async ([username, fullName, status]) => ({
+            id: uid(),
+            username,
+            fullName,
+            email: `${username}@example.com`,
+            mobile: "",
+            role: "user",
+            status,
+            registeredAt: Date.now() - 86_400_000,
+            passHash: await hash("owner123"),
+          })),
+        )),
       ]);
     }
   })();
@@ -89,6 +107,13 @@ function checkThreshold(t) {
     fail(422, "Set at least a warning or a critical limit.", "validation");
 }
 
+const adminApi = createAdminMock({
+  users,
+  saveUsers: (list) => save(USERS_KEY, list),
+  requireAdmin,
+  fail,
+});
+
 export const mockApi = {
   auth: {
     async login(username, password) {
@@ -98,6 +123,8 @@ export const mockApi = {
       );
       if (!u || u.passHash !== (await hash(password)))
         fail(401, "Wrong username or password.", "invalid_credentials");
+      if (u.status === "rejected")
+        fail(403, "Your registration was not approved.", "rejected");
       if (u.status === "pending")
         fail(
           403,
@@ -159,8 +186,9 @@ export const mockApi = {
           fullName: input.fullName.trim(),
           email: input.email.trim(),
           mobile: input.mobile || "",
-          role: input.role === "admin" ? "admin" : "user",
+          role: "user", // administrators are created by the operator, never by sign-up
           status: "pending",
+          registeredAt: Date.now(),
           passHash: await hash(input.password),
         },
       ]);
@@ -183,28 +211,7 @@ export const mockApi = {
     },
   },
 
-  users: {
-    async list(status) {
-      await requireAdmin();
-      return users()
-        .filter((u) => !status || u.status === status)
-        .map(publicUser);
-    },
-    async approve(id) {
-      await requireAdmin();
-      save(
-        USERS_KEY,
-        users().map((u) => (u.id === id ? { ...u, status: "active" } : u)),
-      );
-    },
-    async reject(id) {
-      await requireAdmin();
-      save(
-        USERS_KEY,
-        users().filter((u) => u.id !== id),
-      );
-    },
-  },
+  admin: adminApi,
 
   plants: {
     async list() {

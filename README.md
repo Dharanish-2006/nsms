@@ -4,6 +4,7 @@ Live energy and motor monitoring for a rice mill: dashboard, per-machine process
 analysis, alerts and thresholds, daily reports, and settings. React 19 + Vite,
 plain JavaScript. The backend is built separately; the contract it must meet is in
 [docs/API.md](docs/API.md).
+New here? Start with [docs/GUIDE.md](docs/GUIDE.md).
 
 ## Quick start
 
@@ -97,6 +98,7 @@ src/pages/      one file per screen (each is a separate download)
 deploy/         nginx config and security headers
 scripts/        contract stub server
 docs/API.md     backend contract
+docs/GUIDE.md   usage and setup guide (start here)
 ```
 
 Times are shown in Indian Standard Time.

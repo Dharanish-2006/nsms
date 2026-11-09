@@ -48,10 +48,45 @@ export const httpApi = {
       }),
   },
 
-  users: {
-    list: (status) => request("/users", { query: { status } }),
-    approve: (id) => request(`/users/${enc(id)}/approve`, { method: "POST" }),
-    reject: (id) => request(`/users/${enc(id)}`, { method: "DELETE" }),
+  // Admin Portal (administrators only; no machine data is reachable from here).
+  admin: {
+    dashboard: () => request("/admin-portal/dashboard"),
+    users: (query) => request("/admin-portal/users", { query }),
+    approveUser: (id) =>
+      request(`/admin-portal/users/${enc(id)}/approve`, { method: "POST" }),
+    rejectUser: (id, reason) =>
+      request(`/admin-portal/users/${enc(id)}/reject`, {
+        method: "POST",
+        body: { reason },
+      }),
+    gateways: (query) => request("/admin-portal/gateways", { query }),
+    verifyGateway: (id, remarks) =>
+      request(`/admin-portal/gateways/${enc(id)}/verify`, {
+        method: "POST",
+        body: { remarks },
+      }),
+    rotateKey: (id, remarks) =>
+      request(`/admin-portal/gateways/${enc(id)}/rotate-key`, {
+        method: "POST",
+        body: { remarks },
+      }),
+    assignments: (query) => request("/admin-portal/assignments", { query }),
+    assign: (userId, gatewayId, remarks) =>
+      request("/admin-portal/assignments", {
+        method: "POST",
+        body: { userId: Number(userId), gatewayId, remarks },
+      }),
+    connect: (id, remarks) =>
+      request(`/admin-portal/assignments/${enc(id)}/connect`, {
+        method: "POST",
+        body: { remarks },
+      }),
+    disconnect: (id, remarks) =>
+      request(`/admin-portal/assignments/${enc(id)}/disconnect`, {
+        method: "POST",
+        body: { remarks },
+      }),
+    auditLog: (query) => request("/admin-portal/audit-log", { query }),
   },
 
   plants: {

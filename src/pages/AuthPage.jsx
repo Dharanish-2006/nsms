@@ -52,7 +52,7 @@ function LoginForm() {
     const err = await login(username, password);
     setBusy(false);
     if (err) return setError(err);
-    navigate(from, { replace: true });
+    navigate(from, { replace: true }); // admins are redirected on to /admin by the layout guard
   };
   return (
     <form className="auth-card" onSubmit={submit} noValidate>
@@ -243,7 +243,8 @@ function RegisterForm() {
 }
 export default function AuthPage({ mode }) {
   const { user, ready } = useAuth();
-  if (ready && user) return <Navigate to="/" replace />;
+  if (ready && user)
+    return <Navigate to={user.role === "admin" ? "/admin" : "/"} replace />;
   return (
     <div className="auth-layout">
       <CompanyPanel />
