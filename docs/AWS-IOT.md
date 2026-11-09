@@ -94,10 +94,13 @@ tools/mqtt_gateway_sim.py ──MQTT/TLS──▶ AWS IoT Core ◀──MQTT/TLS
     { "Effect": "Allow", "Action": "iot:Subscribe",
       "Resource": "arn:aws:iot:REGION:ACCOUNT:topicfilter/mill/+/readings" },
     { "Effect": "Allow", "Action": "iot:Receive",
-      "Resource": "arn:aws:iot:REGION:ACCOUNT:topic/mill/+/readings" }
+      "Resource": "arn:aws:iot:REGION:ACCOUNT:topic/mill/*/readings" }
   ]
 }
 ```
+Note the difference: `Subscribe` names the filter exactly as the bridge subscribes (`mill/+/readings`), but
+`Receive` is checked against each real topic, where `+` is **not** a wildcard in a policy. Use `*` there. With
+`+` the bridge connects normally and subscribes, but AWS silently delivers nothing.
 
 **3. Create the simulated gateway.** IoT Core → Manage → All devices → Things → *Create things* → one thing,
 named **`SIM-GW-0001`** (the name is the serial), no shadow, *Auto-generate a new certificate*, attach

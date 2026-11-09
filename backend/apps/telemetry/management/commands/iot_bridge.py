@@ -48,13 +48,29 @@ class Command(BaseCommand):
                 self.stderr.write(f"Connection refused: {reason}")
                 return
             c.subscribe(TOPIC, qos=1)
-            self.stdout.write(f"Connected to {endpoint}; listening on {TOPIC}")
+            self.stdout.write(
+                f"Connected to {endpoint}; listening on {TOPIC}. "
+                "Nothing appearing while a gateway publishes means the policy blocks iot:Receive "
+                "(resource topic/mill/*/readings, with *, not +)."
+            )
+
+        def on_subscribe(c, userdata, mid, reasons, properties=None):
+            if any(r.is_failure for r in reasons):
+                self.stderr.write(
+                    f"AWS refused the subscription to {TOPIC}. Check the bridge policy: iot:Subscribe on "
+                    "topicfilter/mill/+/readings and iot:Connect on client/<client-id>."
+                )
+
+        def on_disconnect(c, userdata, flags, reason, properties=None):
+            self.stderr.write(f"Disconnected ({reason}); reconnecting. If this repeats, check the certificate and policy.")
 
         def on_message(c, userdata, msg):
             self.stdout.write(f"{msg.topic}: {handle_message(msg.topic, msg.payload)}")
 
         client.on_connect = on_connect
         client.on_message = on_message
+        client.on_subscribe = on_subscribe
+        client.on_disconnect = on_disconnect
         client.reconnect_delay_set(min_delay=1, max_delay=60)
         client.connect(endpoint, port, keepalive=60)
         try:
