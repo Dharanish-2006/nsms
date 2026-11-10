@@ -1,5 +1,6 @@
 import { images, machineImage } from "../assets";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "../api";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { AutoReportPanel } from "../components/AutoReportPanel";
 import { StatusBadge } from "../components/Icon";
@@ -36,6 +37,18 @@ export default function ProcessPage() {
   const { machines, plant, lastUpdate, saveMotorRating } = useData();
   const [windowHrs, setWindowHrs] = useState(24);
   const m = machines.find((x) => x.id === id);
+  // Figures for the chosen time range come from the hourly reports.
+  const [sum, setSum] = useState({ key: "", data: null });
+  const sumKey = `${id}:${windowHrs}`;
+  useEffect(() => {
+    if (!id) return undefined;
+    const controller = new AbortController();
+    api.machines
+      .summary(id, windowHrs, { signal: controller.signal })
+      .then((data) => setSum({ key: sumKey, data }))
+      .catch(() => setSum({ key: sumKey, data: null }));
+    return () => controller.abort();
+  }, [id, windowHrs, sumKey]);
   if (!m)
     return <Navigate to={machines[0] ? `/machines/${machines[0].id}` : "/"} replace />;
   const status = statusOf(m, lastUpdate);
@@ -44,6 +57,7 @@ export default function ProcessPage() {
   const na = "N/A";
   const todayKwh = m.hourlyKwh.reduce((a, b) => a + b, 0);
   const hour = istHour(lastUpdate);
+  const range = sum.key === sumKey ? sum.data : null;
   const rangeLabel = RANGES.find((r) => r.hours === windowHrs)?.short ?? "Last 24 hrs";
   const download = () =>
     downloadCsv(`${m.id}-${istDay(lastUpdate).replace(" ", "-")}.csv`, [
@@ -138,7 +152,7 @@ export default function ProcessPage() {
               <div className="data-list compact">
                 <Row
                   k={`Average Load Factor (${rangeLabel})`}
-                  v={`${on ? Math.round(m.loadFactor) : 0} %`}
+                  v={range ? `${Math.round(range.avgLoadFactor)} %` : "…"}
                 />
               </div>
             </article>
@@ -155,6 +169,10 @@ export default function ProcessPage() {
               </div>
               <div className="data-list compact">
                 <Row k="Power Factor (now)" v={on ? m.pf.toFixed(2) : na} />
+                <Row
+                  k={`Average PF (${rangeLabel})`}
+                  v={range ? (range.avgPf == null ? na : range.avgPf.toFixed(2)) : "…"}
+                />
               </div>
             </article>
           )}
@@ -169,7 +187,7 @@ export default function ProcessPage() {
             <div className="data-list compact">
               <Row
                 k={`Total Runtime (${rangeLabel})`}
-                v={on ? fmtDuration(m.runSec) : na}
+                v={range ? fmtDuration(range.runSeconds) : "…"}
               />
             </div>
           </article>
@@ -182,7 +200,7 @@ export default function ProcessPage() {
                 <strong style={{ fontSize: 20, padding: 0 }}>
                   Units Consumed
                   <br />
-                  {todayKwh.toFixed(1)} kWh
+                  {range ? range.kwh.toFixed(1) : "…"} kWh
                 </strong>
               </div>
 
@@ -199,11 +217,15 @@ export default function ProcessPage() {
                 <strong style={{ fontSize: 20 }}>
                   Actual Usage
                   <br />
-                  {(m.runKwh > 0 ? m.runKwh : 0).toFixed(1)} kWh
+                  {range ? range.runKwh.toFixed(1) : "…"} kWh
                 </strong>
               </div>
             </div>
             <div className="data-list compact">
+              <Row
+                k={`Energy used (${rangeLabel})`}
+                v={range ? `${range.kwh.toFixed(1)} kWh` : "…"}
+              />
               <Row k="Energy usage today" v={`${todayKwh.toFixed(1)} kWh`} />
             </div>
           </article>

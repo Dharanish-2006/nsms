@@ -51,6 +51,7 @@ function snapshot(m) {
     totalKvarh: m.totalKvarh,
     totalKvah: m.totalKvah,
     runKwh: m.runKwh,
+    todayRunKwh: m.hourlyKwh.reduce((a, b) => a + b, 0),
     runStart: m.runStart,
     lastStop: m.lastStop,
     runSec: m.runSec,
@@ -134,6 +135,24 @@ export function machineTrend(id, hours) {
   if (!m) return null;
   const cutoff = Date.now() - hours * 3600000;
   return m.trend.filter((p) => p.t >= cutoff);
+}
+
+/** One machine over the last `hours` (the mock scales today's figures; the real backend sums hourly reports). */
+export function machineSummary(id, hours) {
+  advance();
+  const m = machines.find((x) => x.def.id === id);
+  if (!m) return null;
+  const scale = hours / 24;
+  const today = m.hourlyKwh.reduce((a, b) => a + b, 0);
+  const runSeconds = Math.round(m.todaySec * scale);
+  return {
+    hours,
+    kwh: today * scale,
+    runKwh: today * scale,
+    runSeconds,
+    avgLoadFactor: m.def.ratedKw ? (m.def.baseKw / m.def.ratedKw) * 100 : 0,
+    avgPf: m.pfRunN ? m.pfRunSum / m.pfRunN : null,
+  };
 }
 
 export function listAlerts(plant) {

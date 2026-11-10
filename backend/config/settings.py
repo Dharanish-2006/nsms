@@ -98,10 +98,10 @@ TEMPLATES = [
 ]
 
 # --- Database ---------------------------------------------------------------
+# An empty DATABASE_URL (as in .env.example) means "use the local SQLite file".
 DATABASES = {
-    "default": dj_database_url.config(
-        env="DATABASE_URL",
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+    "default": dj_database_url.parse(
+        os.environ.get("DATABASE_URL", "").strip() or f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
         conn_max_age=env_int("DB_CONN_MAX_AGE", 0),
     )
 }

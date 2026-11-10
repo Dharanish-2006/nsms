@@ -10,13 +10,13 @@ import { fmt, fmtDuration } from "../lib/format";
 import { hasPowerQuality } from "../lib/machine";
 import loadfactor_img from "../assets/images/load-gauge.svg";
 const todayKwh = (m) => m.hourlyKwh.reduce((a, b) => a + b, 0);
-// "Actual usage" is the energy used in the machine's current run.
+// "Actual usage" is the part of today's energy used while the machine was running.
 const RANGES = [
   { id: "day", label: "Today" },
   { id: "week", label: "This week" },
   { id: "month", label: "This month" },
 ];
-const actualKwh = (m) => (m.runKwh > 0 ? m.runKwh : 0);
+const actualKwh = (m) => Math.max(m.todayRunKwh ?? m.runKwh ?? 0, 0);
 function MachineCard({ m, now, onOpen }) {
   const status = statusOf(m, now);
   const on = status === "on";

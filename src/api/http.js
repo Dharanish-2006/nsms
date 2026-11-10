@@ -105,6 +105,9 @@ export const httpApi = {
     /** -> [{ t, pf, current, kw }] oldest first */
     trend: (id, hours, opts) =>
       request(`/machines/${enc(id)}/trend`, { ...opts, query: { hours } }),
+    /** hours: 12 | 24 | 168 | 720 -> { kwh, runKwh, runSeconds, avgLoadFactor, avgPf } for one machine */
+    summary: (id, hours, opts) =>
+      request(`/machines/${enc(id)}/summary`, { ...opts, query: { hours } }),
     /** patch: { ratedKw, onThresholdKw } -> the updated machine (names are set by the admin) */
     update: (id, patch) =>
       request(`/machines/${enc(id)}`, { method: "PUT", body: patch }),

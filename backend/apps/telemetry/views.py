@@ -32,7 +32,7 @@ from .publish import publish_ingest, publish_machine_change
 
 logger = logging.getLogger(__name__)
 RESERVED_MACHINE_IDS = {"usage"}  # would collide with /machines/usage
-RANGE_DAYS = {"week": 7, "month": 30}
+RANGE_DAYS = {"day": 1, "week": 7, "month": 30}
 TREND_MAX_HOURS = 72
 TREND_MAX_POINTS = 360
 
@@ -177,6 +177,46 @@ class UsageView(APIView):
         )
         return Response(
             {"consumedKwh": round(totals["consumed"] or 0, 1), "actualKwh": round(totals["actual"] or 0, 1)}
+        )
+
+
+class MachineSummaryView(APIView):
+    permission_classes = [IsPlantOwner]
+
+    """GET /api/machines/<id>/summary?hours=12|24|168|720 : one machine over the last N hours.
+
+    Built from the hourly reports inside the owner's connection periods, so it matches the
+    reports page. avgLoadFactor is the average power while running over the rated power."""
+
+    HOURS = (12, 24, 168, 720)
+
+    def get(self, request, pk):
+        machine = get_object_or_404(accessible_machines(request.user), pk=pk)
+        try:
+            hours = int(request.query_params.get("hours", 24))
+        except ValueError:
+            hours = 0
+        if hours not in self.HOURS:
+            raise ApiError("hours must be one of 12, 24, 168, 720.", 422, "validation")
+        since = timezone.now() - timedelta(hours=hours)
+        t = HourlyReport.objects.filter(
+            window_q(request.user), machine=machine, hour__gte=since - timedelta(hours=1)
+        ).aggregate(
+            kwh=Sum("kwh"), run_kwh=Sum("run_kwh"), run_seconds=Sum("run_seconds"),
+            sum_pf=Sum("sum_pf"), pf_samples=Sum("pf_samples"),
+        )  # fmt: skip
+        run_seconds = t["run_seconds"] or 0
+        run_kwh = t["run_kwh"] or 0
+        avg_kw = run_kwh / (run_seconds / 3600) if run_seconds else 0
+        return Response(
+            {
+                "hours": hours,
+                "kwh": round(t["kwh"] or 0, 2),
+                "runKwh": round(run_kwh, 2),
+                "runSeconds": int(run_seconds),
+                "avgLoadFactor": round(avg_kw / machine.rated_kw * 100, 1) if machine.rated_kw and avg_kw else 0,
+                "avgPf": round(t["sum_pf"] / t["pf_samples"], 3) if t["pf_samples"] else None,
+            }
         )
 
 

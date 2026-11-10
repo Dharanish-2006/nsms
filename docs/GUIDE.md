@@ -66,7 +66,7 @@ Restart `pnpm dev` after any env change. If the Network tab shows no `/api` call
 ### Test everything
 
 ```bash
-cd backend && pytest          # 88 tests
+cd backend && pytest          # 95 tests
 pnpm check                    # lint, 28 tests, build
 ```
 

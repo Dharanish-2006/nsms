@@ -95,3 +95,24 @@ def test_maintenance_prunes_old_raw_readings_but_keeps_reports(anon, gateway, ma
     rows, pruned, _ = run_once()
     assert pruned > 0 and Reading.objects.count() == 0
     assert DailyReport.objects.filter(machine_id="sheller-1").exists()
+
+
+def test_machine_summary_matches_ingested_energy(anon, owner_client, gateway, machines):
+    expected = feed(anon, gateway, kw=24.0, pf=0.9)
+    r = owner_client.get("/api/machines/sheller-1/summary?hours=12")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["kwh"] == pytest.approx(expected, abs=0.1)
+    assert body["runKwh"] == pytest.approx(expected, abs=0.1)
+    assert body["runSeconds"] == pytest.approx(600, abs=120)
+    assert body["avgPf"] == pytest.approx(0.9, abs=0.01)
+    assert body["avgLoadFactor"] == pytest.approx(24.0 / machines["sheller-1"].rated_kw * 100, abs=0.5)
+    assert owner_client.get("/api/machines/sheller-1/summary?hours=5").status_code == 422
+    assert owner_client.get("/api/machines/nope/summary?hours=12").status_code == 404
+
+
+def test_today_run_kwh_is_in_the_machine_payload(anon, owner_client, gateway, machines):
+    feed(anon, gateway, kw=24.0)
+    m = next(x for x in owner_client.get("/api/machines").json()["machines"] if x["id"] == "sheller-1")
+    assert m["todayRunKwh"] == pytest.approx(4.0, abs=0.2)
+    assert owner_client.get("/api/machines/usage?range=day").status_code == 200

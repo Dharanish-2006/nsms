@@ -51,7 +51,8 @@ Rate-limit login and registration on the server.
 | ------ | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
 | GET    | `/plants`                                  | `["Plant 1"]`                                                                                                           |
 | GET    | `/machines?plant=Plant 1`                  | `{ serverTime, machines: [machine] }`                                                                                   |
-| GET    | `/machines/usage?plant=&range=week\|month` | `{ consumedKwh, actualKwh }` plant totals for the last 7 / 30 days (the dashboard computes "last day" from `hourlyKwh`) |
+| GET    | `/machines/usage?plant=&range=day\|week\|month` | `{ consumedKwh, actualKwh }` plant totals for the last 7 / 30 days (the dashboard computes "last day" from `hourlyKwh`) |
+| GET    | `/machines/:id/summary?hours=12\|24\|168\|720` | `{ hours, kwh, runKwh, runSeconds, avgLoadFactor, avgPf }` for one machine over the window (hourly reports) |
 | GET    | `/machines/:id/trend?hours=6`              | `[{ t, pf, current, kw }]`, oldest first                                                                                |
 | GET    | `/alerts?plant=Plant 1`                    | `[alert]`, active first (critical, then newest), then recovered (newest first)                                          |
 

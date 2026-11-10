@@ -7,6 +7,7 @@ import {
   listAlerts,
   listMachines,
   machineTrend,
+  machineSummary,
   plants,
   reevaluate,
   setPhones,
@@ -235,6 +236,10 @@ export const mockApi = {
     async trend(id, hours) {
       await currentUser();
       return machineTrend(id, hours) ?? fail(404, "Machine not found.", "not_found");
+    },
+    async summary(id, hours) {
+      await currentUser();
+      return machineSummary(id, hours) ?? fail(404, "Machine not found.", "not_found");
     },
     async update(id, patch) {
       await currentUser();

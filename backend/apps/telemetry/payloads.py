@@ -35,11 +35,13 @@ def machine_payload(machine, state, hourly_rows, now):
     on = bool(state and state.on)
 
     hourly_kwh = [0.0] * 24
+    today_run_kwh = 0.0
     hour_on = [0 if h <= local_now.hour else 2 for h in range(24)]
     for row in hourly_rows:
         local = timezone.localtime(row.hour)
         if local.date() == local_now.date():
             hourly_kwh[local.hour] = round(row.kwh, 3)
+            today_run_kwh += row.run_kwh
             hour_on[local.hour] = 1 if row.run_seconds > 0 else 0
 
     if state is None:
@@ -49,7 +51,7 @@ def machine_payload(machine, state, hourly_rows, now):
             "gatewayId": str(machine.gateway_id), "meterId": machine.meter_id,
             "on": False, "updatedAt": 0,
             "kw": 0, "pf": 0, "kva": 0, "kvar": 0, "current": 0, "loadFactor": 0,
-            "totalKwh": 0, "totalKvarh": 0, "totalKvah": 0, "runKwh": 0,
+            "totalKwh": 0, "totalKvarh": 0, "totalKvah": 0, "runKwh": 0, "todayRunKwh": round(today_run_kwh, 3),
             "runStart": None, "lastStop": None, "runSec": 0, "todaySec": 0,
             "totalRuntimeSec": 0, "avgPfRun": None,
             "hourlyKwh": hourly_kwh, "hourOn": hour_on,
@@ -85,6 +87,7 @@ def machine_payload(machine, state, hourly_rows, now):
         "totalKvarh": round(state.total_kvarh or 0, 2),
         "totalKvah": round(state.total_kvah or 0, 2),
         "runKwh": round(state.run_kwh, 3) if on else 0,
+        "todayRunKwh": round(today_run_kwh, 3),
         "runStart": to_ms(state.run_start) if on else None,
         "lastStop": to_ms(state.last_stop),
         "runSec": int(state.run_sec) if on else 0,
