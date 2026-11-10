@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import logo from "../../assets/images/logo.png";
 import { Navigate, NavLink, Outlet, useLocation } from "react-router-dom";
 import { icons } from "../../assets";
 import { AssetIcon } from "../../components/Icon";
@@ -42,11 +43,8 @@ export function AdminLayout() {
     <div className="app-shell admin-shell">
       <aside className="sidebar">
         <div className="brand">
-          <AssetIcon src={icons.brand} size={48} />
-          <div>
-            <strong>Rice Mill Monitor</strong>
-            <span>Admin portal</span>
-          </div>
+          <img className="brand-logo" src={logo} alt="RicemillMart.com" />
+          <span className="brand-tag">Admin portal</span>
         </div>
         <nav aria-label="Admin navigation">
           {items.map((i) => (

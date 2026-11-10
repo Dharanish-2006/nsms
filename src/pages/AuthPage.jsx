@@ -1,4 +1,5 @@
 import { icons, images } from "../assets";
+import logo from "../assets/images/logo.png";
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AssetIcon } from "../components/Icon";
@@ -10,11 +11,7 @@ function CompanyPanel() {
   return (
     <section className="company-panel">
       <div className="auth-brand">
-        <AssetIcon src={icons.brandAuth} size={44} />
-        <div>
-          <strong>Rice Mill Monitor</strong>
-          <span>Energy &amp; motor monitoring</span>
-        </div>
+        <img className="auth-logo" src={logo} alt="RicemillMart.com" />
       </div>
       <div className="company-copy">
         <h1>{config.company.name}</h1>

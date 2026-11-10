@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import logo from "../assets/images/logo.png";
 import { Navigate, NavLink, Outlet, useLocation } from "react-router-dom";
 import { icons } from "../assets";
 import { USE_MOCK } from "../config";
@@ -33,11 +34,7 @@ function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <AssetIcon src={icons.brand} size={48} />
-        <div>
-          <strong>Rice Mill Monitor</strong>
-          <span>Energy &amp; motors</span>
-        </div>
+        <img className="brand-logo" src={logo} alt="RicemillMart.com" />
       </div>
 
       <nav aria-label="Primary navigation">
