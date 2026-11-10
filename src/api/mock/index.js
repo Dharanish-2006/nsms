@@ -65,7 +65,7 @@ function ensureSeed() {
         // Demo plant owners so the admin screens have something to show.
         ...(await Promise.all(
           [
-            ["meena", "Meena Traders", "active"],
+            ["ram", "Ram Traders", "active"],
             ["ravi", "Ravi Rice Mill", "pending"],
           ].map(async ([username, fullName, status]) => ({
             id: uid(),

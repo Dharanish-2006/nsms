@@ -52,7 +52,7 @@ pnpm install
 The frontend has two modes:
 
 - **Demo mode** (`VITE_USE_MOCK=true`, the default in `.env.development`): no backend needed. Data is
-  simulated and stored in the browser. Logins: `admin` / `admin123` (admin), `meena` / `owner123`
+  simulated and stored in the browser. Logins: `admin` / `admin123` (admin), `ram` / `owner123`
   (approved owner), `ravi` / `owner123` (pending owner).
 - **Real backend**: create `.env.development.local` (it overrides `.env.development`):
 
