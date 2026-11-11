@@ -21,13 +21,15 @@ export default function AdminDashboard() {
         </Link>
         <Stat label="Approved users" value={d.approvedUsers} />
         <Stat label="Registered gateways" value={d.registeredGateways} />
-        <Link to="/admin/gateways">
-          <Stat
-            label="Awaiting verification"
-            value={d.unverifiedGateways}
-            tone={d.unverifiedGateways ? "warn" : ""}
-          />
-        </Link>
+        {d.unverifiedGateways > 0 && (
+          <Link to="/admin/gateways">
+            <Stat
+              label="Awaiting verification"
+              value={d.unverifiedGateways}
+              tone="warn"
+            />
+          </Link>
+        )}
         <Link to="/admin/gateways">
           <Stat
             label="Machines needing a name"

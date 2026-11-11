@@ -10,7 +10,7 @@ gateway, and how to go to production. Deeper reference: [`../backend/README.md`]
 | Role | Who | Where | Can do |
 |---|---|---|---|
 | **Plant owner** (`user`) | The mill owner, your customer | `/` (dashboard) | See live data, reports, alerts of the gateways connected to them. Set alert limits, SMS numbers, report emails, machine names and HP. |
-| **Admin** | You, owner of the Smart Mill system | `/admin` (Admin Portal) | Approve owners, verify and assign gateways, connect or disconnect them, read the audit log. **Cannot see any machine data.** |
+| **Admin** | You, owner of the Smart Mill system | `/admin` (Admin Portal) | Approve owners, assign gateways, connect or disconnect them, read the audit log. **Cannot see any machine data.** |
 
 An admin who signs in is sent to `/admin`; an owner who opens `/admin` is sent back to `/`.
 
@@ -66,7 +66,7 @@ Restart `pnpm dev` after any env change. If the Network tab shows no `/api` call
 ### Test everything
 
 ```bash
-cd backend && pytest          # 95 tests
+cd backend && pytest          # 100 tests
 pnpm check                    # lint, 28 tests, build
 ```
 
@@ -85,6 +85,7 @@ Copy `.env.example`. The settings that matter:
 | `EMAIL_*`, `DEFAULT_FROM_EMAIL` | SMTP for OTP codes and report emails. Console backend just prints. |
 | `SMS_BACKEND` | `console` (log) or `sns` (AWS SNS). India needs DLT registration for real SMS. |
 | `GATEWAY_PROVISION_KEY` | Shared key gateways use to register themselves. Empty = off. |
+| `GATEWAY_AUTO_VERIFY` | Default `1`: a gateway is verified by its first message. `0` = the admin verifies each one. |
 | `IOT_RULE_SECRET` | Shared secret for the AWS IoT Rule. Empty = off. |
 | `AUTO_REPORT_HOUR` | IST hour (0-23) after which automatic reports go out. Default 6. |
 | `NOMINAL_VOLTAGE` | Used when a gateway does not send voltage (default 415). |
@@ -127,9 +128,10 @@ due automatic reports. To send reports by hand: `python manage.py send_auto_repo
 
 1. Sign in at `/login` with an admin account. You land on the Admin Portal.
 2. **User approval**: new owners register and wait as *Pending*. Approve, or reject with a reason.
-3. **Gateways**: a freshly installed gateway registers itself and appears as *Unverified*. Check its
-   serial number against the box you installed and press **Verify**. Unverified gateways cannot send data
-   or be assigned.
+3. **Gateways**: a freshly installed gateway registers itself with its first message and is verified
+   automatically (`GATEWAY_AUTO_VERIFY`, on by default). It appears in the list as *Verified* and *Available*.
+   It reaches no owner until you assign and connect it. Set `GATEWAY_AUTO_VERIFY=0` if you want to check each
+   serial number yourself and press **Verify**; until then such a gateway cannot send data or be assigned.
 4. **Assign** a verified, available gateway to an approved owner. The owner still sees nothing.
 5. **Name the machines.** Open the gateway (Admin Portal → Gateways → click its name). It lists every
    meter that has reported, by **Meter ID** (the Modbus address of the meter). Give each one the name the
@@ -206,6 +208,6 @@ Test without hardware: `python manage.py simulate_gateway --key gw_...`.
 | OTP request returns 429 | Rate limit on OTP sending: wait a few minutes. |
 | OTP request returns 503 or `Name or service not known` | `EMAIL_HOST` is empty or wrong. |
 | Owner sees no machines | A gateway must be assigned **and connected** to them, and have sent data. |
-| Gateway data rejected | The gateway is unverified, disabled, or the key is old. Verify it or issue a new key. |
+| Gateway data rejected | The gateway is disabled, or the key is old (issue a new key). With `GATEWAY_AUTO_VERIFY=0` it may also be unverified. |
 | Automatic report never arrives | The worker is not running, SMTP is not configured, or the owner has no connected machine. |
 | Admin opens `/` and is sent to `/admin` | By design: admins have no machine data. |

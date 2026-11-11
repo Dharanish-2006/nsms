@@ -214,7 +214,7 @@ def test_new_owner_does_not_see_the_previous_owners_hours(admin_client, anon, op
 
 
 # --- gateways registering themselves ----------------------------------------------------
-@override_settings(GATEWAY_PROVISION_KEY="fleet-secret")
+@override_settings(GATEWAY_PROVISION_KEY="fleet-secret", GATEWAY_AUTO_VERIFY=False)
 def test_gateway_registers_itself_then_waits_for_verification(anon, admin_client, operator):
     body = {"serial": "SN-2026-0001", "name": "Mill gateway"}
     assert anon.post("/api/gateways/provision", body, format="json").status_code == 401
@@ -267,7 +267,7 @@ def test_rotating_a_key_is_audited_and_works(admin_client, anon, gateway, machin
 
 
 # --- AWS IoT Core (MQTT) ---------------------------------------------------------------
-@override_settings(IOT_RULE_SECRET="rule-secret")
+@override_settings(IOT_RULE_SECRET="rule-secret", GATEWAY_AUTO_VERIFY=False)
 def test_iot_rule_delivers_mqtt_readings(anon, admin_client, operator):
     H = {"HTTP_X_IOT_SECRET": "rule-secret"}
     msg = {"serial": "SN-MQTT-0001", "readings": [{"meterId": "1", "kw": 12.5, "pf": 0.9}]}
@@ -303,6 +303,7 @@ def test_iot_ingest_is_off_without_a_secret(anon):
     assert anon.post("/api/iot/ingest", {"serial": "SN-MQTT-0001", "readings": []}, format="json").status_code == 404
 
 
+@override_settings(GATEWAY_AUTO_VERIFY=False)
 def test_iot_bridge_message_handler(admin_client, db):
     """What the `iot_bridge` subscriber does with each MQTT message."""
     from apps.plants.models import Gateway
@@ -322,3 +323,45 @@ def test_iot_bridge_message_handler(admin_client, db):
     gw.enabled = False
     gw.save()
     assert "disabled" in handle_message("mill/SN-BRIDGE-1/readings", good)
+
+
+# --- automatic verification (the default) -----------------------------------------------
+@override_settings(GATEWAY_PROVISION_KEY="fleet-secret")
+def test_self_registered_gateway_is_verified_and_can_send_at_once(anon, admin_client, operator):
+    r = anon.post("/api/gateways/provision", {"serial": "SN-AUTO-1"}, format="json", HTTP_X_PROVISION_KEY="fleet-secret")
+    assert r.status_code == 201 and r.json()["status"] == "verified"
+    gw = Gateway.objects.get(serial_number="SN-AUTO-1")
+    assert gw.verified
+    reading = {"readings": [{"meterId": "7", "kw": 10}]}
+    assert anon.post("/api/ingest", reading, format="json", HTTP_X_GATEWAY_KEY=r.json()["apiKey"]).status_code == 202
+    # still reaches no owner until the admin assigns and connects it
+    assert assign(admin_client, operator, gw).status_code in (200, 201)
+
+
+@override_settings(IOT_RULE_SECRET="rule-secret")
+def test_first_mqtt_message_registers_and_verifies_the_gateway(anon):
+    msg = {"serial": "SN-MQTT-AUTO", "readings": [{"meterId": "1", "kw": 12.5}]}
+    r = anon.post("/api/iot/ingest", msg, format="json", HTTP_X_IOT_SECRET="rule-secret")
+    assert r.status_code == 202 and r.json()["accepted"] == 1
+    assert Gateway.objects.get(serial_number="SN-MQTT-AUTO").verified
+    assert Machine.objects.get(gateway__serial_number="SN-MQTT-AUTO").configured is False
+
+
+def test_bridge_message_from_a_new_gateway_is_stored(db):
+    from apps.telemetry.iot import handle_message
+
+    assert handle_message("mill/SN-BRIDGE-2/readings", b'{"readings": [{"meterId": "1", "kw": 5.0}]}').startswith("stored")
+    assert Gateway.objects.get(serial_number="SN-BRIDGE-2").verified
+
+
+@override_settings(IOT_RULE_SECRET="rule-secret")
+def test_earlier_unverified_gateway_is_verified_by_its_next_message(anon):
+    Gateway.objects.create(name="old", serial_number="SN-OLD-1", verified=False, plant=Gateway.objects.model._meta.get_field("plant").related_model.objects.get_or_create(name="Plant 1")[0])
+    r = anon.post("/api/iot/ingest", {"serial": "SN-OLD-1", "readings": [{"meterId": "1", "kw": 1}]}, format="json", HTTP_X_IOT_SECRET="rule-secret")
+    assert r.status_code == 202 and Gateway.objects.get(serial_number="SN-OLD-1").verified
+
+
+@override_settings(GATEWAY_AUTO_VERIFY=True)
+def test_disabled_gateway_stays_blocked_even_with_auto_verify(anon, gateway):
+    Gateway.objects.filter(pk=gateway.pk).update(enabled=False)
+    assert push(anon, gateway, [{"meterId": "1", "kw": 1}]).status_code == 403

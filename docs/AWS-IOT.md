@@ -63,8 +63,9 @@ endpoint is off. The backend must be reachable on a public HTTPS address with a 
    ```
    `meterId` is the meter's Modbus slave address (a string). If the gateway's payload is fixed and
    looks different, tell me its shape: either the rule's SQL can reshape it, or the backend can accept it.
-4. The first message makes the gateway appear in the Admin Portal as **unverified**. The admin verifies
-   it, assigns it to a plant owner and connects it. Until then its data is not stored (the rule shows a 403).
+4. The first message makes the gateway appear in the Admin Portal, already verified. The admin assigns it
+   to a plant owner and connects it. (With `GATEWAY_AUTO_VERIFY=0` the admin must also verify it first, and
+   until then its data is not stored and the rule shows a 403.)
 
 ## Try it with a simulated gateway (AWS free plan, no hardware)
 
@@ -133,12 +134,12 @@ python tools/mqtt_gateway_sim.py --endpoint <your endpoint> --serial SIM-GW-0001
 It prints `published #1 …`. To see the messages in AWS itself, open IoT Core → *MQTT test client* and
 subscribe to `mill/#`.
 
-**7. Approve it in the app.** The bridge first prints `refused: This gateway is waiting for the
-administrator to verify it`. Sign in as admin → Gateways → **Verify** `SIM-GW-0001` → **Assign** it to an
-approved plant owner → **Connect**. The next messages print `stored 4, rejected 0`. Sign in as that owner:
+**7. Approve it in the app.** The first message registers the gateway and verifies it automatically, and the
+bridge prints `stored 4, rejected 0`. Sign in as admin → Gateways → **Assign** `SIM-GW-0001` to an
+approved plant owner → **Connect**. Sign in as that owner:
 nothing shows yet: the four meters were created as unnamed machines. Open the gateway in the Admin
 Portal (Gateways → click `SIM-GW-0001`), name each meter (Meter ID 1 to 4), and the owner then sees them live.
-Data sent before verification is not kept; data sent before naming is kept.
+Data sent before naming is kept.
 
 **Costs.** IoT Core bills per message, and each publish plus its delivery to the bridge counts. At one
 message every 5 s that is about a million messages a month, so use `--interval 30` for long runs and stop

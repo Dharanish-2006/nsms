@@ -5,7 +5,7 @@ import logging
 import re
 
 from apps.common.errors import ApiError
-from apps.plants.services import register_unverified
+from apps.plants.services import ensure_verified, register_unverified
 
 from .ingest import ingest
 from .publish import publish_ingest
@@ -25,7 +25,7 @@ def gateway_for_serial(serial):
         logger.info("Gateway %s registered itself over MQTT; waiting for verification.", serial)
     if not gateway.enabled:
         raise ApiError("This gateway is disabled.", 403, "gateway_disabled")
-    if not gateway.verified:
+    if not ensure_verified(gateway):
         raise ApiError("This gateway is waiting for the administrator to verify it.", 403, "gateway_not_verified")
     return gateway
 

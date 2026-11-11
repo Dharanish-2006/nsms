@@ -21,6 +21,7 @@ from apps.common.permissions import IsPlantOwner
 from apps.common.timeutil import local_day_start, to_ms
 from apps.plants.access import accessible_machines, window_q
 from apps.plants.models import Gateway, Machine
+from apps.plants.services import ensure_verified
 
 from .consolidate import day_bounds
 from .ingest import ingest
@@ -72,7 +73,7 @@ class IngestView(APIView):
             raise ApiError("Invalid gateway key.", 401, "invalid_gateway_key")
         if not gateway.enabled:
             raise ApiError("This gateway is disabled.", 403, "gateway_disabled")
-        if not gateway.verified:
+        if not ensure_verified(gateway):
             raise ApiError("This gateway is waiting for the administrator to verify it.", 403, "gateway_not_verified")
 
         return _store(gateway, request.data, request)

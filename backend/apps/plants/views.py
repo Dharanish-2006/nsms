@@ -57,6 +57,6 @@ class GatewayProvisionView(APIView):
                 "This gateway is already registered. Ask the administrator for a new key.", 409, "already_registered"
             )
         return Response(
-            {"gatewayId": str(gateway.pk), "apiKey": gateway._first_key, "status": "awaiting_verification"},
+            {"gatewayId": str(gateway.pk), "apiKey": gateway._first_key, "status": "verified" if gateway.verified else "awaiting_verification"},
             status=201,
         )

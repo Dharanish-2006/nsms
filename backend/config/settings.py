@@ -216,6 +216,9 @@ LOGGING = {
 
 # Gateways register themselves with this shared key (leave empty to turn self-registration off).
 GATEWAY_PROVISION_KEY = os.environ.get("GATEWAY_PROVISION_KEY", "")
+# A gateway is trusted as soon as it sends its first message (it still reaches no owner until an
+# admin assigns and connects it). Set to 0 to make the admin verify every new gateway by hand.
+GATEWAY_AUTO_VERIFY = env_bool("GATEWAY_AUTO_VERIFY", True)
 DEFAULT_PLANT_NAME = os.environ.get("DEFAULT_PLANT_NAME", "Plant 1")
 # A verified gateway may create machines for meters it reports; this caps the junk a bad one can make.
 MAX_AUTO_MACHINES_PER_GATEWAY = env_int("MAX_AUTO_MACHINES_PER_GATEWAY", 32)

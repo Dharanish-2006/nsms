@@ -36,7 +36,7 @@ Point the frontend at it with `VITE_USE_MOCK=false` and proxy `/api/` (REST and 
 ## How the gateway sends data
 
 `POST /api/ingest`, header `X-Gateway-Key: gw_…`. The key comes from self-registration (below) or from Django
-admin, and is shown once. A gateway that registered itself cannot send data until an admin verifies it.
+admin, and is shown once. A gateway that registered itself is verified automatically (`GATEWAY_AUTO_VERIFY=1`, the default); with `0` it cannot send data until an admin verifies it.
 
 ```json
 { "readings": [
@@ -79,12 +79,13 @@ On first boot it calls:
 
 ```
 POST /api/gateways/provision      X-Provision-Key: <shared key>
-{ "serial": "SN-2026-0001", "name": "Mill gateway" }   ->  201 { "gatewayId", "apiKey", "status": "awaiting_verification" }
+{ "serial": "SN-2026-0001", "name": "Mill gateway" }   ->  201 { "gatewayId", "apiKey", "status": "verified" }
 ```
 
 The gateway stores `apiKey` and uses it as `X-Gateway-Key` from then on (it is shown only once). The gateway
-appears in the admin portal at once, *unverified*. The admin verifies it (a check that it is the box that was
-installed); only then can it be assigned and can it send data. A serial can register only once; a replaced
+appears in the admin portal at once and is verified automatically, so it can send data and be assigned. (With
+`GATEWAY_AUTO_VERIFY=0` it starts *unverified* and the admin must verify it first.) It reaches no owner until
+the admin assigns and connects it. A serial can register only once; a replaced
 device gets a new key from the admin (`rotate-key`). Leave `GATEWAY_PROVISION_KEY` empty to turn this off.
 Nothing here depends on the gateway model: any device that can send an HTTPS POST with a header will do.
 

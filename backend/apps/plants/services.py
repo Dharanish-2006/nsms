@@ -97,10 +97,21 @@ def disconnect(admin, assignment_id, remarks=""):
     return a
 
 
+def ensure_verified(gateway):
+    """With GATEWAY_AUTO_VERIFY on, a gateway that sends data is verified on the spot (this also
+    covers gateways that registered while the setting was off). Returns gateway.verified."""
+    from django.conf import settings
+
+    if not gateway.verified and settings.GATEWAY_AUTO_VERIFY:
+        gateway.verified = True
+        gateway.save(update_fields=["verified"])
+    return gateway.verified
+
+
 def register_unverified(serial, name=""):
-    """Create a gateway that announced itself (serial number only). It starts unverified, so it
-    cannot be assigned or send data until an admin verifies it. Returns (gateway, created);
-    `gateway._first_key` is set only when created."""
+    """Create a gateway that announced itself (serial number only). It is verified at once when
+    GATEWAY_AUTO_VERIFY is on (the default); otherwise it cannot be assigned or send data until
+    an admin verifies it. Returns (gateway, created); `gateway._first_key` is set only when created."""
     from django.conf import settings
 
     from .models import Plant
@@ -109,7 +120,7 @@ def register_unverified(serial, name=""):
     if gateway is not None:
         return gateway, False
     plant, _ = Plant.objects.get_or_create(name=settings.DEFAULT_PLANT_NAME)
-    gateway = Gateway(name=(name or "").strip() or serial, plant=plant, serial_number=serial, verified=False)
+    gateway = Gateway(name=(name or "").strip() or serial, plant=plant, serial_number=serial, verified=settings.GATEWAY_AUTO_VERIFY)
     try:
         with transaction.atomic():
             gateway.save()
