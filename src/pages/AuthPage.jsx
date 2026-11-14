@@ -116,7 +116,6 @@ function RegisterForm() {
     e.preventDefault();
     const mobile = usePhone ? mobileDigits : "";
     const er = {};
-    if (!f.fullName.trim()) er.fullName = "Enter your full name";
     if (f.username.trim().length < 3) er.username = "At least 3 characters";
     if (!/^\S+@\S+\.\S+$/.test(f.email)) er.email = "Enter a valid email";
     if (!emailToken) er.email ||= "Verify your email with the OTP";
@@ -132,6 +131,7 @@ function RegisterForm() {
     const { confirm: _c, ...rest } = f;
     const err = await register({
       ...rest,
+      fullName: f.username.trim(), // there is no separate full-name field: the username is the display name
       mobile,
       role: "user", // plant owners register here; admins are created by us
       emailToken,
