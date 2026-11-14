@@ -32,7 +32,9 @@ body {
   inset: 0 auto 0 0;
   z-index: 10;
   width: 258px;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   padding: 17px 13px 14px;
@@ -43,7 +45,7 @@ body {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 0 11px 25px;
+  padding: 0 11px 14px;
 }
 .brand img {
   flex: none;
@@ -51,7 +53,7 @@ body {
 .brand .brand-logo {
   width: 100%;
   height: auto;
-  max-width: 220px;
+  max-width: 170px;
 }
 .brand:has(.brand-tag) {
   flex-direction: column;
@@ -135,9 +137,12 @@ body {
   height: 23px;
 }
 .account {
+  position: sticky;
+  bottom: 0;
   margin-top: auto;
   padding: 13px 10px 0;
   border-top: 1px solid #dce2d6;
+  background: #fff;
 }
 .account-info {
   display: flex;
@@ -2078,8 +2083,26 @@ h1 {
     height: 44px;
     padding: 0 12px;
   }
+  .sidebar {
+    height: auto;
+    overflow: visible;
+  }
   .account {
-    display: none;
+    position: static;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 10px;
+    padding: 10px 4px 0;
+  }
+  .account-info {
+    margin-bottom: 0;
+  }
+  .account .logout {
+    width: auto;
+    height: 42px;
+    padding: 0 16px;
   }
   main {
     width: 100%;
