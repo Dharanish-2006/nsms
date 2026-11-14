@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     "apps.telemetry",
     "apps.alerts",
     "apps.adminportal",
+    "apps.enquiries",
 ]
 
 MIDDLEWARE = [
@@ -150,6 +151,7 @@ REST_FRAMEWORK = {
         "register": "10/hour",
         "otp": "30/hour",
         "provision": "30/hour",
+        "contact": "5/hour",
     },
 }
 
@@ -186,6 +188,8 @@ EMAIL_PORT = env_int("EMAIL_PORT", 587)
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+# Who is emailed when someone fills in the public Contact form (comma separated). Empty = nobody.
+ENQUIRY_NOTIFY_EMAIL = os.environ.get("ENQUIRY_NOTIFY_EMAIL", "")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Rice Mill Monitor <no-reply@example.com>")
 
 # --- SMS --------------------------------------------------------------------

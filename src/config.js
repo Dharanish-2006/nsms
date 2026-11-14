@@ -27,5 +27,7 @@ export const config = {
     address: env.VITE_COMPANY_ADDRESS || "Company address, city",
     phone: env.VITE_COMPANY_PHONE || "Company phone number",
     email: env.VITE_COMPANY_EMAIL || "Company email address",
+    /** Digits with country code, e.g. 919876543210. Empty hides the WhatsApp button. */
+    whatsapp: (env.VITE_COMPANY_WHATSAPP || "").replace(/\D/g, ""),
   },
 };

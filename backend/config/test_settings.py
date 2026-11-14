@@ -20,5 +20,5 @@ SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 REST_FRAMEWORK = {
     **REST_FRAMEWORK,
-    "DEFAULT_THROTTLE_RATES": {"login": "1000/min", "register": "1000/min", "otp": "1000/min", "provision": "1000/min"},
+    "DEFAULT_THROTTLE_RATES": {"login": "1000/min", "register": "1000/min", "otp": "1000/min", "provision": "1000/min", "contact": "5/hour"},
 }

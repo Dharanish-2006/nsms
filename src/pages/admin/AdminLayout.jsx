@@ -13,6 +13,7 @@ const items = [
   { label: "Dashboard", to: "/admin", end: true, icon: icons.navDashboard },
   { label: "User approval", to: "/admin/users", icon: icons.navAlerts },
   { label: "Gateways", to: "/admin/gateways", icon: icons.navSettings },
+  { label: "Enquiries", to: "/admin/enquiries", icon: icons.navAlerts },
   { label: "Connections", to: "/admin/connections", icon: icons.navReports },
   { label: "Audit log", to: "/admin/audit", icon: icons.navReports },
   { label: "Profile", to: "/admin/profile", icon: icons.navSettings },

@@ -16,6 +16,11 @@ function CompanyPanel() {
       <div className="company-copy">
         <h1>{config.company.name}</h1>
         <p>Live status, power quality and energy use for every motor in your mill.</p>
+        <p>
+          <Link className="company-more" to="/smart-milling">
+            About the Smart Milling System →
+          </Link>
+        </p>
         <ul>
           <li>
             <AssetIcon src={icons.contactAddress} size={20} />

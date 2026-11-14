@@ -66,7 +66,7 @@ Restart `pnpm dev` after any env change. If the Network tab shows no `/api` call
 ### Test everything
 
 ```bash
-cd backend && pytest          # 100 tests
+cd backend && pytest          # 112 tests
 pnpm check                    # lint, 28 tests, build
 ```
 
@@ -85,6 +85,7 @@ Copy `.env.example`. The settings that matter:
 | `EMAIL_*`, `DEFAULT_FROM_EMAIL` | SMTP for OTP codes and report emails. Console backend just prints. |
 | `SMS_BACKEND` | `console` (log) or `sns` (AWS SNS). India needs DLT registration for real SMS. |
 | `GATEWAY_PROVISION_KEY` | Shared key gateways use to register themselves. Empty = off. |
+| `ENQUIRY_NOTIFY_EMAIL` | Who is emailed for each Contact-form enquiry (comma separated). Empty = saved only, nobody emailed. |
 | `GATEWAY_AUTO_VERIFY` | Default `1`: a gateway is verified by its first message. `0` = the admin verifies each one. |
 | `IOT_RULE_SECRET` | Shared secret for the AWS IoT Rule. Empty = off. |
 | `AUTO_REPORT_HOUR` | IST hour (0-23) after which automatic reports go out. Default 6. |
@@ -145,7 +146,9 @@ due automatic reports. To send reports by hand: `python manage.py send_auto_repo
    were connected. A disconnected record can be reconnected, or the gateway assigned to someone else.
 8. **New key** issues a fresh gateway key (replaced or reset device). The old key stops at once and the new
    one is shown once.
-9. **Audit log** lists every action with admin, time, target and remarks. It cannot be edited.
+9. **Enquiries**: messages from the public Smart Milling page (see below). Mark each one *Contacted* or
+   *Closed* after you have called the person. The dashboard counts new ones.
+10. **Audit log** lists every action with admin, time, target and remarks. It cannot be edited.
 
 ### Plant owner
 
@@ -156,6 +159,17 @@ due automatic reports. To send reports by hand: `python manage.py send_auto_repo
 3. **Settings**: alert limit for power factor, SMS numbers, and **automatic report** (email a CSV daily,
    weekly or monthly). Turning it on or changing the frequency means the first report is for the next period.
 4. **Reports** and each machine page show usage for the periods you were connected.
+
+### The public Smart Milling page
+
+`/smart-milling` needs no login. It explains the Smart Milling System, shows the benefits and has a Contact
+form (name, mobile, requirement). Each enquiry is saved in the database (even if email fails), emailed to
+`ENQUIRY_NOTIFY_EMAIL`, and listed in Admin Portal → Enquiries. It is limited to 5 enquiries an hour per IP
+address and has a hidden spam trap. The text is in `src/content/smartMilling.js`; the pictures are the
+`sm-*.svg` files in `src/assets/images`. Items the product does not do yet carry a "Coming soon" tag
+(`soon: true` in that file); remove the flag when the feature exists. The address, phone and email shown come
+from `COMPANY_*` in `deploy/prod.env`; set `COMPANY_WHATSAPP` (digits with country code) to show a "Chat on
+WhatsApp" button. WhatsApp alerts for each enquiry would need the paid WhatsApp Business API and are not built.
 
 ## 6. Connecting a gateway
 
@@ -211,3 +225,4 @@ Test without hardware: `python manage.py simulate_gateway --key gw_...`.
 | Gateway data rejected | The gateway is disabled, or the key is old (issue a new key). With `GATEWAY_AUTO_VERIFY=0` it may also be unverified. |
 | Automatic report never arrives | The worker is not running, SMTP is not configured, or the owner has no connected machine. |
 | Admin opens `/` and is sent to `/admin` | By design: admins have no machine data. |
+| Contact-form enquiries are saved but no email arrives | `ENQUIRY_NOTIFY_EMAIL` is empty or SMTP is not set up. The enquiry is still in Admin Portal → Enquiries. |

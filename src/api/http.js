@@ -48,8 +48,17 @@ export const httpApi = {
       }),
   },
 
+  // Public Contact form on the Smart Milling page (no login).
+  contact: {
+    /** { name, mobile, requirement, website } -> { ok: true }. `website` is a hidden spam trap. */
+    send: (input) => request("/contact", { method: "POST", body: input, auth: false }),
+  },
+
   // Admin Portal (administrators only; no machine data is reachable from here).
   admin: {
+    enquiries: (query) => request("/admin-portal/enquiries", { query }),
+    setEnquiryStatus: (id, status) =>
+      request(`/admin-portal/enquiries/${enc(id)}`, { method: "PUT", body: { status } }),
     dashboard: () => request("/admin-portal/dashboard"),
     users: (query) => request("/admin-portal/users", { query }),
     approveUser: (id) =>

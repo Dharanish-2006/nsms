@@ -37,6 +37,13 @@ export default function AdminDashboard() {
             tone={d.machinesNeedingSetup ? "warn" : ""}
           />
         </Link>
+        <Link to="/admin/enquiries">
+          <Stat
+            label="New enquiries"
+            value={d.newEnquiries}
+            tone={d.newEnquiries ? "warn" : ""}
+          />
+        </Link>
         <Stat label="Available gateways" value={d.availableGateways} />
         <Stat label="Assigned gateways" value={d.assignedGateways} />
         <Link to="/admin/connections">

@@ -197,3 +197,13 @@ Admins also get `POST /machines`, `PUT/DELETE /machines/:id` to register meters 
 day
 week
 mont
+
+### Contact form and enquiries
+
+| Method | Path | Notes |
+|---|---|---|
+| POST | `/contact` | Public, no token. Body `{ name, mobile, requirement, website }`. `website` is a hidden spam trap and must be empty. `mobile` is a 10-digit Indian mobile (`+91` or `0` prefix accepted). Returns `201 { ok: true }`; `422` on bad input; `429` after 5 enquiries an hour from one IP. The enquiry is saved first, then `ENQUIRY_NOTIFY_EMAIL` is emailed. |
+| GET | `/admin-portal/enquiries?status=new\|contacted\|closed` | Admin only. Rows `{ id, name, mobile, requirement, status, emailed, createdAt, handledAt, handledBy }`, newest first. |
+| PUT | `/admin-portal/enquiries/:id` | Admin only. Body `{ status }`. |
+
+The admin dashboard also returns `newEnquiries` (count of enquiries still `new`).

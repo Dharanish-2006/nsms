@@ -11,6 +11,7 @@ urlpatterns = [
                 path("", include("apps.plants.urls")),
                 path("", include("apps.telemetry.urls")),
                 path("", include("apps.alerts.urls")),
+                path("", include("apps.enquiries.urls")),
                 path("", include("apps.adminportal.urls")),
             ]
         ),

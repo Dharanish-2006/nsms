@@ -15,6 +15,9 @@ const TONES = {
   offline: "muted",
   verified: "ok",
   unverified: "warn",
+  new: "warn",
+  contacted: "ok",
+  closed: "muted",
 };
 export const Pill = ({ value, label }) => (
   <span className={`adm-pill ${TONES[value] ?? "muted"}`}>{label ?? value}</span>

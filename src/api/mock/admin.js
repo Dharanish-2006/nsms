@@ -171,7 +171,34 @@ export function createAdminMock({ users, saveUsers, requireAdmin, fail }) {
     return userRow(byId(u.id));
   }
 
+  const EQ_KEY = "rmm.mock.enquiries";
+  const enquiries = () => load(EQ_KEY, []);
+
   return {
+    async enquiries(query = {}) {
+      await requireAdmin();
+      return enquiries().filter((e) => !query.status || e.status === query.status);
+    },
+    async setEnquiryStatus(id, status) {
+      const me = await requireAdmin();
+      if (!["new", "contacted", "closed"].includes(status))
+        fail(422, "Unknown status.", "validation");
+      let row = null;
+      save(
+        EQ_KEY,
+        enquiries().map((e) => {
+          if (e.id !== Number(id)) return e;
+          row = {
+            ...e,
+            status,
+            handledAt: status === "new" ? null : Date.now(),
+            handledBy: status === "new" ? null : me.username,
+          };
+          return row;
+        }),
+      );
+      return row ?? fail(404, "Not found.", "not_found");
+    },
     async dashboard() {
       await requireAdmin();
       const d = db(),
@@ -186,6 +213,7 @@ export function createAdminMock({ users, saveUsers, requireAdmin, fail }) {
         availableGateways: d.gateways.filter((g) => g.verified && !l[g.id]).length,
         assignedGateways: Object.keys(l).length,
         machinesNeedingSetup: d.machines.filter((m) => !m.configured).length,
+        newEnquiries: enquiries().filter((e) => e.status === "new").length,
         gateways: d.gateways.map((g) => gwRow(g, l[g.id])),
       };
     },

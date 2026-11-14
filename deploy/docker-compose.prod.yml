@@ -67,6 +67,7 @@ services:
         VITE_COMPANY_ADDRESS: ${COMPANY_ADDRESS:-Company address, city}
         VITE_COMPANY_PHONE: ${COMPANY_PHONE:-+91 00000 00000}
         VITE_COMPANY_EMAIL: ${COMPANY_EMAIL:-info@example.com}
+        VITE_COMPANY_WHATSAPP: ${COMPANY_WHATSAPP:-}
     restart: unless-stopped
 
   caddy:

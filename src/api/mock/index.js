@@ -212,6 +212,37 @@ export const mockApi = {
     },
   },
 
+  contact: {
+    // Demo only: the enquiry is stored in this browser, it is NOT sent anywhere.
+    async send({ name, mobile, requirement, website }) {
+      if (website) return { ok: true };
+      const digits = String(mobile ?? "")
+        .replace(/\D/g, "")
+        .replace(/^(91|0)(?=\d{10}$)/, "");
+      if (!String(name ?? "").trim()) fail(422, "Enter your name.", "validation");
+      if (!/^[6-9]\d{9}$/.test(digits))
+        fail(422, "Enter a valid 10-digit mobile number.", "validation");
+      if (String(requirement ?? "").trim().length < 5)
+        fail(422, "Please describe your requirement.", "validation");
+      const list = load("rmm.mock.enquiries", []);
+      save("rmm.mock.enquiries", [
+        {
+          id: (list[0]?.id ?? 0) + 1,
+          name: name.trim(),
+          mobile: digits,
+          requirement: requirement.trim(),
+          status: "new",
+          emailed: false,
+          createdAt: Date.now(),
+          handledAt: null,
+          handledBy: null,
+        },
+        ...list,
+      ]);
+      return { ok: true };
+    },
+  },
+
   admin: adminApi,
 
   plants: {

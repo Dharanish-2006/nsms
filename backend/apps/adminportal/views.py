@@ -18,6 +18,7 @@ from apps.common.errors import ApiError
 from apps.common.permissions import IsAdminRole
 from apps.common.realtime import notify_user_access_changed
 from apps.common.timeutil import to_ms
+from apps.enquiries.models import Enquiry
 from apps.plants import services
 from apps.plants.models import LIVE_STATUSES, Gateway, GatewayAssignment, Machine
 
@@ -116,6 +117,7 @@ class DashboardView(AdminView):
                 "availableGateways": sum(1 for g in gateways if g.verified and g.pk not in live),
                 "assignedGateways": len(live),
                 "machinesNeedingSetup": Machine.objects.filter(configured=False).count(),
+                "newEnquiries": Enquiry.objects.filter(status=Enquiry.Status.NEW).count(),
                 "gateways": [gateway_row(g, live.get(g.pk)) for g in gateways],
             }
         )
