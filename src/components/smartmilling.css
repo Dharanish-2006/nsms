@@ -1,13 +1,13 @@
 .sm {
-  --g: #1f6b3a;
-  --g2: #2f8a4c;
-  --lg: #e7f1ea;
-  --gold: #e0a824;
-  --brown: #7a3b12;
-  --cream: #f4efe2;
-  --ink: #222;
-  --mute: #555;
-  --line: #d6dfd8;
+  --g: #1e6b3c;
+  --g2: #1e6b3c;
+  --lg: #e3f0e5;
+  --gold: #1e6b3c;
+  --brown: #1e6b3c;
+  --cream: #f3f5f0;
+  --ink: #172019;
+  --mute: #46534b;
+  --line: #dce2d6;
   background: #fff;
   color: var(--ink);
   font-family:
@@ -31,7 +31,7 @@
   line-height: 1.2;
   margin: 0 0 12px;
   font-size: clamp(24px, 3.2vw, 32px);
-  color: #14391f;
+  color: #172019;
   text-wrap: balance;
 }
 .sm p {
@@ -65,8 +65,6 @@
 }
 .sm-card {
   border: 1px solid var(--line);
-  border-top: 5px solid var(--gold);
-  box-shadow: 0 8px 22px rgba(20, 71, 42, 0.08);
   border-radius: 18px;
   padding: 16px;
   background: #fff;
@@ -88,7 +86,7 @@
 }
 .sm-band {
   max-width: none;
-  background: linear-gradient(180deg, #14472a 0%, #1f6b3a 100%);
+  background: #1e6b3c;
   padding-left: max(16px, calc((100% - 1088px) / 2));
   padding-right: max(16px, calc((100% - 1088px) / 2));
 }
@@ -111,15 +109,14 @@
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 14px 16px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 .sm-ico {
   flex: none;
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: #fff4d6;
-  color: var(--brown);
+  background: #e3f0e5;
+  color: #1e6b3c;
   display: grid;
   place-items: center;
 }
@@ -224,7 +221,7 @@
 }
 .sm-msg.ok {
   background: var(--lg);
-  color: #14391f;
+  color: #172019;
 }
 .sm-msg.bad {
   background: #fdecec;
