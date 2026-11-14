@@ -14,9 +14,16 @@ const FILTERS = [
 function AssignDialog({ gateway, onClose, reload }) {
   const [users, setUsers] = useState(null);
   const [userId, setUserId] = useState("");
+  const [search, setSearch] = useState("");
   useEffect(() => {
     api.admin.users({ status: "active" }).then(setUsers, () => setUsers([]));
   }, []);
+  const term = search.trim().toLowerCase();
+  const shown = (users ?? []).filter(
+    (u) =>
+      !term ||
+      `${u.username} ${u.fullName ?? ""} ${u.email ?? ""}`.toLowerCase().includes(term),
+  );
   return (
     <Confirm
       title={`Assign ${gateway.name}`}
@@ -31,14 +38,30 @@ function AssignDialog({ gateway, onClose, reload }) {
       }
     >
       <label className="adm-field">
+        Search username
+        <input
+          type="search"
+          autoFocus
+          placeholder="Type a username, name or email"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </label>
+      <label className="adm-field">
         Plant owner
         <select
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
           disabled={!users}
         >
-          <option value="">{users ? "Select an approved user" : "Loading…"}</option>
-          {(users ?? []).map((u) => (
+          <option value="">
+            {users
+              ? shown.length
+                ? "Select an approved user"
+                : "No matching user"
+              : "Loading…"}
+          </option>
+          {shown.map((u) => (
             <option key={u.id} value={u.id}>
               {u.fullName || u.username} (@{u.username})
             </option>
