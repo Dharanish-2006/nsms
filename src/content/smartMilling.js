@@ -1,5 +1,4 @@
-// The words on the public Smart Milling page. Edit text here, not in the page.
-// `soon: true` shows a "Coming soon" tag: use it for anything the product does not do yet.
+// The words on the login page. Only the text supplied by the owner of the site; edit it here.
 
 export const intro = {
   title: "Smart Milling System",
@@ -16,38 +15,18 @@ export const intelligence = [
     key: "production",
     title: "Production Intelligence",
     text: "Production output, machine load and utilisation.",
-    points: [
-      { label: "Production output", soon: true },
-      { label: "Machine load" },
-      { label: "Utilisation" },
-    ],
   },
   {
     key: "energy",
     title: "Energy Intelligence",
     text: "Machine-wise energy consumption, power factor and energy cost per unit of production.",
-    points: [
-      { label: "Machine-wise energy consumption" },
-      { label: "Power factor" },
-      { label: "Energy cost per unit of production", soon: true },
-    ],
   },
   {
     key: "maintenance",
     title: "Maintenance Intelligence",
     text: "Running hours, abnormal operating patterns and preventive maintenance.",
-    points: [
-      { label: "Running hours" },
-      { label: "Abnormal operating patterns", soon: true },
-      { label: "Preventive maintenance", soon: true },
-    ],
   },
 ];
-
-export const steps = {
-  title: "How it works",
-  text: "Nothing changes in how you mill. We add a small energy meter to each machine, and the rest happens by itself.",
-};
 
 export const benefits = {
   title: "Benefits for Rice Mill Owners",
@@ -59,7 +38,7 @@ export const benefits = {
       icon: "search",
       text: "Identification of energy wastage and operational inefficiencies.",
     },
-    { icon: "wrench", text: "Improved preventive maintenance planning.", soon: true },
+    { icon: "wrench", text: "Improved preventive maintenance planning." },
     { icon: "rupee", text: "Better control over electricity expenses." },
     { icon: "screen", text: "Centralised monitoring of your entire rice mill." },
   ],
@@ -76,9 +55,10 @@ export const founders = {
     "Our journey goes beyond building a marketplace. Through initiatives such as the Smart Milling System, we aim to introduce digital monitoring, machinery performance analytics and energy efficiency into traditional rice milling operations.",
     "We believe that the next phase of growth in the rice milling industry will be driven by better connectivity, smarter machinery and data-driven decisions.",
   ],
-  philosophy: "Understand the industry. Solve real problems. Create lasting value.",
+  philosophy:
+    "Our philosophy is simple: Understand the industry. Solve real problems. Create lasting value.",
   closing:
-    "At ricemillmart.com, we are committed to being a technology partner to the rice milling community, helping businesses connect, modernise and grow.",
+    "At ricemillmart.com, we are committed to being a technology partner to the rice milling community, helping businesses connect, modernise and grow",
 };
 
 export const connect = {

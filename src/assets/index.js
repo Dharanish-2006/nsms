@@ -27,7 +27,6 @@ import cardMotor from "./icons/card-motor.svg";
 import powerfactor from "../assets/images/power-factor-icon.svg";
 
 import heroMill from "./images/hero-mill.svg";
-import authMill from "./images/auth-mill.svg";
 import machineBanner from "./images/machine-banner.svg";
 import loadGauge from "./images/load-gauge.svg";
 import alertMachine from "./images/alert-machine.svg";
@@ -69,7 +68,6 @@ export const icons = {
 
 export const images = {
   heroMill,
-  authMill,
   machineBanner,
   loadGauge,
   alertMachine,

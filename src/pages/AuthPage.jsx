@@ -1,4 +1,6 @@
-import { icons, images } from "../assets";
+import { icons } from "../assets";
+import SmartMillingContent from "../components/SmartMillingContent";
+import { intro } from "../content/smartMilling";
 import logo from "../assets/images/logo.png";
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
@@ -15,12 +17,11 @@ function CompanyPanel() {
       </div>
       <div className="company-copy">
         <h1>{config.company.name}</h1>
-        <p>Live status, power quality and energy use for every motor in your mill.</p>
-        <p>
-          <Link className="company-more" to="/smart-milling">
-            About the Smart Milling System →
-          </Link>
-        </p>
+        <h2 className="company-title">{intro.title}</h2>
+        <p className="company-tagline">{intro.tagline}</p>
+        {intro.paragraphs.map((t) => (
+          <p key={t}>{t}</p>
+        ))}
         <ul>
           <li>
             <AssetIcon src={icons.contactAddress} size={20} />
@@ -36,7 +37,6 @@ function CompanyPanel() {
           </li>
         </ul>
       </div>
-      <img className="auth-mill" src={images.authMill} alt="Rice mill" />
     </section>
   );
 }
@@ -248,11 +248,14 @@ export default function AuthPage({ mode }) {
   if (ready && user)
     return <Navigate to={user.role === "admin" ? "/admin" : "/"} replace />;
   return (
-    <div className="auth-layout">
-      <CompanyPanel />
-      <div className="auth-form-wrap">
-        {mode === "login" ? <LoginForm /> : <RegisterForm />}
+    <>
+      <div className="auth-layout">
+        <CompanyPanel />
+        <div className="auth-form-wrap">
+          {mode === "login" ? <LoginForm /> : <RegisterForm />}
+        </div>
       </div>
-    </div>
+      {mode === "login" && <SmartMillingContent />}
+    </>
   );
 }

@@ -21,7 +21,6 @@ const AdminGateways = lazy(() => import("./pages/admin/AdminGateways"));
 const AdminGatewayDetail = lazy(() => import("./pages/admin/AdminGatewayDetail"));
 const AdminConnections = lazy(() => import("./pages/admin/AdminConnections"));
 const AdminEnquiries = lazy(() => import("./pages/admin/AdminEnquiries"));
-const SmartMillingPage = lazy(() => import("./pages/SmartMillingPage"));
 const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 const AdminProfile = lazy(() => import("./pages/admin/AdminProfile"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
@@ -34,7 +33,6 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<AuthPage mode="login" />} />
             <Route path="/register" element={<AuthPage mode="register" />} />
-            <Route path="/smart-milling" element={<SmartMillingPage />} />
             <Route path="admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
               <Route path="users" element={<AdminUsers />} />

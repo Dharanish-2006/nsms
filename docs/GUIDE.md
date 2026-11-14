@@ -160,16 +160,14 @@ due automatic reports. To send reports by hand: `python manage.py send_auto_repo
    weekly or monthly). Turning it on or changing the frequency means the first report is for the next period.
 4. **Reports** and each machine page show usage for the periods you were connected.
 
-### The public Smart Milling page
+### The login page (Smart Milling System and Contact form)
 
-`/smart-milling` needs no login. It explains the Smart Milling System, shows the benefits and has a Contact
-form (name, mobile, requirement). Each enquiry is saved in the database (even if email fails), emailed to
-`ENQUIRY_NOTIFY_EMAIL`, and listed in Admin Portal → Enquiries. It is limited to 5 enquiries an hour per IP
-address and has a hidden spam trap. The text is in `src/content/smartMilling.js`; the pictures are the
-`sm-*.svg` files in `src/assets/images`. Items the product does not do yet carry a "Coming soon" tag
-(`soon: true` in that file); remove the flag when the feature exists. The address, phone and email shown come
-from `COMPANY_*` in `deploy/prod.env`; set `COMPANY_WHATSAPP` (digits with country code) to show a "Chat on
-WhatsApp" button. WhatsApp alerts for each enquiry would need the paid WhatsApp Business API and are not built.
+The login page (`/login`) also shows the Smart Milling System text, the three intelligence cards, the benefits,
+the founders text and a Contact form (name, mobile, requirement), all visible before signing in. Each enquiry
+is saved in the database (even if email fails), emailed to `ENQUIRY_NOTIFY_EMAIL`, and listed in Admin Portal →
+Enquiries. It is limited to 5 enquiries an hour per IP address and has a hidden spam trap. The words are in
+`src/content/smartMilling.js`, the pictures are the `sm-*.svg` files in `src/assets/images`. The address,
+phone and email beside the logo come from `COMPANY_*` in `deploy/prod.env`.
 
 ## 6. Connecting a gateway
 

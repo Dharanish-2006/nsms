@@ -1029,7 +1029,6 @@ h1 {
   background: #f3f5f0;
 }
 .company-panel {
-  min-height: 100vh;
   position: relative;
   overflow: hidden;
   padding: 56px 64px 40px;
@@ -1070,15 +1069,26 @@ h1 {
   line-height: 52px;
   letter-spacing: -0.92px;
 }
+.company-copy .company-title {
+  margin: 28px 0 6px;
+  font-size: 24px;
+  line-height: 30px;
+  letter-spacing: 0;
+  color: #1f6b3a;
+}
+.company-copy .company-tagline {
+  font-weight: 700;
+  color: #7a3b12;
+}
 .company-copy > p {
   max-width: 470px;
-  margin: 16px 0 24px;
+  margin: 0 0 14px;
   color: #46534b;
   font-size: 17px;
   line-height: 26px;
 }
 .company-copy ul {
-  margin: 0;
+  margin: 24px 0 0;
   padding: 0;
   display: grid;
   gap: 10px;
@@ -1090,13 +1100,6 @@ h1 {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-.auth-mill {
-  position: absolute;
-  left: 91px;
-  bottom: 46px;
-  width: 415px;
-  height: 376px;
 }
 .auth-form-wrap {
   display: grid;
@@ -2168,10 +2171,6 @@ h1 {
   .company-panel {
     padding: 44px;
   }
-  .auth-mill {
-    left: 45px;
-    width: 360px;
-  }
   .auth-form-wrap {
     padding: 28px;
   }
@@ -2218,15 +2217,7 @@ h1 {
     margin: 8px 0 14px;
   }
   .company-copy ul {
-    display: none;
-  }
-  .auth-mill {
-    left: auto;
-    right: 30px;
-    bottom: -50px;
-    width: 270px;
-    height: 270px;
-    opacity: 0.7;
+    margin-top: 16px;
   }
   .auth-form-wrap {
     padding: 24px;
@@ -2347,10 +2338,6 @@ h1 {
     max-width: 250px;
     font-size: 14px;
     line-height: 20px;
-  }
-  .auth-mill {
-    right: -38px;
-    width: 230px;
   }
   .auth-form-wrap {
     padding: 14px;
@@ -2806,11 +2793,4 @@ h1 {
 }
 .form-grid:has(> :only-child) {
   grid-template-columns: 1fr;
-}
-
-.company-copy .company-more {
-  color: inherit;
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
