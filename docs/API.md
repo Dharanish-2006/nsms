@@ -39,11 +39,13 @@ Rate-limit login and registration on the server.
 
 ## Users (admin only)
 
-| Method | Path                    | Response                       |
-| ------ | ----------------------- | ------------------------------ |
-| GET    | `/users?status=pending` | `[user]`                       |
-| POST   | `/users/:id/approve`    | 204                            |
-| DELETE | `/users/:id`            | 204 (used to reject a request) |
+Served by the Admin Portal; plant owners get a 403.
+
+| Method | Path                                 | Response                             |
+| ------ | ------------------------------------ | ------------------------------------ |
+| GET    | `/admin-portal/users?status=pending` | `[user]`                             |
+| POST   | `/admin-portal/users/:id/approve`    | the updated user                     |
+| POST   | `/admin-portal/users/:id/reject`     | the updated user. Body `{ reason? }` |
 
 ## Plants, machines, alerts (any signed-in user)
 
@@ -133,16 +135,18 @@ off. Critical wins over warning.
 
 ## Thresholds and phone numbers
 
+Per owner: each plant owner manages their own thresholds and SMS numbers and sees only theirs.
+
 | Method | Path              | Body                   | Response                 |
 | ------ | ----------------- | ---------------------- | ------------------------ |
-| GET    | `/thresholds`     |                        | `[threshold]` (any user) |
-| POST   | `/thresholds`     | threshold without `id` | 201 `threshold` (admin)  |
-| PUT    | `/thresholds/:id` | threshold              | 200 (admin)              |
-| DELETE | `/thresholds/:id` |                        | 204 (admin)              |
-| GET    | `/phones`         |                        | `[phone]` (any user)     |
-| POST   | `/phones`         | phone without `id`     | 201 `phone` (admin)      |
-| PUT    | `/phones/:id`     | phone                  | 200 (admin)              |
-| DELETE | `/phones/:id`     |                        | 204 (admin)              |
+| GET    | `/thresholds`     |                        | `[threshold]` |
+| POST   | `/thresholds`     | threshold without `id` | 201 `threshold` |
+| PUT    | `/thresholds/:id` | threshold              | 200 |
+| DELETE | `/thresholds/:id` |                        | 204 |
+| GET    | `/phones`         |                        | `[phone]` |
+| POST   | `/phones`         | phone without `id`     | 201 `phone` |
+| PUT    | `/phones/:id`     | phone                  | 200 |
+| DELETE | `/phones/:id`     |                        | 204 |
 
 `threshold`: `{ id, param, machineId: "all" | "<machine id>", warning: number | null, critical: number | null }`
 Validate on the server: at least one limit set; for `powerFactor` critical ≤ warning;
@@ -152,8 +156,8 @@ for the others critical ≥ warning.
 
 | Method | Path                      | Body          | Response                    |
 | ------ | ------------------------- | ------------- | --------------------------- |
-| GET    | `/settings/notifications` |               | `notifications` (any)       |
-| PUT    | `/settings/notifications` | notifications | 200 `notifications` (admin) |
+| GET    | `/settings/notifications` |               | `notifications` (own)       |
+| PUT    | `/settings/notifications` | notifications | 200 `notifications`         |
 
 `notifications`: `{ alertsEnabled: boolean, autoReports: boolean, reportFrequency: "day" | "week" | "month" }`. When
 `alertsEnabled` is false the backend must not send alert messages; when
@@ -174,12 +178,12 @@ seconds, epoch ms or ISO 8601 (defaults to now). Optional: `kva kvar current vol
 kwh kvarh kvah on`. Reply `202 {accepted, rejected:[{index,error}], unknownMeters}`; `4xx` means
 fix the data (do not retry), `5xx` / network errors mean retry (duplicates are ignored).
 
-**Gateways and assignment (admin).** `GET/POST /gateways`, `GET/PUT/DELETE /gateways/:id`,
-`POST /gateways/:id/rotate-key` (the key is returned once, on create and rotate, never again),
-`GET/PUT/POST /gateways/:id/users` (`PUT {userIds:[…]}` replaces the set, `POST {userId}` adds one),
-`DELETE /gateways/:id/users/:userId`. A regular user's `GET /gateways` lists only their own, with no
-key or user list. Users only ever see the machines, plants and alerts of gateways assigned to them.
-Admins also get `POST /machines`, `PUT/DELETE /machines/:id` to register meters on a gateway.
+**Gateways and assignment (admin).** Use the Admin Portal endpoints: `GET /admin-portal/gateways?availability=&q=`,
+`GET /admin-portal/gateways/:id/machines` (read-only list of meters, no readings),
+`POST /admin-portal/gateways/:id/rotate-key` (the key is returned once, never again),
+`GET/POST /admin-portal/assignments`, and `POST /admin-portal/assignments/:id/connect|disconnect`.
+A gateway is approved by its first message; there is no verify step. Owners see only the machines,
+plants and alerts of gateways connected to them, and rename a machine with `PUT /machines/:id`.
 
 **Reports.** `GET /reports/daily?plant=&date=YYYY-MM-DD` returns the consolidated per-machine day
 (energy, running energy, runtime, average/max power, average power factor).
