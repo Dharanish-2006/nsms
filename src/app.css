@@ -237,6 +237,14 @@ select:disabled {
   flex-wrap: wrap;
   gap: 12px;
 }
+.machine-type {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #c3ccbc;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+}
 .machine-name h1 {
   margin: 0;
 }

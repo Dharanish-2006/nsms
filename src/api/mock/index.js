@@ -275,11 +275,19 @@ export const mockApi = {
     },
     async update(id, patch) {
       await currentUser();
-      if (patch?.name !== undefined) {
-        const name = String(patch.name).trim();
-        if (!name) fail(422, "Enter a machine name.", "validation");
+      if (patch?.name !== undefined || patch?.type !== undefined) {
+        const details = {};
+        if (patch.name !== undefined) {
+          details.name = String(patch.name).trim();
+          if (!details.name) fail(422, "Enter a machine name.", "validation");
+        }
+        if (patch.type !== undefined) {
+          if (!["sheller", "whitener", "sortex"].includes(patch.type))
+            fail(422, "Pick a machine type.", "validation");
+          details.type = patch.type;
+        }
         return (
-          setMachineDetails(id, { name }) ?? fail(404, "Machine not found.", "not_found")
+          setMachineDetails(id, details) ?? fail(404, "Machine not found.", "not_found")
         );
       }
       const kw = patch?.ratedKw;

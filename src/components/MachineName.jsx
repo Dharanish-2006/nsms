@@ -1,5 +1,11 @@
 import { useState } from "react";
 
+const TYPES = [
+  ["sheller", "Sheller"],
+  ["whitener", "Whitener"],
+  ["sortex", "Sortex"],
+];
+
 /** A machine's name with an inline rename. The plant owner names their own machines. */
 export function MachineName({ machine, onSave }) {
   const [editing, setEditing] = useState(false);
@@ -11,6 +17,17 @@ export function MachineName({ machine, onSave }) {
     setEditing(false);
     setError("");
   };
+  const changeType = async (type) => {
+    setBusy(true);
+    setError("");
+    try {
+      await onSave(machine.id, { type });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
   const submit = async (e) => {
     e.preventDefault();
     const name = text.trim();
@@ -19,7 +36,7 @@ export function MachineName({ machine, onSave }) {
     setBusy(true);
     setError("");
     try {
-      await onSave(machine.id, name);
+      await onSave(machine.id, { name });
       setEditing(false);
     } catch (err) {
       setError(err.message);
@@ -44,6 +61,24 @@ export function MachineName({ machine, onSave }) {
         >
           Rename
         </button>
+        <select
+          className="machine-type"
+          aria-label={`Machine type for ${machine.name}`}
+          value={machine.type}
+          disabled={busy}
+          onChange={(e) => changeType(e.target.value)}
+        >
+          {TYPES.map(([v, l]) => (
+            <option key={v} value={v}>
+              {l}
+            </option>
+          ))}
+        </select>
+        {error && (
+          <small className="form-error motor-error" role="alert">
+            {error}
+          </small>
+        )}
       </div>
     );
   }

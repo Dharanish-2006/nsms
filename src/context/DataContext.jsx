@@ -163,8 +163,8 @@ export function DataProvider({ children }) {
     [refresh],
   );
   const saveMachineName = useCallback(
-    async (id, name) => {
-      await api.machines.update(id, { name });
+    async (id, patch) => {
+      await api.machines.update(id, patch);
       refresh();
     },
     [refresh],
