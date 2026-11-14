@@ -204,6 +204,11 @@ export function createAdminMock({ users, saveUsers, requireAdmin, fail }) {
         pendingUsers: o.filter((u) => u.status === "pending").length,
         approvedUsers: o.filter((u) => u.status === "active").length,
         registeredGateways: d.gateways.length,
+        disconnectedUsers: o.filter(
+          (u) =>
+            u.status === "active" &&
+            !d.assignments.some((a) => a.userId === u.id && a.status === "connected"),
+        ).length,
         activeConnections: d.assignments.filter((a) => a.status === "connected").length,
         availableGateways: d.gateways.filter((g) => !l[g.id]).length,
         assignedGateways: Object.keys(l).length,

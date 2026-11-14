@@ -20,19 +20,12 @@ export default function AdminDashboard() {
           />
         </Link>
         <Stat label="Approved users" value={d.approvedUsers} />
-        <Stat label="Registered gateways" value={d.registeredGateways} />
-        <Link to="/admin/enquiries">
-          <Stat
-            label="New enquiries"
-            value={d.newEnquiries}
-            tone={d.newEnquiries ? "warn" : ""}
-          />
-        </Link>
-        <Stat label="Available gateways" value={d.availableGateways} />
-        <Stat label="Assigned gateways" value={d.assignedGateways} />
-        <Link to="/admin/connections">
-          <Stat label="Active connections" value={d.activeConnections} tone="ok" />
-        </Link>
+        <Stat label="Total gateways" value={d.registeredGateways} />
+        <Stat
+          label="Assigned / available gateways"
+          value={`${d.assignedGateways}/${d.availableGateways}`}
+        />
+        <Stat label="Disconnected users" value={d.disconnectedUsers} />
       </div>
       <section className="adm-card">
         <h2>Gateways</h2>

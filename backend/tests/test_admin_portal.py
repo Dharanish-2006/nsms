@@ -168,6 +168,7 @@ def test_dashboard_counts(admin_client, operator, other_user, gateway, second_ga
     d = admin_client.get(f"{P}/dashboard").json()
     assert d["pendingUsers"] == 1 and d["approvedUsers"] == 2  # asha, ravi
     assert d["registeredGateways"] == 2 and d["activeConnections"] == 1
+    assert d["disconnectedUsers"] == 1  # asha is connected, ravi is not
     assert d["availableGateways"] == 1 and d["assignedGateways"] == 1
     by_name = {g["name"]: g for g in d["gateways"]}
     assert by_name["Gateway A"]["availability"] == "assigned" and by_name["Gateway A"]["assignedTo"]["username"] == "asha"

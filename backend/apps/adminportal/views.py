@@ -111,6 +111,10 @@ class DashboardView(AdminView):
                 "pendingUsers": owners.filter(status=User.Status.PENDING).count(),
                 "approvedUsers": owners.filter(status=User.Status.ACTIVE).count(),
                 "registeredGateways": len(gateways),
+                "disconnectedUsers": owners.filter(status=User.Status.ACTIVE)
+                .exclude(gateway_assignments__status=GatewayAssignment.Status.CONNECTED)
+                .distinct()
+                .count(),
                 "activeConnections": GatewayAssignment.objects.filter(status=GatewayAssignment.Status.CONNECTED).count(),
                 "availableGateways": sum(1 for g in gateways if g.verified and g.pk not in live),
                 "assignedGateways": len(live),
