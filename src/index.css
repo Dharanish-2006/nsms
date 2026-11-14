@@ -59,6 +59,7 @@ body {
   gap: 2px;
 }
 .auth-brand .auth-logo {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
   width: min(170px, 100%);
   height: auto;
   padding: 6px 10px;
@@ -1034,7 +1035,11 @@ h1 {
   padding: 36px 64px 32px;
   display: flex;
   flex-direction: column;
-  background: #e3f0e5;
+  color: #fff;
+  background:
+    radial-gradient(circle at 105% -8%, rgba(224, 168, 36, 0.3), transparent 46%),
+    linear-gradient(165deg, #1f6b3a 0%, #14472a 58%, #0f3320 100%);
+  border-bottom: 5px solid #e0a824;
 }
 .auth-brand {
   display: flex;
@@ -1065,6 +1070,7 @@ h1 {
   margin-top: 20px;
 }
 .company-copy h1 {
+  color: #fff;
   font-size: 38px;
   line-height: 44px;
   letter-spacing: -0.92px;
@@ -1074,16 +1080,16 @@ h1 {
   font-size: 22px;
   line-height: 30px;
   letter-spacing: 0;
-  color: #1f6b3a;
+  color: #f2c14e;
 }
 .company-copy .company-tagline {
   font-weight: 700;
-  color: #7a3b12;
+  color: #fbe7b0;
 }
 .company-copy > p {
   max-width: 470px;
   margin: 0 0 14px;
-  color: #46534b;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 17px;
   line-height: 26px;
 }
@@ -1093,8 +1099,11 @@ h1 {
   display: grid;
   gap: 10px;
   list-style: none;
-  color: #46534b;
+  color: #fff;
   font-size: 15px;
+}
+.company-copy li img {
+  filter: brightness(0) invert(1) sepia(1) saturate(4) hue-rotate(2deg) brightness(1.25);
 }
 .company-copy li {
   display: flex;
@@ -1105,13 +1114,18 @@ h1 {
   display: grid;
   place-items: center;
   padding: 50px;
+  background:
+    radial-gradient(circle at 0% 100%, rgba(31, 107, 58, 0.1), transparent 45%),
+    radial-gradient(circle at 100% 0%, rgba(224, 168, 36, 0.16), transparent 42%), #fbf7ec;
 }
 .auth-card {
   width: 438px;
   padding: 40px;
-  border: 1px solid #dce2d6;
+  border: 1px solid #e6dcc0;
+  border-top: 5px solid #e0a824;
   border-radius: 16px;
   background: white;
+  box-shadow: 0 14px 34px rgba(20, 71, 42, 0.12);
 }
 .auth-card.register {
   width: 520px;

@@ -65,6 +65,8 @@
 }
 .sm-card {
   border: 1px solid var(--line);
+  border-top: 5px solid var(--gold);
+  box-shadow: 0 8px 22px rgba(20, 71, 42, 0.08);
   border-radius: 18px;
   padding: 16px;
   background: #fff;
@@ -86,9 +88,12 @@
 }
 .sm-band {
   max-width: none;
-  background: var(--cream);
+  background: linear-gradient(180deg, #14472a 0%, #1f6b3a 100%);
   padding-left: max(16px, calc((100% - 1088px) / 2));
   padding-right: max(16px, calc((100% - 1088px) / 2));
+}
+.sm-band h2 {
+  color: #fff;
 }
 .sm-benefits {
   list-style: none;
@@ -106,14 +111,15 @@
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 14px 16px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 .sm-ico {
   flex: none;
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--lg);
-  color: var(--g);
+  background: #fff4d6;
+  color: var(--brown);
   display: grid;
   place-items: center;
 }
@@ -135,6 +141,10 @@
   color: var(--brown);
 }
 .sm-contact {
+  max-width: none;
+  background: var(--cream);
+  padding-left: max(16px, calc((100% - 1088px) / 2));
+  padding-right: max(16px, calc((100% - 1088px) / 2));
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 32px;
