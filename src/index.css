@@ -59,9 +59,9 @@ body {
   gap: 2px;
 }
 .auth-brand .auth-logo {
-  width: min(300px, 100%);
+  width: min(170px, 100%);
   height: auto;
-  padding: 10px 14px;
+  padding: 6px 10px;
   background: #fff;
   border-radius: 14px;
 }
@@ -1031,7 +1031,7 @@ h1 {
 .company-panel {
   position: relative;
   overflow: hidden;
-  padding: 56px 64px 40px;
+  padding: 36px 64px 32px;
   display: flex;
   flex-direction: column;
   background: #e3f0e5;
@@ -1062,16 +1062,16 @@ h1 {
   font-size: 13px;
 }
 .company-copy {
-  margin-top: 44px;
+  margin-top: 20px;
 }
 .company-copy h1 {
-  font-size: 46px;
-  line-height: 52px;
+  font-size: 38px;
+  line-height: 44px;
   letter-spacing: -0.92px;
 }
 .company-copy .company-title {
-  margin: 28px 0 6px;
-  font-size: 24px;
+  margin: 18px 0 6px;
+  font-size: 22px;
   line-height: 30px;
   letter-spacing: 0;
   color: #1f6b3a;
