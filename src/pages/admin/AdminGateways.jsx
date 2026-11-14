@@ -74,14 +74,7 @@ export default function AdminGateways() {
             {g.machineCount} machine{g.machineCount === 1 ? "" : "s"}
           </small>
         </Link>
-        {g.unconfiguredMachines > 0 && (
-          <>
-            {" "}
-            <Pill value="warn" label={`${g.unconfiguredMachines} need a name`} />
-          </>
-        )}
       </>,
-      <Pill key="v" value={g.verified ? "verified" : "unverified"} />,
       <>
         <Pill value={g.online ? "online" : "offline"} />
         <br />
@@ -90,12 +83,7 @@ export default function AdminGateways() {
       <Pill key="a" value={g.connection ?? g.availability} />,
       g.assignedTo ? g.assignedTo.fullName || g.assignedTo.username : "—",
       <div className="adm-actions inline" key="x">
-        {!g.verified && (
-          <button className="adm-btn primary" onClick={() => open("verify")}>
-            Verify
-          </button>
-        )}
-        {g.verified && !g.assignmentId && (
+        {!g.assignmentId && (
           <button className="adm-btn primary" onClick={() => open("assign")}>
             Assign
           </button>
@@ -122,8 +110,8 @@ export default function AdminGateways() {
     <>
       <h1>Gateways</h1>
       <p className="adm-note">
-        Gateways register themselves when first powered on. Check the serial number
-        against the box that was installed, then verify it.
+        A gateway appears here, ready to assign, as soon as it sends its first message.
+        There is nothing to approve.
       </p>
       <div className="adm-toolbar">
         <div className="adm-tabs" role="tablist">
@@ -152,22 +140,12 @@ export default function AdminGateways() {
           <p className="adm-empty">Loading…</p>
         ) : (
           <Table
-            head={["Gateway", "Verified", "Link", "Status", "Assigned to", "Actions"]}
+            head={["Gateway", "Link", "Status", "Assigned to", "Actions"]}
             rows={rows}
             empty="No gateways match."
           />
         )}
       </section>
-      {dialog?.kind === "verify" && (
-        <Confirm
-          title={`Verify ${g.name}?`}
-          body={`Serial ${g.serialNumber}. Only verify a gateway you recognise: once verified it can send data and be assigned.`}
-          field="Remarks (optional)"
-          action="Verify"
-          onClose={close}
-          onConfirm={(r) => act(() => api.admin.verifyGateway(g.id, r), reload)}
-        />
-      )}
       {dialog?.kind === "assign" && (
         <AssignDialog gateway={g} onClose={close} reload={reload} />
       )}

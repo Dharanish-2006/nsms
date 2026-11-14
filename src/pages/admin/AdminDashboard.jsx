@@ -21,22 +21,6 @@ export default function AdminDashboard() {
         </Link>
         <Stat label="Approved users" value={d.approvedUsers} />
         <Stat label="Registered gateways" value={d.registeredGateways} />
-        {d.unverifiedGateways > 0 && (
-          <Link to="/admin/gateways">
-            <Stat
-              label="Awaiting verification"
-              value={d.unverifiedGateways}
-              tone="warn"
-            />
-          </Link>
-        )}
-        <Link to="/admin/gateways">
-          <Stat
-            label="Machines needing a name"
-            value={d.machinesNeedingSetup}
-            tone={d.machinesNeedingSetup ? "warn" : ""}
-          />
-        </Link>
         <Link to="/admin/enquiries">
           <Stat
             label="New enquiries"
@@ -53,20 +37,11 @@ export default function AdminDashboard() {
       <section className="adm-card">
         <h2>Gateways</h2>
         <Table
-          head={[
-            "Gateway",
-            "Serial",
-            "Verified",
-            "Link",
-            "Availability",
-            "Assigned to",
-            "Last seen",
-          ]}
+          head={["Gateway", "Serial", "Link", "Availability", "Assigned to", "Last seen"]}
           empty="No gateways have registered yet."
           rows={d.gateways.map((g) => [
             g.name,
             g.serialNumber || "—",
-            <Pill key="v" value={g.verified ? "verified" : "unverified"} />,
             <Pill key="o" value={g.online ? "online" : "offline"} />,
             <Pill key="a" value={g.connection ?? g.availability} />,
             g.assignedTo ? g.assignedTo.fullName || g.assignedTo.username : "—",

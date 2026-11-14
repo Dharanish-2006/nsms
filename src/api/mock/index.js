@@ -10,6 +10,7 @@ import {
   machineSummary,
   plants,
   reevaluate,
+  setMachineDetails,
   setPhones,
   setRatedKw,
   setThresholds,
@@ -274,6 +275,13 @@ export const mockApi = {
     },
     async update(id, patch) {
       await currentUser();
+      if (patch?.name !== undefined) {
+        const name = String(patch.name).trim();
+        if (!name) fail(422, "Enter a machine name.", "validation");
+        return (
+          setMachineDetails(id, { name }) ?? fail(404, "Machine not found.", "not_found")
+        );
+      }
       const kw = patch?.ratedKw;
       if (!Number.isFinite(kw) || kw <= 0 || kw > 1000 * 0.7457)
         fail(422, "Enter a motor rating above 0.", "validation");

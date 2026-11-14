@@ -63,9 +63,8 @@ endpoint is off. The backend must be reachable on a public HTTPS address with a 
    ```
    `meterId` is the meter's Modbus slave address (a string). If the gateway's payload is fixed and
    looks different, tell me its shape: either the rule's SQL can reshape it, or the backend can accept it.
-4. The first message makes the gateway appear in the Admin Portal, already verified. The admin assigns it
-   to a plant owner and connects it. (With `GATEWAY_AUTO_VERIFY=0` the admin must also verify it first, and
-   until then its data is not stored and the rule shows a 403.)
+4. The first message makes the gateway appear in the Admin Portal, already approved. There is no approval
+   step: the admin assigns it to a plant owner and connects it.
 
 ## Try it with a simulated gateway (AWS free plan, no hardware)
 
@@ -134,12 +133,11 @@ python tools/mqtt_gateway_sim.py --endpoint <your endpoint> --serial SIM-GW-0001
 It prints `published #1 …`. To see the messages in AWS itself, open IoT Core → *MQTT test client* and
 subscribe to `mill/#`.
 
-**7. Approve it in the app.** The first message registers the gateway and verifies it automatically, and the
+**7. Assign it in the app.** The first message registers and approves the gateway automatically, and the
 bridge prints `stored 4, rejected 0`. Sign in as admin → Gateways → **Assign** `SIM-GW-0001` to an
 approved plant owner → **Connect**. Sign in as that owner:
-nothing shows yet: the four meters were created as unnamed machines. Open the gateway in the Admin
-Portal (Gateways → click `SIM-GW-0001`), name each meter (Meter ID 1 to 4), and the owner then sees them live.
-Data sent before naming is kept.
+the four meters appear at once as "Meter 1" to "Meter 4". The owner renames each one from its machine page
+(Rename button). The admin only sees the Meter IDs.
 
 **Costs.** IoT Core bills per message, and each publish plus its delivery to the bridge counts. At one
 message every 5 s that is about a million messages a month, so use `--interval 30` for long runs and stop
@@ -169,9 +167,9 @@ topic carries the gateway's identity; the body carries one entry per meter:
 | `on` | no | true/false | Whether the motor is running. Without it, a machine is "on" at or above its ON threshold. |
 
 Nothing else is needed: no machine name, type or HP. The `meterId` is the machine's permanent identity (its
-history and reports hang on it), and the name is only a label the **administrator** sets in the Admin Portal.
-The first time a new `meterId` appears, the server creates an unnamed machine that stays hidden from the plant
-owner until the admin names it. Never put a name in `meterId`: renaming would then look like a new machine.
+history and reports hang on it), and the name is only a label the **plant owner** sets (Rename on the machine page).
+The first time a new `meterId` appears, the server creates a machine called "Meter <id>" that the owner can see
+and rename. Never put a name in `meterId`: renaming would then look like a new machine.
 
 **Where `meterId` comes from.** On a Modbus gateway it is the **slave (server) address** of the meter: the
 number set on the meter itself (Selec MFM384: a menu setting, 1 to 247) and used by the gateway to poll it.

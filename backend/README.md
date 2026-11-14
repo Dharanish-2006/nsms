@@ -36,7 +36,7 @@ Point the frontend at it with `VITE_USE_MOCK=false` and proxy `/api/` (REST and 
 ## How the gateway sends data
 
 `POST /api/ingest`, header `X-Gateway-Key: gw_…`. The key comes from self-registration (below) or from Django
-admin, and is shown once. A gateway that registered itself is verified automatically (`GATEWAY_AUTO_VERIFY=1`, the default); with `0` it cannot send data until an admin verifies it.
+admin, and is shown once. A gateway that registered itself is approved automatically; there is no approval step.
 
 ```json
 { "readings": [
@@ -46,7 +46,7 @@ admin, and is shown once. A gateway that registered itself is verified automatic
 ```
 
 - `meterId` maps to a machine (`Machine.meter_id`, unique per gateway). Register machines with
-  Django admin. A meter a verified gateway reports for the first time is registered automatically as
+  Django admin. A meter a gateway reports for the first time is registered automatically as
   "Meter <id>" (type `sheller`, rating 0): the plant owner renames it and sets its HP. At most
   `MAX_AUTO_MACHINES_PER_GATEWAY` (32) are created this way; the rest come back in `unknownMeters`.
 - Only `meterId` and `kw` are required. Missing `pf`/`kva`/`kvar`/`current`/`on` are derived; without `on`,
@@ -83,8 +83,7 @@ POST /api/gateways/provision      X-Provision-Key: <shared key>
 ```
 
 The gateway stores `apiKey` and uses it as `X-Gateway-Key` from then on (it is shown only once). The gateway
-appears in the admin portal at once and is verified automatically, so it can send data and be assigned. (With
-`GATEWAY_AUTO_VERIFY=0` it starts *unverified* and the admin must verify it first.) It reaches no owner until
+appears in the admin portal at once and is approved automatically, so it can send data and be assigned. It reaches no owner until
 the admin assigns and connects it. A serial can register only once; a replaced
 device gets a new key from the admin (`rotate-key`). Leave `GATEWAY_PROVISION_KEY` empty to turn this off.
 Nothing here depends on the gateway model: any device that can send an HTTPS POST with a header will do.
@@ -109,7 +108,7 @@ alerts or reports (those endpoints return 403 for them and the WebSocket sends t
 |---|---|
 | Dashboard | `GET dashboard`: pending/approved users, gateways, active connections, availability |
 | User Approval | `GET users?status=pending\|active\|rejected&q=`, `POST users/:id/approve`, `POST users/:id/reject {reason?}` |
-| Gateway Assignment | `GET gateways?availability=&verified=&q=`, `POST gateways/:id/verify`, `POST gateways/:id/rotate-key`, `POST assignments {userId, gatewayId}` |
+| Gateway Assignment | `GET gateways?availability=&q=`, `POST gateways/:id/rotate-key`, `POST assignments {userId, gatewayId}` |
 | Connections | `GET assignments?status=&userId=&gatewayId=&q=`, `POST assignments/:id/connect`, `POST assignments/:id/disconnect` |
 | Profile | `GET/PATCH /api/auth/me` (name only), logout is `POST /api/auth/logout` |
 | Audit | `GET audit-log?action=&limit=` |

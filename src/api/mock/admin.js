@@ -1,9 +1,8 @@
-import { setMachineDetails, setRatedKw } from "./engine";
 import { MACHINES } from "./sim";
 import { load, save, uid } from "./storage";
 
 // Browser-only stand-in for the Admin Portal API (see backend/apps/adminportal).
-// It mirrors the server rules: an approved user, a verified and free gateway,
+// It mirrors the server rules: an approved user, a free gateway,
 // one live record per gateway, and an audit entry for every action.
 
 const KEY = "rmm.mock.admin";
@@ -71,7 +70,7 @@ function seedMachines(now) {
       name: `Meter ${n}`,
       type: "sheller",
       ratedKw: 0,
-      configured: false,
+      configured: true,
       lastSeenAt: now - 90_000,
     })),
   ];
@@ -119,9 +118,6 @@ export function createAdminMock({ users, saveUsers, requireAdmin, fail }) {
   const gwRow = (g, l, apiKey) => ({
     ...g,
     machineCount: db().machines.filter((m) => m.gatewayId === g.id).length,
-    unconfiguredMachines: db().machines.filter(
-      (m) => m.gatewayId === g.id && !m.configured,
-    ).length,
     availability: l ? "assigned" : "available",
     online: g.lastSeenAt !== null && Date.now() - g.lastSeenAt < 120_000,
     assignmentId: l?.id ?? null,
@@ -208,11 +204,9 @@ export function createAdminMock({ users, saveUsers, requireAdmin, fail }) {
         pendingUsers: o.filter((u) => u.status === "pending").length,
         approvedUsers: o.filter((u) => u.status === "active").length,
         registeredGateways: d.gateways.length,
-        unverifiedGateways: d.gateways.filter((g) => !g.verified).length,
         activeConnections: d.assignments.filter((a) => a.status === "connected").length,
-        availableGateways: d.gateways.filter((g) => g.verified && !l[g.id]).length,
+        availableGateways: d.gateways.filter((g) => !l[g.id]).length,
         assignedGateways: Object.keys(l).length,
-        machinesNeedingSetup: d.machines.filter((m) => !m.configured).length,
         newEnquiries: enquiries().filter((e) => e.status === "new").length,
         gateways: d.gateways.map((g) => gwRow(g, l[g.id])),
       };
@@ -232,25 +226,8 @@ export function createAdminMock({ users, saveUsers, requireAdmin, fail }) {
         l = live(d);
       return d.gateways
         .filter((g) => match(`${g.name} ${g.serialNumber}`, query.q))
-        .filter(
-          (g) =>
-            query.verified === undefined ||
-            query.verified === "" ||
-            g.verified === (query.verified === "true"),
-        )
         .map((g) => gwRow(g, l[g.id]))
         .filter((r) => !query.availability || r.availability === query.availability);
-    },
-    async verifyGateway(id, remarks = "") {
-      const me = await requireAdmin();
-      const d = db();
-      const g =
-        d.gateways.find((x) => x.id === id) ?? fail(404, "Not found.", "not_found");
-      if (g.verified) fail(409, "Already verified.", "already_verified");
-      g.verified = true;
-      log(d, me, "gateway_verified", "gateway", g.id, remarks);
-      commit(d);
-      return gwRow(g, live(d)[g.id]);
     },
     async rotateKey(id, remarks = "") {
       const me = await requireAdmin();
@@ -285,8 +262,6 @@ export function createAdminMock({ users, saveUsers, requireAdmin, fail }) {
       const g =
         d.gateways.find((x) => x.id === gatewayId) ??
         fail(404, "Gateway not found.", "not_found");
-      if (!g.verified)
-        fail(409, "Verify this gateway before assigning it.", "gateway_unverified");
       if (live(d)[g.id])
         fail(
           409,
@@ -355,54 +330,9 @@ export function createAdminMock({ users, saveUsers, requireAdmin, fail }) {
         d.gateways.find((x) => x.id === id) ?? fail(404, "Not found.", "not_found");
       const rows = d.machines
         .filter((m) => m.gatewayId === id)
-        .sort(
-          (a, b) =>
-            Number(a.configured) - Number(b.configured) ||
-            a.meterId.localeCompare(b.meterId),
-        )
+        .sort((a, b) => a.meterId.localeCompare(b.meterId))
         .map(({ gatewayId, ...m }) => (void gatewayId, m));
       return { gateway: gwRow(g, live(d)[g.id]), machines: rows };
-    },
-    async configureMachine(id, body = {}) {
-      const me = await requireAdmin();
-      const d = db();
-      const m =
-        d.machines.find((x) => x.id === id) ?? fail(404, "Not found.", "not_found");
-      const name = String(body.name ?? "").trim();
-      if (!name || name.length > 100) fail(422, "Enter a machine name.", "validation");
-      if (!["sheller", "whitener", "sortex"].includes(body.type))
-        fail(422, "Pick a machine type.", "validation");
-      if (
-        d.machines.some(
-          (x) =>
-            x.id !== id &&
-            x.gatewayId === m.gatewayId &&
-            x.name.toLowerCase() === name.toLowerCase(),
-        )
-      )
-        fail(
-          409,
-          "Another machine on this gateway already has that name.",
-          "name_in_use",
-        );
-      const before = m.configured
-        ? `${m.name} (${m.type})`
-        : `unnamed meter ${m.meterId}`;
-      Object.assign(m, { name, type: body.type, configured: true });
-      if (Number.isFinite(body.ratedKw) && body.ratedKw >= 0) m.ratedKw = body.ratedKw;
-      setMachineDetails(id, { name, type: body.type }); // keeps the demo owner view in step
-      if (m.ratedKw > 0) setRatedKw(id, m.ratedKw);
-      log(
-        d,
-        me,
-        "machine_configured",
-        "machine",
-        m.id,
-        `${before} -> ${name} (${m.type})`,
-      );
-      commit(d);
-      const { gatewayId, ...row } = m;
-      return (void gatewayId, row);
     },
     async auditLog(query = {}) {
       await requireAdmin();

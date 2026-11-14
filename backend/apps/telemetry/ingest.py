@@ -243,8 +243,8 @@ def _keep_raw(state, s):
 
 
 def _auto_register(gateway, meter_id, machines):
-    """A verified gateway reported a meter we have not seen: register it as a machine so the
-    administrator can name it. Until then it is stored but hidden from the owner. Capped, so a faulty gateway cannot flood us."""
+    """A verified gateway reported a meter we have not seen: register it as a machine ("Meter <id>")
+    that the owner can rename. Capped, so a faulty gateway cannot flood us."""
     if len(machines) >= settings.MAX_AUTO_MACHINES_PER_GATEWAY:
         return None
     base = slugify(f"{gateway.serial_number or gateway.name}-{meter_id}")[:55] or "meter"
@@ -254,7 +254,7 @@ def _auto_register(gateway, meter_id, machines):
         candidate = f"{base}-{n}"
     machine = Machine.objects.create(
         id=candidate, name=f"Meter {meter_id}", type=Machine.Type.SHELLER, rated_kw=0,
-        gateway=gateway, meter_id=meter_id, position=len(machines), configured=False,
+        gateway=gateway, meter_id=meter_id, position=len(machines), configured=True,
     )  # fmt: skip
     machines[meter_id] = machine
     return machine

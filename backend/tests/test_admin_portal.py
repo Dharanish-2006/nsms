@@ -84,12 +84,8 @@ def test_database_refuses_two_live_records_for_one_gateway(operator, other_user,
     GatewayAssignment.objects.create(gateway=gateway, user=other_user, status="disconnected")
 
 
-def test_unverified_gateway_cannot_be_assigned(admin_client, operator, gateway):
-    Gateway.objects.filter(pk=gateway.pk).update(verified=False)
-    r = assign(admin_client, operator, gateway)
-    assert r.status_code == 409 and r.json()["code"] == "gateway_not_verified"
-    assert admin_client.post(f"{P}/gateways/{gateway.pk}/verify").status_code == 200
-    assert admin_client.post(f"{P}/gateways/{gateway.pk}/verify").status_code == 409
+def test_old_unverified_gateway_can_be_assigned(admin_client, operator, gateway):
+    Gateway.objects.filter(pk=gateway.pk).update(verified=False)  # no approval step any more
     assert assign(admin_client, operator, gateway).status_code == 201
 
 
@@ -159,7 +155,7 @@ def test_failed_actions_leave_no_audit_entry(admin_client, operator, other_user,
 
 def test_only_admins_reach_the_portal(user_client, anon, operator, gateway):
     for method, path in (("get", "/dashboard"), ("get", "/gateways"), ("get", "/assignments"), ("get", "/audit-log"),
-                         ("post", "/assignments"), ("post", f"/gateways/{gateway.pk}/verify")):  # fmt: skip
+                         ("post", "/assignments")):  # fmt: skip
         assert getattr(user_client, method)(P + path).status_code == 403, path
         assert getattr(anon, method)(P + path).status_code == 401, path
 
@@ -214,8 +210,8 @@ def test_new_owner_does_not_see_the_previous_owners_hours(admin_client, anon, op
 
 
 # --- gateways registering themselves ----------------------------------------------------
-@override_settings(GATEWAY_PROVISION_KEY="fleet-secret", GATEWAY_AUTO_VERIFY=False)
-def test_gateway_registers_itself_then_waits_for_verification(anon, admin_client, operator):
+@override_settings(GATEWAY_PROVISION_KEY="fleet-secret")
+def test_gateway_registers_itself_and_is_ready_at_once(anon, admin_client, operator):
     body = {"serial": "SN-2026-0001", "name": "Mill gateway"}
     assert anon.post("/api/gateways/provision", body, format="json").status_code == 401
     assert anon.post("/api/gateways/provision", body, format="json", HTTP_X_PROVISION_KEY="wrong").status_code == 401
@@ -227,17 +223,12 @@ def test_gateway_registers_itself_then_waits_for_verification(anon, admin_client
     r2 = anon.post("/api/gateways/provision", body, format="json", HTTP_X_PROVISION_KEY="fleet-secret")
     assert r2.status_code == 409
 
-    # The admin sees it straight away, unverified, and cannot assign it yet
-    gw = admin_client.get(f"{P}/gateways?verified=false").json()
+    # The admin sees it straight away, approved and available to assign
+    gw = admin_client.get(f"{P}/gateways").json()
     assert len(gw) == 1 and gw[0]["serialNumber"] == "SN-2026-0001" and gw[0]["availability"] == "available"
-    assert assign(admin_client, operator, Gateway.objects.get(serial_number="SN-2026-0001")).status_code == 409
+    assert assign(admin_client, operator, Gateway.objects.get(serial_number="SN-2026-0001")).status_code == 201
 
-    # It may not send data until verified
     reading = {"readings": [{"meterId": "7", "kw": 10}]}
-    r = anon.post("/api/ingest", reading, format="json", HTTP_X_GATEWAY_KEY=key)
-    assert r.status_code == 403 and r.json()["code"] == "gateway_not_verified"
-
-    assert admin_client.post(f"{P}/gateways/{gw[0]['id']}/verify").status_code == 200
     r = anon.post("/api/ingest", reading, format="json", HTTP_X_GATEWAY_KEY=key)
     assert r.status_code == 202 and r.json()["accepted"] == 1
     machine = Machine.objects.get(gateway__serial_number="SN-2026-0001")
@@ -267,23 +258,17 @@ def test_rotating_a_key_is_audited_and_works(admin_client, anon, gateway, machin
 
 
 # --- AWS IoT Core (MQTT) ---------------------------------------------------------------
-@override_settings(IOT_RULE_SECRET="rule-secret", GATEWAY_AUTO_VERIFY=False)
+@override_settings(IOT_RULE_SECRET="rule-secret")
 def test_iot_rule_delivers_mqtt_readings(anon, admin_client, operator):
     H = {"HTTP_X_IOT_SECRET": "rule-secret"}
     msg = {"serial": "SN-MQTT-0001", "readings": [{"meterId": "1", "kw": 12.5, "pf": 0.9}]}
     assert anon.post("/api/iot/ingest", msg, format="json").status_code == 401
     assert anon.post("/api/iot/ingest", msg, format="json", HTTP_X_IOT_SECRET="nope").status_code == 401
 
-    # First message from an unknown serial: it appears for the admin, unverified, data not stored
-    r = anon.post("/api/iot/ingest", msg, format="json", **H)
-    assert r.status_code == 403 and r.json()["code"] == "gateway_not_verified"
-    gw = admin_client.get(f"{P}/gateways?verified=false").json()
-    assert [g["serialNumber"] for g in gw] == ["SN-MQTT-0001"]
-    assert Machine.objects.count() == 0
-
-    admin_client.post(f"{P}/gateways/{gw[0]['id']}/verify")
+    # The first message from an unknown serial registers it and is stored
     r = anon.post("/api/iot/ingest", msg, format="json", **H)
     assert r.status_code == 202 and r.json()["accepted"] == 1
+    assert [g["serialNumber"] for g in admin_client.get(f"{P}/gateways").json()] == ["SN-MQTT-0001"]
     assert Machine.objects.get(gateway__serial_number="SN-MQTT-0001").meter_id == "1"
 
     # Bad serials and bad bodies are refused
@@ -303,7 +288,6 @@ def test_iot_ingest_is_off_without_a_secret(anon):
     assert anon.post("/api/iot/ingest", {"serial": "SN-MQTT-0001", "readings": []}, format="json").status_code == 404
 
 
-@override_settings(GATEWAY_AUTO_VERIFY=False)
 def test_iot_bridge_message_handler(admin_client, db):
     """What the `iot_bridge` subscriber does with each MQTT message."""
     from apps.plants.models import Gateway
@@ -313,13 +297,10 @@ def test_iot_bridge_message_handler(admin_client, db):
     assert handle_message("other/topic", good).startswith("ignored")
     assert handle_message("mill/SN-BRIDGE-1/readings", b"not json").startswith("rejected")
     assert handle_message("mill/SN-BRIDGE-1/readings", b"[1]").startswith("rejected")
-    # first message registers the gateway but is refused until an admin verifies it
-    assert "waiting" in handle_message("mill/SN-BRIDGE-1/readings", good)
-    gw = Gateway.objects.get(serial_number="SN-BRIDGE-1")
-    assert not gw.verified
-    gw.verified = True
-    gw.save()
+    # the first message registers and approves the gateway, and is stored
     assert handle_message("mill/SN-BRIDGE-1/readings", good).startswith("stored")
+    gw = Gateway.objects.get(serial_number="SN-BRIDGE-1")
+    assert gw.verified
     gw.enabled = False
     gw.save()
     assert "disabled" in handle_message("mill/SN-BRIDGE-1/readings", good)
@@ -344,7 +325,7 @@ def test_first_mqtt_message_registers_and_verifies_the_gateway(anon):
     r = anon.post("/api/iot/ingest", msg, format="json", HTTP_X_IOT_SECRET="rule-secret")
     assert r.status_code == 202 and r.json()["accepted"] == 1
     assert Gateway.objects.get(serial_number="SN-MQTT-AUTO").verified
-    assert Machine.objects.get(gateway__serial_number="SN-MQTT-AUTO").configured is False
+    assert Machine.objects.get(gateway__serial_number="SN-MQTT-AUTO").configured is True
 
 
 def test_bridge_message_from_a_new_gateway_is_stored(db):
@@ -361,7 +342,6 @@ def test_earlier_unverified_gateway_is_verified_by_its_next_message(anon):
     assert r.status_code == 202 and Gateway.objects.get(serial_number="SN-OLD-1").verified
 
 
-@override_settings(GATEWAY_AUTO_VERIFY=True)
-def test_disabled_gateway_stays_blocked_even_with_auto_verify(anon, gateway):
+def test_disabled_gateway_stays_blocked(anon, gateway):
     Gateway.objects.filter(pk=gateway.pk).update(enabled=False)
     assert push(anon, gateway, [{"meterId": "1", "kw": 1}]).status_code == 403

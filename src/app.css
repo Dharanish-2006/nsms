@@ -231,6 +231,23 @@ select:disabled {
   gap: 8px;
   min-height: 54px;
 }
+.machine-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.machine-name h1 {
+  margin: 0;
+}
+.machine-name input {
+  height: 40px;
+  min-width: 220px;
+  padding: 0 12px;
+  border: 1px solid #c3ccbc;
+  border-radius: 8px;
+  font: inherit;
+}
 .motor-cell {
   display: flex;
   flex-wrap: wrap;

@@ -66,7 +66,7 @@ Restart `pnpm dev` after any env change. If the Network tab shows no `/api` call
 ### Test everything
 
 ```bash
-cd backend && pytest          # 112 tests
+cd backend && pytest          # 111 tests
 pnpm check                    # lint, 28 tests, build
 ```
 
@@ -86,7 +86,6 @@ Copy `.env.example`. The settings that matter:
 | `SMS_BACKEND` | `console` (log) or `sns` (AWS SNS). India needs DLT registration for real SMS. |
 | `GATEWAY_PROVISION_KEY` | Shared key gateways use to register themselves. Empty = off. |
 | `ENQUIRY_NOTIFY_EMAIL` | Who is emailed for each Contact-form enquiry (comma separated). Empty = saved only, nobody emailed. |
-| `GATEWAY_AUTO_VERIFY` | Default `1`: a gateway is verified by its first message. `0` = the admin verifies each one. |
 | `IOT_RULE_SECRET` | Shared secret for the AWS IoT Rule. Empty = off. |
 | `AUTO_REPORT_HOUR` | IST hour (0-23) after which automatic reports go out. Default 6. |
 | `NOMINAL_VOLTAGE` | Used when a gateway does not send voltage (default 415). |
@@ -129,19 +128,16 @@ due automatic reports. To send reports by hand: `python manage.py send_auto_repo
 
 1. Sign in at `/login` with an admin account. You land on the Admin Portal.
 2. **User approval**: new owners register and wait as *Pending*. Approve, or reject with a reason.
-3. **Gateways**: a freshly installed gateway registers itself with its first message and is verified
-   automatically (`GATEWAY_AUTO_VERIFY`, on by default). It appears in the list as *Verified* and *Available*.
-   It reaches no owner until you assign and connect it. Set `GATEWAY_AUTO_VERIFY=0` if you want to check each
-   serial number yourself and press **Verify**; until then such a gateway cannot send data or be assigned.
-4. **Assign** a verified, available gateway to an approved owner. The owner still sees nothing.
-5. **Name the machines.** Open the gateway (Admin Portal → Gateways → click its name). It lists every
-   meter that has reported, by **Meter ID** (the Modbus address of the meter). Give each one the name the
-   owner will see (for example "Sheller 1"), its type (Sheller, Whitener, Sortex) and, optionally, its HP.
-   You never see readings here, only configuration. A meter stays **hidden from the owner** (no live
-   values, reports or alerts) until you name it; data it sends meanwhile is kept. The Dashboard counts
-   "Machines needing a name".
+3. **Gateways**: a freshly installed gateway registers itself with its first message and is approved
+   automatically. There is no approval step. It appears in the list as *Available* and reaches no owner until
+   you assign and connect it.
+4. **Assign** an available gateway to an approved owner. The owner still sees nothing.
+5. **Machines are named by the owner.** Open the gateway (Admin Portal → Gateways → click its name) to see
+   the meters that have reported, by **Meter ID**. You cannot rename them and never see readings. Each meter
+   shows up for the owner at once as "Meter <id>"; the owner renames it with the **Rename** button on the
+   machine page.
 6. **Connect**. From now on the owner sees that gateway's named machines, reports and alerts.
-   (Steps 5 and 6 can be done in either order.)
+   
 7. **Disconnect** frees the gateway. The owner loses live access but keeps reports for the period they
    were connected. A disconnected record can be reconnected, or the gateway assigned to someone else.
 8. **New key** issues a fresh gateway key (replaced or reset device). The old key stops at once and the new
@@ -220,7 +216,7 @@ Test without hardware: `python manage.py simulate_gateway --key gw_...`.
 | OTP request returns 429 | Rate limit on OTP sending: wait a few minutes. |
 | OTP request returns 503 or `Name or service not known` | `EMAIL_HOST` is empty or wrong. |
 | Owner sees no machines | A gateway must be assigned **and connected** to them, and have sent data. |
-| Gateway data rejected | The gateway is disabled, or the key is old (issue a new key). With `GATEWAY_AUTO_VERIFY=0` it may also be unverified. |
+| Gateway data rejected | The gateway is disabled, or the key is old (issue a new key). |
 | Automatic report never arrives | The worker is not running, SMTP is not configured, or the owner has no connected machine. |
 | Admin opens `/` and is sent to `/admin` | By design: admins have no machine data. |
 | Contact-form enquiries are saved but no email arrives | `ENQUIRY_NOTIFY_EMAIL` is empty or SMTP is not set up. The enquiry is still in Admin Portal → Enquiries. |

@@ -162,6 +162,13 @@ export function DataProvider({ children }) {
     },
     [refresh],
   );
+  const saveMachineName = useCallback(
+    async (id, name) => {
+      await api.machines.update(id, { name });
+      refresh();
+    },
+    [refresh],
+  );
   const savePhone = useCallback(async (p) => {
     await api.phones.save(p);
     setPhones(await api.phones.list());
@@ -194,6 +201,7 @@ export function DataProvider({ children }) {
       saveThreshold,
       removeThreshold,
       saveMotorRating,
+      saveMachineName,
       phones,
       savePhone,
       removePhone,
@@ -213,6 +221,7 @@ export function DataProvider({ children }) {
       saveThreshold,
       removeThreshold,
       saveMotorRating,
+      saveMachineName,
       phones,
       savePhone,
       removePhone,

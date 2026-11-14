@@ -17,16 +17,15 @@ TOPIC_PARTS = ("mill", None, "readings")  # mill/<serial>/readings
 
 def gateway_for_serial(serial):
     """The gateway that may store data for this serial. Unknown serials register themselves
-    (unverified, like HTTPS self-registration); unverified or disabled gateways are refused."""
+    and are approved by this first message; disabled gateways are refused."""
     if not isinstance(serial, str) or not SERIAL_RE.match(serial):
         raise ApiError("A valid gateway serial is required.", 422, "validation")
     gateway, created = register_unverified(serial)
     if created:
-        logger.info("Gateway %s registered itself over MQTT; waiting for verification.", serial)
+        logger.info("Gateway %s registered itself over MQTT and was approved.", serial)
     if not gateway.enabled:
         raise ApiError("This gateway is disabled.", 403, "gateway_disabled")
-    if not ensure_verified(gateway):
-        raise ApiError("This gateway is waiting for the administrator to verify it.", 403, "gateway_not_verified")
+    ensure_verified(gateway)
     return gateway
 
 

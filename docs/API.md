@@ -59,8 +59,8 @@ Rate-limit login and registration on the server.
 The app calls `/machines` and `/alerts` every `VITE_POLL_INTERVAL_MS` (5 s).
 Keep them fast. It backs off automatically when they fail.
 
-Any signed-in user can change the rating of a machine they can see, from the Reports and machine pages: `PUT /machines/:id` with
-`{ "ratedKw": 37.285 }` (404 for a machine they cannot see) returns the updated `machine`. The UI shows and
+Any signed-in user can rename a machine they can see and change its rating, from the Reports and machine pages: `PUT /machines/:id` with
+`{ "name": "Sheller 1", "ratedKw": 37.285 }` (409 `name_in_use` if another machine on the gateway has that name) (404 for a machine they cannot see) returns the updated `machine`. The UI shows and
 edits horsepower and converts at 1 HP = 0.7457 kW, so `ratedKw` stays the stored value and
 `loadFactor` is recomputed from it.
 

@@ -7,6 +7,7 @@ import { StatusBadge } from "../components/Icon";
 import { useData } from "../context/DataContext";
 import runtime_icon from "../assets/images/runtime-icon.svg";
 import { MotorRating } from "../components/MotorRating";
+import { MachineName } from "../components/MachineName";
 // import power from "../assets/images/"
 import {
   downloadCsv,
@@ -34,7 +35,7 @@ const RANGES = [
 export default function ProcessPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { machines, plant, lastUpdate, saveMotorRating } = useData();
+  const { machines, plant, lastUpdate, saveMotorRating, saveMachineName } = useData();
   const [windowHrs, setWindowHrs] = useState(24);
   const m = machines.find((x) => x.id === id);
   // Figures for the chosen time range come from the hourly reports.
@@ -105,7 +106,7 @@ export default function ProcessPage() {
         <section className="machine-banner">
           <img src={images.machineBanner} alt="" />
           <div>
-            <h1>{m.name}</h1>
+            <MachineName machine={m} onSave={saveMachineName} />
             <p>
               {m.plant} · <MotorRating machine={m} canEdit onSave={saveMotorRating} /> ·
               Updated {istStamp12(m.updatedAt)}

@@ -65,7 +65,6 @@ def gateway_row(g, live=None, api_key=None):
         "assignedTo": _person(live.user) if live else None,
         "connection": live.status if live else None,
         "machineCount": g.machines.count(),
-        "unconfiguredMachines": g.machines.filter(configured=False).count(),
     }
     if api_key:
         data["apiKey"] = api_key  # shown once
@@ -112,11 +111,9 @@ class DashboardView(AdminView):
                 "pendingUsers": owners.filter(status=User.Status.PENDING).count(),
                 "approvedUsers": owners.filter(status=User.Status.ACTIVE).count(),
                 "registeredGateways": len(gateways),
-                "unverifiedGateways": sum(1 for g in gateways if not g.verified),
                 "activeConnections": GatewayAssignment.objects.filter(status=GatewayAssignment.Status.CONNECTED).count(),
                 "availableGateways": sum(1 for g in gateways if g.verified and g.pk not in live),
                 "assignedGateways": len(live),
-                "machinesNeedingSetup": Machine.objects.filter(configured=False).count(),
                 "newEnquiries": Enquiry.objects.filter(status=Enquiry.Status.NEW).count(),
                 "gateways": [gateway_row(g, live.get(g.pk)) for g in gateways],
             }
@@ -195,20 +192,6 @@ class GatewayListView(AdminView):
         if availability in ("available", "assigned"):
             rows = [r for r in rows if r["availability"] == availability]
         return Response(rows)
-
-
-class GatewayVerifyView(AdminView):
-    """Confirm that a gateway which registered itself is the box that was installed."""
-
-    @transaction.atomic
-    def post(self, request, pk):
-        gateway = get_object_or_404(Gateway.objects.select_for_update(), pk=pk)
-        if gateway.verified:
-            raise ApiError("Already verified.", 409, "already_verified")
-        gateway.verified = True
-        gateway.save(update_fields=["verified"])
-        AdminAuditLog.record(request.user, AdminAuditLog.Action.GATEWAY_VERIFIED, "gateway", gateway.pk, _remarks(request))
-        return Response(gateway_row(gateway, _live_by_gateway().get(gateway.pk)))
 
 
 class GatewayRotateKeyView(AdminView):
@@ -303,7 +286,7 @@ class AuditLogView(AdminView):
         )
 
 
-# --- Naming machines -------------------------------------------------------------------
+# --- Machines (read-only; owners name them) -------------------------------------------------------------------
 def machine_row(m):
     """Configuration only. No readings: those belong to the plant owner."""
     state = getattr(m, "state", None)
@@ -319,48 +302,9 @@ def machine_row(m):
 
 
 class GatewayMachinesView(AdminView):
-    """The machines (meters) a gateway has reported, so the admin can name them."""
+    """The machines (meters) a gateway has reported. Read-only: the owner names them."""
 
     def get(self, request, pk):
         gateway = get_object_or_404(Gateway, pk=pk)
         machines = gateway.machines.select_related("state").order_by("configured", "position", "meter_id")
         return Response({"gateway": gateway_row(gateway, _live_by_gateway().get(gateway.pk)), "machines": [machine_row(m) for m in machines]})
-
-
-class MachineConfigureSerializer(serializers.Serializer):
-    name = serializers.CharField(max_length=100)
-    type = serializers.ChoiceField(Machine.Type.values)
-    ratedKw = serializers.FloatField(min_value=0, max_value=100000, required=False)
-
-
-class MachineConfigureView(AdminView):
-    """Name a machine and set its type (and optionally its rating). It then becomes visible to the
-    owner connected to its gateway."""
-
-    @transaction.atomic
-    def put(self, request, pk):
-        from apps.alerts.dispatch import dispatch
-        from apps.alerts.engine import reevaluate_gateway
-        from apps.telemetry.publish import publish_machine_change
-
-        machine = get_object_or_404(Machine.objects.select_for_update().select_related("gateway"), pk=pk)
-        s = MachineConfigureSerializer(data=request.data)
-        s.is_valid(raise_exception=True)
-        d = s.validated_data
-        name = d["name"].strip()
-        if not name:
-            raise ApiError("Enter a machine name.", 422, "validation")
-        if Machine.objects.filter(gateway=machine.gateway, name__iexact=name).exclude(pk=machine.pk).exists():
-            raise ApiError("Another machine on this gateway already has that name.", 409, "name_in_use")
-        before = f"{machine.name} ({machine.type})" if machine.configured else f"unnamed meter {machine.meter_id}"
-        machine.name, machine.type, machine.configured = name, d["type"], True
-        if "ratedKw" in d:
-            machine.rated_kw = d["ratedKw"]
-        machine.save()
-        AdminAuditLog.record(
-            request.user, AdminAuditLog.Action.MACHINE_CONFIGURED, "machine", machine.pk,
-            f"{before} -> {name} ({machine.type}); gateway {machine.gateway.serial_number or machine.gateway.name}",
-        )  # fmt: skip
-        transaction.on_commit(lambda: (publish_machine_change(machine), dispatch(reevaluate_gateway(machine.gateway_id))))
-        machine = Machine.objects.select_related("state").get(pk=machine.pk)
-        return Response(machine_row(machine))

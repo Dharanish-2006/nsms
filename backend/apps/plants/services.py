@@ -43,8 +43,6 @@ def assign(admin, user_id, gateway_id, remarks=""):
     user = get_object_or_404(User.objects.select_for_update(), pk=user_id)
     if user.role != User.Role.USER or user.status != User.Status.ACTIVE:
         raise ApiError("Only approved users can be assigned a gateway.", 409, "user_not_approved")
-    if not gateway.verified:
-        raise ApiError("Verify this gateway before assigning it.", 409, "gateway_not_verified")
     if _live_exists(gateway):
         raise ApiError("This gateway is already assigned. Disconnect it first.", 409, "gateway_in_use")
     try:
@@ -65,8 +63,6 @@ def connect(admin, assignment_id, remarks=""):
     user = User.objects.get(pk=a.user_id)
     if user.status != User.Status.ACTIVE:
         raise ApiError("Only approved users can be connected.", 409, "user_not_approved")
-    if not gateway.verified:
-        raise ApiError("Verify this gateway before connecting it.", 409, "gateway_not_verified")
     if _live_exists(gateway, exclude=a.pk):
         raise ApiError("Another user holds this gateway.", 409, "gateway_in_use")
     now = timezone.now()
@@ -98,20 +94,17 @@ def disconnect(admin, assignment_id, remarks=""):
 
 
 def ensure_verified(gateway):
-    """With GATEWAY_AUTO_VERIFY on, a gateway that sends data is verified on the spot (this also
-    covers gateways that registered while the setting was off). Returns gateway.verified."""
-    from django.conf import settings
-
-    if not gateway.verified and settings.GATEWAY_AUTO_VERIFY:
+    """There is no approval step: a gateway that sends data is approved on the spot, so it can be
+    assigned to an owner. Returns True."""
+    if not gateway.verified:
         gateway.verified = True
         gateway.save(update_fields=["verified"])
     return gateway.verified
 
 
 def register_unverified(serial, name=""):
-    """Create a gateway that announced itself (serial number only). It is verified at once when
-    GATEWAY_AUTO_VERIFY is on (the default); otherwise it cannot be assigned or send data until
-    an admin verifies it. Returns (gateway, created); `gateway._first_key` is set only when created."""
+    """Create a gateway that announced itself (serial number only). It is approved at once, so it
+    can be assigned straight away. Returns (gateway, created); `gateway._first_key` is set only when created."""
     from django.conf import settings
 
     from .models import Plant
@@ -120,7 +113,7 @@ def register_unverified(serial, name=""):
     if gateway is not None:
         return gateway, False
     plant, _ = Plant.objects.get_or_create(name=settings.DEFAULT_PLANT_NAME)
-    gateway = Gateway(name=(name or "").strip() or serial, plant=plant, serial_number=serial, verified=settings.GATEWAY_AUTO_VERIFY)
+    gateway = Gateway(name=(name or "").strip() or serial, plant=plant, serial_number=serial, verified=True)
     try:
         with transaction.atomic():
             gateway.save()

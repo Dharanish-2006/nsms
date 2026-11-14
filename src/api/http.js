@@ -69,11 +69,6 @@ export const httpApi = {
         body: { reason },
       }),
     gateways: (query) => request("/admin-portal/gateways", { query }),
-    verifyGateway: (id, remarks) =>
-      request(`/admin-portal/gateways/${enc(id)}/verify`, {
-        method: "POST",
-        body: { remarks },
-      }),
     rotateKey: (id, remarks) =>
       request(`/admin-portal/gateways/${enc(id)}/rotate-key`, {
         method: "POST",
@@ -96,8 +91,6 @@ export const httpApi = {
         body: { remarks },
       }),
     gatewayMachines: (id) => request(`/admin-portal/gateways/${enc(id)}/machines`),
-    configureMachine: (id, body) =>
-      request(`/admin-portal/machines/${enc(id)}`, { method: "PUT", body }),
     auditLog: (query) => request("/admin-portal/audit-log", { query }),
   },
 
@@ -117,7 +110,7 @@ export const httpApi = {
     /** hours: 12 | 24 | 168 | 720 -> { kwh, runKwh, runSeconds, avgLoadFactor, avgPf } for one machine */
     summary: (id, hours, opts) =>
       request(`/machines/${enc(id)}/summary`, { ...opts, query: { hours } }),
-    /** patch: { ratedKw, onThresholdKw } -> the updated machine (names are set by the admin) */
+    /** patch: { name, type, ratedKw, onThresholdKw } -> the updated machine (the owner names their machines) */
     update: (id, patch) =>
       request(`/machines/${enc(id)}`, { method: "PUT", body: patch }),
   },

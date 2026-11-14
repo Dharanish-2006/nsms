@@ -73,8 +73,7 @@ class IngestView(APIView):
             raise ApiError("Invalid gateway key.", 401, "invalid_gateway_key")
         if not gateway.enabled:
             raise ApiError("This gateway is disabled.", 403, "gateway_disabled")
-        if not ensure_verified(gateway):
-            raise ApiError("This gateway is waiting for the administrator to verify it.", 403, "gateway_not_verified")
+        ensure_verified(gateway)
 
         return _store(gateway, request.data, request)
 
@@ -85,7 +84,7 @@ class IotIngestView(APIView):
     The gateway publishes to `mill/<serial>/readings`; IoT Core authenticates it with its own
     certificate and its policy only lets it publish under its own serial, so the rule can trust
     the topic. The rule forwards `{"serial": topic(2), "readings": [...]}` with the shared secret
-    in `X-IoT-Secret`. A serial we have not seen is registered as an unverified gateway, exactly
+    in `X-IoT-Secret`. A serial we have not seen is registered as a gateway (approved by its first message), exactly
     like self-registration over HTTPS. See docs/AWS-IOT.md.
     """
 
@@ -115,8 +114,10 @@ class IotIngestView(APIView):
 
 # --- Machines ---------------------------------------------------------------
 class MachineEditSerializer(serializers.Serializer):
-    """What a plant owner may change about their machine: its rating and ON threshold. The name,
-    type and wiring are set by the administrator (Admin Portal)."""
+    """What a plant owner may change about their machine: its name, type, rating and ON threshold."""
+
+    name = serializers.CharField(max_length=100, required=False)
+    type = serializers.ChoiceField(Machine.Type.values, required=False)
 
     ratedKw = serializers.FloatField(min_value=0, max_value=100000, required=False)
     onThresholdKw = serializers.FloatField(min_value=0, required=False)
@@ -142,6 +143,19 @@ class MachineDetailView(APIView):
         s = MachineEditSerializer(data=request.data, partial=True)
         s.is_valid(raise_exception=True)
         d = s.validated_data
+        if "name" in d:
+            name = d["name"].strip()
+            if not name:
+                raise ApiError("Enter a machine name.", 422, "validation")
+            if (
+                Machine.objects.filter(gateway=machine.gateway, name__iexact=name)
+                .exclude(pk=machine.pk)
+                .exists()
+            ):
+                raise ApiError("Another machine on this gateway already has that name.", 409, "name_in_use")
+            machine.name = name
+        if "type" in d:
+            machine.type = d["type"]
         for src, dst in (("ratedKw", "rated_kw"), ("onThresholdKw", "on_threshold_kw")):
             if src in d:
                 setattr(machine, dst, d[src])
