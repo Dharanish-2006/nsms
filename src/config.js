@@ -23,10 +23,10 @@ export const config = {
   /** A machine that has not reported for this long shows as Unknown. */
   staleAfterMs: 120000,
   company: {
-    name: env.VITE_COMPANY_NAME || "Your Company Name",
-    address: env.VITE_COMPANY_ADDRESS || "Company address, city",
-    phone: env.VITE_COMPANY_PHONE || "Company phone number",
-    email: env.VITE_COMPANY_EMAIL || "Company email address",
+    name: env.VITE_COMPANY_NAME || "RicemillMart",
+    address: env.VITE_COMPANY_ADDRESS || "[Your address, City, State PIN]",
+    phone: env.VITE_COMPANY_PHONE || "+91 XXXXX XXXXX",
+    email: env.VITE_COMPANY_EMAIL || "[info@yourdomain.com]",
     /** Digits with country code, e.g. 919876543210. Empty hides the WhatsApp button. */
     whatsapp: (env.VITE_COMPANY_WHATSAPP || "").replace(/\D/g, ""),
   },

@@ -63,10 +63,10 @@ services:
       context: ..
       dockerfile: Dockerfile
       args:
-        VITE_COMPANY_NAME: ${COMPANY_NAME:-Your Company Name}
-        VITE_COMPANY_ADDRESS: ${COMPANY_ADDRESS:-Company address, city}
-        VITE_COMPANY_PHONE: ${COMPANY_PHONE:-+91 00000 00000}
-        VITE_COMPANY_EMAIL: ${COMPANY_EMAIL:-info@example.com}
+        VITE_COMPANY_NAME: ${COMPANY_NAME:-RicemillMart}
+        VITE_COMPANY_ADDRESS: ${COMPANY_ADDRESS:-[Your address, City, State PIN]}
+        VITE_COMPANY_PHONE: ${COMPANY_PHONE:-+91 XXXXX XXXXX}
+        VITE_COMPANY_EMAIL: ${COMPANY_EMAIL:-[info@yourdomain.com]}
         VITE_COMPANY_WHATSAPP: ${COMPANY_WHATSAPP:-}
     restart: unless-stopped
 
