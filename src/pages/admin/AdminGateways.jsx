@@ -76,7 +76,6 @@ export default function AdminGateways() {
   const [availability, setAvailability] = useState("");
   const [q, setQ] = useState("");
   const [dialog, setDialog] = useState(null);
-  const [newKey, setNewKey] = useState(null);
   const { data, error, loading, reload } = useLoad(
     () => api.admin.gateways({ availability, q }),
     [availability, q],
@@ -121,9 +120,6 @@ export default function AdminGateways() {
             {g.connection === "assigned" ? "Unassign" : "Disconnect"}
           </button>
         )}
-        <button className="adm-btn" onClick={() => open("rotate")}>
-          New key
-        </button>
       </div>,
     ];
   });
@@ -192,51 +188,6 @@ export default function AdminGateways() {
           onClose={close}
           onConfirm={(r) => act(() => api.admin.disconnect(g.assignmentId, r), reload)}
         />
-      )}
-      {dialog?.kind === "rotate" && (
-        <Confirm
-          title={`Issue a new key for ${g.name}?`}
-          body="The old key stops working immediately. Use this for a replaced or reset device."
-          field="Remarks (optional)"
-          action="Issue key"
-          danger
-          onClose={close}
-          onConfirm={async (r) => {
-            try {
-              const res = await api.admin.rotateKey(g.id, r);
-              setNewKey({ name: g.name, key: res.apiKey });
-              reload();
-              return "";
-            } catch (e) {
-              return e?.message || "That did not work.";
-            }
-          }}
-        />
-      )}
-      {newKey && (
-        <div className="adm-backdrop" role="presentation">
-          <div
-            className="adm-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-label="New gateway key"
-          >
-            <h2>New key for {newKey.name}</h2>
-            <p>Copy it into the gateway now. It is shown only once.</p>
-            <code className="adm-key">{newKey.key}</code>
-            <div className="adm-actions">
-              <button
-                className="adm-btn"
-                onClick={() => navigator.clipboard?.writeText(newKey.key)}
-              >
-                Copy
-              </button>
-              <button className="adm-btn primary" onClick={() => setNewKey(null)}>
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </>
   );
