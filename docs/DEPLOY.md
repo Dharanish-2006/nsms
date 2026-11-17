@@ -83,6 +83,9 @@ nsms exec web python manage.py createsuperuser
 Open `https://mill.example.com`, sign in with that account: you land on the Admin Portal.
 Check `https://mill.example.com/api/healthz` returns `{"status": "ok"}`.
 
+Then run the login-free checks from any computer: `bash deploy/smoke-test.sh https://mill.example.com`
+(health, private pages refusing strangers, wrong gateway keys refused, security headers, certificate, closed database ports).
+
 **Do not run `seed_demo` on a server**: it creates accounts with known passwords.
 
 ## 7. Connect gateways
