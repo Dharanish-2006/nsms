@@ -3,6 +3,9 @@
 {$DOMAIN} {
 	encode gzip
 
+	# Tell browsers to use HTTPS only for this site (one year).
+	header Strict-Transport-Security "max-age=31536000"
+
 	# REST, the live WebSocket feed (/api/live/) and the AWS IoT HTTPS rule all go to Django.
 	handle /api/* {
 		reverse_proxy web:8000
