@@ -33,8 +33,6 @@ from apps.plants.models import Gateway, Machine
 from .models import HourlyReport, MachineState, Reading
 
 
-
-# --- Validation -------------------------------------------------------------
 class FiniteFloat(serializers.FloatField):
     def to_internal_value(self, data):
         value = super().to_internal_value(data)
@@ -52,8 +50,6 @@ class TimestampField(serializers.Field):
 
 
 class ReadingSerializer(serializers.Serializer):
-    """One meter reading. Only `meterId` and `kw` are required."""
-
     meterId = serializers.CharField(max_length=32)
     ts = TimestampField(required=False)
     kw = FiniteFloat()
@@ -71,7 +67,7 @@ class ReadingSerializer(serializers.Serializer):
     def validate_pf(self, value):
         if value is None:
             return None
-        value = abs(value)  # some meters report a signed power factor
+        value = abs(value)
         if value > 1.0001:
             raise serializers.ValidationError("Power factor must be between 0 and 1.")
         return min(value, 1.0)
@@ -95,8 +91,7 @@ class Sample:
 
 
 def _complete(d, machine, ts):
-    """Fill in what the meter did not send, from what it did."""
-    kw = max(d["kw"], 0.0)  # tiny negatives at idle are meter noise
+    kw = max(d["kw"], 0.0)
     pf = d.get("pf")
     kva = d.get("kva")
     if pf is None and kva:
@@ -120,7 +115,6 @@ def _complete(d, machine, ts):
 
 
 def parse_payload(data, now):
-    """-> (list of (validated dict, ts), rejected). Accepts {"readings": [...]} or one reading."""
     if not isinstance(data, dict):
         raise ApiError("Send a JSON object with a readings list.", 422, "validation")
     items = data.get("readings")
@@ -151,16 +145,13 @@ def parse_payload(data, now):
     return good, rejected
 
 
-# --- Applying a sample ------------------------------------------------------
 def _delta(new, old):
-    """Increase of a lifetime counter, or None if unusable (missing or reset)."""
     if new is None or old is None or new < old:
         return None
     return new - old
 
 
 def apply_sample(machine, state, s, hourly):
-    """Fold one sample (newer than state.last_ts) into live state and the hourly report."""
     prev_ts, prev_on = state.last_ts, state.on
     dt = (s.ts - prev_ts).total_seconds() if prev_ts else None
     contiguous = dt is not None and dt <= settings.MAX_SAMPLE_GAP_SEC
@@ -195,7 +186,6 @@ def apply_sample(machine, state, s, hourly):
     if s.kvah is not None:
         state.total_kvah = s.kvah
 
-    # Run / stop transitions and runtime
     if s.on and not prev_on:
         state.run_start = s.ts
         state.run_sec = state.run_kwh = state.run_pf_sum = 0.0
@@ -215,7 +205,6 @@ def apply_sample(machine, state, s, hourly):
         hr.sum_pf += s.pf
         hr.pf_samples += 1
 
-    # Hourly consolidation
     hr.kwh += d_kwh
     hr.kvarh += d_kvarh
     hr.kvah += d_kvah
@@ -225,7 +214,6 @@ def apply_sample(machine, state, s, hourly):
     hr.sum_current += s.current
     hr.max_current = max(hr.max_current, s.current)
 
-    # Live values
     state.on, state.kw, state.pf = s.on, s.kw, s.pf
     state.kva, state.kvar, state.current = s.kva, s.kvar, s.current
     state.voltage, state.frequency = s.voltage, s.frequency
@@ -233,7 +221,6 @@ def apply_sample(machine, state, s, hourly):
 
 
 def _keep_raw(state, s):
-    """Thin raw storage: one sample per RAW_SAMPLE_INTERVAL_SEC, plus every on/off change."""
     if state.last_raw_ts is None:
         return True
     gap = (s.ts - state.last_raw_ts).total_seconds()
@@ -243,8 +230,6 @@ def _keep_raw(state, s):
 
 
 def _auto_register(gateway, meter_id, machines):
-    """A verified gateway reported a meter we have not seen: register it as a machine ("Meter <id>")
-    that the owner can rename. Capped, so a faulty gateway cannot flood us."""
     if len(machines) >= settings.MAX_AUTO_MACHINES_PER_GATEWAY:
         return None
     base = slugify(f"{gateway.serial_number or gateway.name}-{meter_id}")[:55] or "meter"
@@ -260,7 +245,6 @@ def _auto_register(gateway, meter_id, machines):
     return machine
 
 
-# --- Entry point ------------------------------------------------------------
 @dataclass
 class IngestResult:
     accepted: int = 0

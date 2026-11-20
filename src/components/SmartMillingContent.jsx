@@ -133,7 +133,6 @@ function ContactForm() {
   );
 }
 
-/** Everything below the sign-in area on the login page. Text lives in src/content/smartMilling.js. */
 export default function SmartMillingContent() {
   return (
     <div className="sm">

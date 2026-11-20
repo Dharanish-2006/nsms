@@ -6,12 +6,6 @@ import { Field } from "./Field";
 
 const COOLDOWN_S = 30;
 
-/**
- * A contact field with Send OTP -> enter code -> Verify. `target` is the
- * normalised value sent to the server and `valid` says whether it is well
- * formed. Changing the value drops any earlier verification. The server issues
- * the proof `token`; verification is never decided in the browser.
- */
 export function OtpVerify({
   channel,
   label,

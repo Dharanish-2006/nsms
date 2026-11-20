@@ -21,11 +21,10 @@ from .serializers import (
     threshold_json,
 )
 
-RECOVERED_KEPT = 100  # most recent recovered alerts returned
+RECOVERED_KEPT = 100
 
 
 def alerts_for(user, plant=None):
-    """Alerts the user may see: active first (critical, then newest), then recovered."""
     machines = accessible_machines(user)
     if plant:
         machines = machines.filter(gateway__plant__name=plant)
@@ -49,10 +48,7 @@ class AlertListView(OwnerView):
         return Response(alerts_for(request.user, request.query_params.get("plant")))
 
 
-
-
 def _after_threshold_change(user):
-    """Re-judge this owner's machines against the new limits, then tell their dashboards."""
     events = engine.reevaluate_owner(user)
     transaction.on_commit(lambda: (dispatch(events), refresh_all_dashboards(user)))
 
@@ -89,7 +85,7 @@ class ThresholdDetailView(OwnerView):
 
     @transaction.atomic
     def delete(self, request, pk):
-        get_object_or_404(Threshold, pk=pk, owner=request.user).delete()  # cascades its alerts
+        get_object_or_404(Threshold, pk=pk, owner=request.user).delete()
         _after_threshold_change(request.user)
         return Response(status=204)
 

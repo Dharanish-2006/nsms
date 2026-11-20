@@ -67,11 +67,6 @@ export const Notice = ({ error, children }) =>
     <p className="adm-note">{children}</p>
   ) : null;
 
-/**
- * Confirmation dialog for an admin action. `field` adds a text box (a reason or
- * remarks); `children` can hold extra inputs. `onConfirm(text)` returns an
- * error message or "" and the dialog closes on success.
- */
 export function Confirm({
   title,
   body,

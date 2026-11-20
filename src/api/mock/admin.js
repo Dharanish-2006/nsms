@@ -1,10 +1,6 @@
 import { MACHINES } from "./sim";
 import { load, save, uid } from "./storage";
 
-// Browser-only stand-in for the Admin Portal API (see backend/apps/adminportal).
-// It mirrors the server rules: an approved user, a free gateway,
-// one live record per gateway, and an audit entry for every action.
-
 const KEY = "rmm.mock.admin";
 const DAY = 86_400_000;
 
@@ -49,8 +45,6 @@ function seed() {
   };
 }
 
-// Gateway 1 already has its machines named (they are the demo plant's). Gateway 2's meters have
-// just reported in and wait for the admin to name them.
 function seedMachines(now) {
   return [
     ...MACHINES.map((m, i) => ({
@@ -77,7 +71,7 @@ function seedMachines(now) {
 }
 const db = () => {
   const d = load(KEY, null) ?? seed();
-  d.machines ??= seedMachines(Date.now()); // older saved demo data
+  d.machines ??= seedMachines(Date.now());
   return d;
 };
 const commit = (d) => save(KEY, d);

@@ -1,9 +1,3 @@
-# Whole system on one Linux server: HTTPS (Caddy), React app, Django, worker, PostgreSQL, Redis.
-#
-#   cp deploy/prod.env.example deploy/prod.env      # then fill it in
-#   docker compose --env-file deploy/prod.env -f deploy/docker-compose.prod.yml up -d --build
-#
-# See docs/DEPLOY.md for the full walk-through.
 name: nsms
 
 x-backend: &backend
@@ -33,22 +27,17 @@ services:
     image: redis:7
     restart: unless-stopped
 
-  # Django (REST + WebSocket). Runs migrations on start.
   web:
     <<: *backend
     depends_on:
       db: {condition: service_healthy}
       redis: {condition: service_started}
 
-  # Daily reports, pruning, token clean-up and the automatic report emails.
   worker:
     <<: *backend
     command: python manage.py run_maintenance --loop 300
     depends_on: [web]
 
-  # Optional: store MQTT data straight from AWS IoT Core (no IoT Rule needed).
-  #   docker compose ... --profile bridge up -d
-  # Put the bridge certificate, key and AmazonRootCA1.pem in deploy/certs/ first.
   bridge:
     <<: *backend
     profiles: [bridge]

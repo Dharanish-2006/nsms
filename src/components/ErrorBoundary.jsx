@@ -1,6 +1,5 @@
 import { Component } from "react";
 
-/** Catches rendering crashes so users see a message instead of a blank page. */
 export class ErrorBoundary extends Component {
   state = { failed: false };
 

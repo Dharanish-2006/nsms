@@ -1,5 +1,3 @@
-"""The public Contact form (Smart Milling page) and the admin's list of enquiries."""
-
 import logging
 import re
 
@@ -37,7 +35,7 @@ class EnquirySerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100)
     mobile = serializers.CharField(max_length=20)
     requirement = serializers.CharField(max_length=2000)
-    website = serializers.CharField(required=False, allow_blank=True, default="")  # honeypot
+    website = serializers.CharField(required=False, allow_blank=True, default="")
 
     def validate_name(self, v):
         v = " ".join(v.split())
@@ -56,7 +54,6 @@ class EnquirySerializer(serializers.Serializer):
 
 
 def notify_team(enquiry):
-    """Email the team. Never raises: the enquiry is already saved."""
     to = [e.strip() for e in settings.ENQUIRY_NOTIFY_EMAIL.split(",") if e.strip()]
     if not to:
         return False
@@ -67,14 +64,12 @@ def notify_team(enquiry):
     try:
         send_mail(f"New enquiry: {enquiry.name}", body, None, to)
         return True
-    except Exception:  # noqa: BLE001 - a mail outage must not lose or fail the enquiry
+    except Exception:  # noqa: BLE001 
         logger.exception("Could not email enquiry %s", enquiry.pk)
         return False
 
 
 class ContactView(APIView):
-    """POST /api/contact (public). Saves the enquiry, then emails the team."""
-
     authentication_classes = []
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
@@ -84,7 +79,7 @@ class ContactView(APIView):
         s = EnquirySerializer(data=request.data)
         s.is_valid(raise_exception=True)
         d = s.validated_data
-        if d["website"]:  # a bot filled the hidden field: pretend it worked, store nothing
+        if d["website"]:
             return Response({"ok": True}, status=201)
         enquiry = Enquiry.objects.create(name=d["name"], mobile=d["mobile"], requirement=d["requirement"])
         if notify_team(enquiry):
@@ -107,8 +102,6 @@ def enquiry_row(e):
 
 
 class EnquiryListView(APIView):
-    """GET /api/admin-portal/enquiries?status=new|contacted|closed"""
-
     permission_classes = [IsAdminRole]
 
     def get(self, request):
@@ -126,8 +119,6 @@ class StatusSerializer(serializers.Serializer):
 
 
 class EnquiryUpdateView(APIView):
-    """PUT /api/admin-portal/enquiries/<id> {status}"""
-
     permission_classes = [IsAdminRole]
 
     def put(self, request, pk):

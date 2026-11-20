@@ -26,7 +26,7 @@ const writePlant = (name) => {
   try {
     localStorage.setItem(PLANT_KEY, name);
   } catch {
-    /* ignore */
+    // ignore
   }
 };
 
@@ -37,13 +37,12 @@ export function DataProvider({ children }) {
   const [phones, setPhones] = useState([]);
   const [live, setLive] = useState({ machines: [], alerts: [], serverTime: 0 });
   const [staticReady, setStaticReady] = useState(false);
-  const [status, setStatus] = useState("loading"); // loading | ready | error
+  const [status, setStatus] = useState("loading");
   const [error, setError] = useState("");
   const [offline, setOffline] = useState(false); // live refresh failing after a good load
   const [reloadKey, setReloadKey] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Slow-changing data: plants, thresholds, phone numbers.
   useEffect(() => {
     let cancelled = false;
     Promise.all([api.plants.list(), api.thresholds.list(), api.phones.list()])
@@ -137,8 +136,6 @@ export function DataProvider({ children }) {
     writePlant(name);
   }, []);
 
-  // Changes go to the server first; the list is then re-read so the screen shows
-  // exactly what was saved. Errors are thrown so the form can show them.
   const saveThreshold = useCallback(
     async (t) => {
       await api.thresholds.save(t);

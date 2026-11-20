@@ -1,9 +1,6 @@
 import { request } from "./client";
 import { tokenStore } from "./token";
 
-// Real backend. The endpoints below are the contract the backend must provide;
-// see docs/API.md for request and response shapes.
-
 const enc = encodeURIComponent;
 
 export const httpApi = {
@@ -19,14 +16,12 @@ export const httpApi = {
     },
     register: (input) =>
       request("/auth/register", { method: "POST", body: input, auth: false }),
-    /** channel: "email" | "phone" -> 204 (code is sent out of band) */
     sendOtp: (channel, target) =>
       request("/auth/otp/send", {
         method: "POST",
         body: { channel, target },
         auth: false,
       }),
-    /** -> { token }, a short-lived proof of verification to pass to register */
     verifyOtp: (channel, target, code) =>
       request("/auth/otp/verify", {
         method: "POST",
@@ -48,13 +43,10 @@ export const httpApi = {
       }),
   },
 
-  // Public Contact form on the Smart Milling page (no login).
   contact: {
-    /** { name, mobile, requirement, website } -> { ok: true }. `website` is a hidden spam trap. */
     send: (input) => request("/contact", { method: "POST", body: input, auth: false }),
   },
 
-  // Admin Portal (administrators only; no machine data is reachable from here).
   admin: {
     enquiries: (query) => request("/admin-portal/enquiries", { query }),
     setEnquiryStatus: (id, status) =>
@@ -99,18 +91,13 @@ export const httpApi = {
   },
 
   machines: {
-    /** -> { serverTime, machines: [...] } */
     list: (plant, opts) => request("/machines", { ...opts, query: { plant } }),
-    /** range: "week" | "month" -> { consumedKwh, actualKwh } totals for the plant */
     usage: (plant, range, opts) =>
       request("/machines/usage", { ...opts, query: { plant, range } }),
-    /** -> [{ t, pf, current, kw }] oldest first */
     trend: (id, hours, opts) =>
       request(`/machines/${enc(id)}/trend`, { ...opts, query: { hours } }),
-    /** hours: 12 | 24 | 168 | 720 -> { kwh, runKwh, runSeconds, avgLoadFactor, avgPf } for one machine */
     summary: (id, hours, opts) =>
       request(`/machines/${enc(id)}/summary`, { ...opts, query: { hours } }),
-    /** patch: { name, type, ratedKw, onThresholdKw } -> the updated machine (the owner names their machines) */
     update: (id, patch) =>
       request(`/machines/${enc(id)}`, { method: "PUT", body: patch }),
   },
@@ -137,7 +124,6 @@ export const httpApi = {
     remove: (id) => request(`/phones/${enc(id)}`, { method: "DELETE" }),
   },
 
-  /** -> { alertsEnabled, autoReports, reportFrequency } ; PUT saves and returns the same shape */
   notifications: {
     get: () => request("/settings/notifications"),
     save: (n) => request("/settings/notifications", { method: "PUT", body: n }),

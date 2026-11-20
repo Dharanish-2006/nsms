@@ -1,11 +1,3 @@
-"""Pretend to be an industrial gateway: push synthetic meter readings to /api/ingest so
-you can watch the dashboard update in real time.
-
-    python manage.py simulate_gateway --key gw_xxx --url http://localhost:8000/api/ingest
-
-Meters 1-4 match `seed_demo`. Meter 3 runs at a low power factor so an alert fires.
-"""
-
 import json
 import math
 import random
@@ -15,7 +7,6 @@ import urllib.request
 
 from django.core.management.base import BaseCommand, CommandError
 
-# meter id -> (typical kW, typical power factor)
 PROFILES = {"1": (26.0, 0.93), "2": (19.0, 0.92), "3": (15.0, 0.79), "4": (11.0, 0.9)}
 
 

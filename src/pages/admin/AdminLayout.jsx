@@ -33,7 +33,6 @@ function Clock() {
   );
 }
 
-/** Route guard and shell for the Admin Portal: administrators only. */
 export function AdminLayout() {
   const { user, ready, logout } = useAuth();
   const { pathname } = useLocation();

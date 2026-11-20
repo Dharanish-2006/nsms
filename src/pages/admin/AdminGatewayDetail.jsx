@@ -4,7 +4,6 @@ import { ErrorPanel, PageLoader } from "../../components/PageState";
 import { useLoad } from "./useLoad";
 import { Pill, Table, when } from "./ui";
 
-/** The meters a gateway has reported. Read-only: the plant owner names their machines. */
 export default function AdminGatewayDetail() {
   const { id } = useParams();
   const { data, error, reload } = useLoad(() => api.admin.gatewayMachines(id), [id]);

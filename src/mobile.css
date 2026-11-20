@@ -1,5 +1,3 @@
-/* Responsive + Alerts fixes. Import AFTER app.css in main.jsx. */
-
 html,
 body {
   overflow-x: hidden;
@@ -15,7 +13,6 @@ svg {
   max-width: 100%;
 }
 
-/* ---------- Alerts page ---------- */
 .alerts-page .filters {
   max-width: 640px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -125,14 +122,12 @@ svg {
   }
 }
 
-/* ---------- Shared page chrome ---------- */
 .page-heading {
   gap: 12px;
   flex-wrap: wrap;
 }
 
 @media (max-width: 760px) {
-  /* Bottom tab bar replaces the top nav strip. */
   .sidebar {
     padding: 10px 14px;
   }
@@ -217,7 +212,6 @@ svg {
     line-height: 32px;
   }
 
-  /* Dashboard */
   .hero {
     padding: 18px 16px;
     min-height: 0;
@@ -276,7 +270,6 @@ svg {
     font-size: 18px;
   }
 
-  /* Process analysis */
   .process-page {
     margin: -14px;
   }
@@ -332,7 +325,6 @@ svg {
     gap: 4px 12px;
   }
 
-  /* Reports + settings tables scroll sideways instead of overflowing */
   .threshold-scroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -390,7 +382,6 @@ svg {
     width: 100%;
   }
 
-  /* Auth */
   .auth-layout {
     display: block;
   }
@@ -428,7 +419,6 @@ svg {
   }
 }
 
-/* ---------- Notifications panel ---------- */
 .notify-panel {
   padding: 24px 34px;
 }
@@ -475,7 +465,6 @@ svg {
   }
 }
 
-/* ---------- Reports: automatic report sidebar ---------- */
 .reports-layout {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
@@ -526,7 +515,6 @@ svg {
   }
 }
 
-/* Process page: automatic report card sits above the machine banner */
 .process-content > .auto-report {
   margin-bottom: 16px;
   display: grid;
@@ -585,9 +573,7 @@ svg {
   }
 }
 
-/* Dashboard machine cards on phones: compact 2-column stats */
 @media (max-width: 760px) {
-  /* Status is already shown beside the machine name. */
   .machine-stats > .machine-stat:first-child {
     display: none;
   }

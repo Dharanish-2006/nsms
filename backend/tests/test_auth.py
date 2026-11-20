@@ -34,7 +34,6 @@ def _register(anon, **over):
 def test_register_approve_login_flow(anon, admin_client):
     assert _register(anon).status_code == 201
 
-    # Cannot sign in until approved
     r = anon.post("/api/auth/login", {"username": "newbie", "password": "Corr3ct-horse-battery"}, format="json")
     assert r.status_code == 403 and r.json()["code"] == "pending_approval"
 
@@ -64,7 +63,7 @@ def test_register_needs_matching_email_proof(anon):
     r = _register(anon, emailToken="not-a-real-token")
     assert r.status_code == 400 and r.json()["code"] == "otp_required"
     token = _verified_email(anon, "someone@example.com")
-    r = _register(anon, emailToken=token)  # proof is for a different address
+    r = _register(anon, emailToken=token)
     assert r.status_code == 400
 
 
@@ -98,7 +97,6 @@ def test_otp_locks_after_five_wrong_tries(anon):
         for _ in range(5)
     ]
     assert statuses == [400, 400, 400, 400, 429]
-    # even the right code no longer works
     r = anon.post("/api/auth/otp/verify", {"channel": "email", "target": "a@example.com", "code": real}, format="json")
     assert r.status_code == 429
 
@@ -121,7 +119,7 @@ def test_login_wrong_password_and_lockout(anon, operator):
         r = anon.post("/api/auth/login", {"username": "asha", "password": "nope"}, format="json")
         assert r.status_code == 401
     r = anon.post("/api/auth/login", {"username": "asha", "password": "S3cure-pass-42"}, format="json")
-    assert r.status_code == 429  # account locked for a while, even with the right password
+    assert r.status_code == 429
 
 
 def test_change_password_signs_out_other_sessions(operator):
@@ -148,7 +146,7 @@ def test_rejected_user_cannot_sign_in_and_sees_the_reason(anon, admin_client):
     assert admin_client.post(f"/api/admin-portal/users/{uid}/reject", {"reason": "Not a customer"}, format="json").status_code == 200
     r = anon.post("/api/auth/login", {"username": "newbie", "password": "Corr3ct-horse-battery"}, format="json")
     assert r.status_code == 403 and r.json()["code"] == "rejected" and "Not a customer" in r.json()["message"]
-    assert User.objects.get(username="newbie").status == "rejected"  # kept, not deleted
+    assert User.objects.get(username="newbie").status == "rejected"
 
 
 def test_profile_edit_only_changes_the_name(operator, user_client):

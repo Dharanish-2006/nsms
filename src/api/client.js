@@ -12,7 +12,6 @@ export class ApiError extends Error {
 }
 
 let onUnauthorized = () => {};
-/** The auth layer registers a callback that signs the user out on a 401. */
 export const setUnauthorizedHandler = (fn) => {
   onUnauthorized = fn;
 };
@@ -45,11 +44,6 @@ async function readBody(res) {
   }
 }
 
-/**
- * JSON request to the backend. Throws ApiError with a message that is safe to
- * show to the user. `auth: false` skips the sign-in header and the
- * sign-out-on-401 behaviour (used by login and register).
- */
 export async function request(
   path,
   { method = "GET", body, query, signal, auth = true } = {},

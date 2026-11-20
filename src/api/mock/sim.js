@@ -129,7 +129,6 @@ export function createInitial(def, now) {
     trend,
   };
 }
-/** Advance one machine by `dt` seconds. Pure: returns a new state. */
 export function tick(m, now, dt) {
   const hour = istHour(now);
   const dayKey = istDayKey(now);

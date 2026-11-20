@@ -1,8 +1,3 @@
-"""Roll the hourly reports up into one DailyReport row per machine per IST day.
-
-Safe to run as often as you like: each run recomputes the day from the hourly rows.
-"""
-
 from datetime import datetime, time, timedelta
 
 from django.db.models import Max, Sum
@@ -17,7 +12,6 @@ def day_bounds(day):
 
 
 def consolidate_day(day, machine_ids=None):
-    """(Re)build the DailyReport rows of one IST date. Returns the number of rows written."""
     start, end = day_bounds(day)
     rows = HourlyReport.objects.filter(hour__gte=start, hour__lt=end)
     if machine_ids is not None:

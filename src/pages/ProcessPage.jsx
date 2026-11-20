@@ -8,7 +8,6 @@ import { useData } from "../context/DataContext";
 import runtime_icon from "../assets/images/runtime-icon.svg";
 import { MotorRating } from "../components/MotorRating";
 import { MachineName } from "../components/MachineName";
-// import power from "../assets/images/"
 import {
   downloadCsv,
   fmtDuration,
@@ -38,7 +37,6 @@ export default function ProcessPage() {
   const { machines, plant, lastUpdate, saveMotorRating, saveMachineName } = useData();
   const [windowHrs, setWindowHrs] = useState(24);
   const m = machines.find((x) => x.id === id);
-  // Figures for the chosen time range come from the hourly reports.
   const [sum, setSum] = useState({ key: "", data: null });
   const sumKey = `${id}:${windowHrs}`;
   useEffect(() => {
@@ -194,7 +192,6 @@ export default function ProcessPage() {
           </article>
           <article className="info-card load-card">
             <div className="load-visual">
-              {/* <img src={runtime_icon} alt="" /> */}
               <span className="energy-icon">ϟ</span>
 
               <div>

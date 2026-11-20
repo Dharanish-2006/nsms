@@ -63,7 +63,6 @@ def admin_client(admin):
 
 @pytest.fixture
 def owner_client(operator, gateway):
-    """The plant owner, connected to the gateway: sees its machines, alerts and reports."""
     connect(operator, gateway)
     return client_for(operator)
 
@@ -110,7 +109,6 @@ def machines(gateway):
 
 
 def connect(user, gateway):
-    """Give `user` a connected assignment to `gateway`, as the admin portal would."""
     from django.utils import timezone
 
     now = timezone.now()
@@ -125,7 +123,6 @@ def pf_threshold(db, operator):
 
 
 def push(client, gateway, readings, key=None):
-    """POST readings to /api/ingest the way a gateway would."""
     return client.post(
         "/api/ingest",
         {"readings": readings},

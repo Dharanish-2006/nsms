@@ -17,11 +17,9 @@ describe("format helpers", () => {
   });
 
   it("shows times in Indian Standard Time regardless of the viewer's zone", () => {
-    // 2026-11-04 07:30:00 UTC is 13:00 in India.
     const ms = Date.UTC(2026, 10, 4, 7, 30);
     expect(istHm(ms)).toBe("13:00");
     expect(istDayKey(ms)).toBe("2026-11-04");
-    // 20:00 UTC is already the next day in India.
     expect(istDayKey(Date.UTC(2026, 10, 4, 20, 0))).toBe("2026-11-05");
   });
 });

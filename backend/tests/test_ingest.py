@@ -65,13 +65,11 @@ def test_ingest_updates_live_state_and_report(anon, owner_client, gateway, machi
     assert sum(m["hourlyKwh"]) == pytest.approx(0.85, abs=0.01)
     assert len(m["hourlyKwh"]) == 24 and len(m["hourOn"]) == 24
 
-    # consolidated hourly report (one row, maybe two if the batch straddles an IST hour)
     totals = HourlyReport.objects.filter(machine_id="sheller-1").aggregate(k=Sum("kwh"), s=Sum("run_seconds"))
     assert totals["k"] == pytest.approx(0.85) and totals["s"] == 120
 
 
 def test_serverTime_and_updatedAt_use_the_servers_clock(anon, owner_client, gateway, machines):
-    # a gateway whose clock is 4 minutes behind still looks live
     push(anon, gateway, [reading("1", timezone.now() - timedelta(minutes=4))])
     body = owner_client.get("/api/machines").json()
     m = next(x for x in body["machines"] if x["id"] == "sheller-1")
@@ -86,15 +84,15 @@ def test_off_machine_reports_zeroes_and_stop_time(anon, owner_client, gateway, m
     assert (m["kw"], m["pf"], m["kva"], m["current"], m["loadFactor"], m["runKwh"], m["runSec"]) == (0,) * 7
     assert m["avgPfRun"] is None and m["runStart"] is None
     assert m["lastStop"] == ms(t0 + timedelta(seconds=30))
-    assert m["todaySec"] == 30  # it ran for the first 30 s interval
+    assert m["todaySec"] == 30
 
 
 def test_duplicate_and_late_samples_do_not_double_count(anon, owner_client, gateway, machines):
     t0 = timezone.now() - timedelta(minutes=5)
     batch = [reading("1", t0, kwh=10.0), reading("1", t0 + timedelta(seconds=60), kwh=10.5)]
     push(anon, gateway, batch)
-    push(anon, gateway, batch)  # gateway retried the same batch
-    push(anon, gateway, [reading("1", t0 - timedelta(seconds=30), kwh=9.0)])  # arrives late
+    push(anon, gateway, batch)
+    push(anon, gateway, [reading("1", t0 - timedelta(seconds=30), kwh=9.0)])
     m = machine_json(owner_client, "sheller-1")
     assert m["totalKwh"] == 10.5 and m["runSec"] == 60
     assert HourlyReport.objects.filter(machine_id="sheller-1").aggregate(k=Sum("kwh"))["k"] == pytest.approx(0.5)
@@ -111,10 +109,10 @@ def test_counter_glitch_is_ignored(anon, owner_client, gateway, machines):
     t0 = timezone.now() - timedelta(minutes=5)
     push(anon, gateway, [
         reading("1", t0, kw=20, kwh=100.0),
-        reading("1", t0 + timedelta(seconds=60), kw=20, kwh=5000.0),  # absurd jump for one minute
+        reading("1", t0 + timedelta(seconds=60), kw=20, kwh=5000.0),
     ])
     m = machine_json(owner_client, "sheller-1")
-    assert m["runKwh"] == pytest.approx(20 / 60, abs=0.01)  # integrated, not the glitch
+    assert m["runKwh"] == pytest.approx(20 / 60, abs=0.01)
 
 
 def test_bad_readings_are_rejected_individually(anon, gateway, machines):
@@ -124,7 +122,7 @@ def test_bad_readings_are_rejected_individually(anon, gateway, machines):
         {"meterId": "1", "ts": ms(now), "kw": "abc"},
         {"meterId": "1", "ts": ms(now + timedelta(hours=2)), "kw": 5},
         {"meterId": "1", "ts": ms(now), "kw": 5, "pf": 1.7},
-        reading("99", now),  # a meter we have not seen: registered automatically
+        reading("99", now),
     ])
     body = r.json()
     assert r.status_code == 202 and body["accepted"] == 2
@@ -155,12 +153,11 @@ def test_raw_samples_are_thinned_but_state_changes_are_kept(anon, gateway, machi
     settings.RAW_SAMPLE_INTERVAL_SEC = 15
     t0 = timezone.now() - timedelta(minutes=5)
     push(anon, gateway, [reading("1", t0 + timedelta(seconds=s)) for s in range(0, 30, 2)])
-    assert Reading.objects.filter(machine_id="sheller-1").count() == 2  # t0 and t0+16s
-    push(anon, gateway, [reading("1", t0 + timedelta(seconds=31), kw=0.0, pf=0)])  # stops: always kept
+    assert Reading.objects.filter(machine_id="sheller-1").count() == 2
+    push(anon, gateway, [reading("1", t0 + timedelta(seconds=31), kw=0.0, pf=0)])
     assert Reading.objects.filter(machine_id="sheller-1").count() == 3
 
 
-# --- alerts -----------------------------------------------------------------
 def test_low_power_factor_raises_critical_alert_and_sends_sms(anon, owner_client, operator, gateway, machines, pf_threshold):
     PhoneNumber.objects.create(owner=operator, digits="9000000001", label="Primary")
     now = timezone.now()
@@ -172,7 +169,6 @@ def test_low_power_factor_raises_critical_alert_and_sends_sms(anon, owner_client
     assert a["reading"] == 0.79 and a["limit"] == 0.8 and a["plant"] == "Plant 1" and a["recoveredAt"] is None
     assert len(sms.outbox) == 1 and sms.outbox[0][0] == "9000000001" and "CRITICAL" in sms.outbox[0][1]
 
-    # a second batch does not text again
     push(anon, gateway, [reading("3", now + timedelta(seconds=5), kw=15, pf=0.78)])
     assert len(sms.outbox) == 1
 
@@ -186,12 +182,12 @@ def test_warning_then_escalation_then_recovery(anon, owner_client, operator, gat
 
     push(anon, gateway, [reading("1", t + timedelta(seconds=5), pf=0.75)])
     assert owner_client.get("/api/alerts").json()[0]["severity"] == "critical"
-    assert len(sms.outbox) == 2  # escalation texts again
+    assert len(sms.outbox) == 2
 
     push(anon, gateway, [reading("1", t + timedelta(seconds=10), pf=0.95)])
     a = owner_client.get("/api/alerts").json()[0]
     assert a["status"] == "recovered" and a["recoveredAt"] is not None
-    assert len(sms.outbox) == 2  # recovery is not texted
+    assert len(sms.outbox) == 2
 
 
 def test_off_machines_and_sortex_never_alert(anon, owner_client, gateway, machines, pf_threshold):
@@ -209,7 +205,7 @@ def test_machine_going_off_recovers_its_alert(anon, owner_client, gateway, machi
 
 def test_machine_specific_threshold_overrides_all(anon, owner_client, operator, gateway, machines, pf_threshold):
     Threshold.objects.create(owner=operator, param="powerFactor", machine=machines["whitener-2"], warning=0.7, critical=0.6)
-    push(anon, gateway, [reading("3", timezone.now(), pf=0.75)])  # below "all" (0.8) but above its own 0.7
+    push(anon, gateway, [reading("3", timezone.now(), pf=0.75)])
     assert owner_client.get("/api/alerts").json() == []
 
 
@@ -225,7 +221,7 @@ def test_changing_thresholds_reevaluates_immediately(anon, owner_client, gateway
 def test_sms_cooldown_suppresses_flapping(anon, owner_client, operator, gateway, machines, pf_threshold):
     PhoneNumber.objects.create(owner=operator, digits="9000000001")
     t = timezone.now() - timedelta(minutes=2)
-    for i, pf in enumerate([0.7, 0.95, 0.7, 0.95, 0.7]):  # flaps across the limit
+    for i, pf in enumerate([0.7, 0.95, 0.7, 0.95, 0.7]):
         push(anon, gateway, [reading("3", t + timedelta(seconds=10 * i), pf=pf)])
     assert len(sms.outbox) == 1
     assert Alert.objects.get().status == "active"
@@ -240,7 +236,6 @@ def test_state_row_is_created_per_machine(anon, gateway, machines):
 def test_hovering_at_a_limit_does_not_text_repeatedly(anon, owner_client, operator, gateway, machines, pf_threshold):
     PhoneNumber.objects.create(owner=operator, digits="9000000001")
     t = timezone.now() - timedelta(minutes=2)
-    # critical -> warning -> critical -> warning -> critical, all within the cool-down
     for i, pf in enumerate([0.78, 0.82, 0.78, 0.82, 0.78]):
         push(anon, gateway, [reading("3", t + timedelta(seconds=10 * i), pf=pf)])
     assert len(sms.outbox) == 1

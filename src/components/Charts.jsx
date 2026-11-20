@@ -34,7 +34,6 @@ export function RuntimeBand({ hours }) {
     </div>
   );
 }
-/** Hourly kWh area chart. */
 export function EnergyChart({ values, startHour }) {
   const W = 320;
   const H = 90;
@@ -71,7 +70,6 @@ export function EnergyChart({ values, startHour }) {
     </svg>
   );
 }
-/** Recent trend for one parameter with threshold guide lines. */
 export function TrendChart({ points, pick, warning, critical, decimals = 2 }) {
   const W = 420;
   const H = 130;

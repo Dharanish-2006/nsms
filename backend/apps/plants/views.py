@@ -27,14 +27,6 @@ class ProvisionSerializer(serializers.Serializer):
 
 
 class GatewayProvisionView(APIView):
-    """POST /api/gateways/provision: a freshly installed gateway registers itself.
-
-    The gateway is configured with this server's address and a provisioning key
-    (`GATEWAY_PROVISION_KEY`, sent as `X-Provision-Key`). The first call with a new serial
-    number creates the gateway as *unverified* and returns its own API key, once. The admin
-    then sees it in the portal and verifies it; until then it cannot send data.
-    """
-
     authentication_classes = []
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]

@@ -5,7 +5,6 @@ from .models import User
 
 
 def user_json(user):
-    """The `user` object of docs/API.md. Never includes anything secret."""
     return {
         "id": str(user.pk),
         "username": user.username,
@@ -51,7 +50,7 @@ class RegisterSerializer(serializers.Serializer):
         )
         try:
             validate_password(attrs["password"], candidate)
-        except Exception as exc:  # DjangoValidationError
+        except Exception as exc:
             raise serializers.ValidationError({"password": list(getattr(exc, "messages", [str(exc)]))}) from None
         return attrs
 

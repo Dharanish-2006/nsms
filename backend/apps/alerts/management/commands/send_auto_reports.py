@@ -1,6 +1,3 @@
-"""Send the automatic report emails that are due.  python manage.py send_auto_reports
-(`run_maintenance` does this too.)  --now ignores the time-of-day rule; --user limits it to one username."""
-
 from django.core.management.base import BaseCommand
 
 from apps.accounts.models import User

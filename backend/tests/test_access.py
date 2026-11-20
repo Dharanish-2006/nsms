@@ -1,5 +1,3 @@
-"""Plant owners see only what they are connected to; thresholds, phones and settings are theirs."""
-
 import pytest
 from django.utils import timezone
 
@@ -30,7 +28,7 @@ def test_owner_sees_only_connected_gateways(anon, operator, other_user, gateway,
     push(anon, gateway, [{"meterId": "1", "ts": int(now.timestamp() * 1000), "kw": 20}])
 
     mine = client_for(operator)
-    assert ids(mine.get("/api/machines")) == []  # nothing connected yet
+    assert ids(mine.get("/api/machines")) == []
     assert mine.get("/api/plants").json() == []
 
     connect(operator, gateway)
@@ -39,7 +37,6 @@ def test_owner_sees_only_connected_gateways(anon, operator, other_user, gateway,
     assert ids(mine.get("/api/machines?plant=Plant 2")) == []
     assert ids(client_for(other_user).get("/api/machines")) == []
 
-    # A machine on someone else's gateway is invisible by id as well
     assert mine.get("/api/machines/huller-9/trend").status_code == 404
     assert mine.get("/api/machines/sheller-1/trend?hours=1").status_code == 200
     assert mine.put("/api/machines/huller-9", {"ratedKw": 1}, format="json").status_code == 404
@@ -48,7 +45,7 @@ def test_owner_sees_only_connected_gateways(anon, operator, other_user, gateway,
 def test_assigned_but_not_connected_sees_nothing(operator, gateway, machines):
     from apps.plants.models import GatewayAssignment
 
-    GatewayAssignment.objects.create(gateway=gateway, user=operator)  # status: assigned
+    GatewayAssignment.objects.create(gateway=gateway, user=operator)
     assert ids(client_for(operator).get("/api/machines")) == []
 
 
@@ -72,21 +69,19 @@ def test_alerts_are_scoped_to_the_connected_owner(anon, operator, other_user, ga
     assert [a["machineId"] for a in client_for(other_user).get("/api/alerts").json()] == ["huller-9"]
 
 
-# --- machines: the owner edits their own -----------------------------------------------
 def test_owner_edits_machine_name_rating_but_not_wiring(owner_client, gateway, machines):
     r = owner_client.put("/api/machines/sheller-1", {"ratedKw": 37.285, "name": "Sheller One", "type": "sortex"}, format="json")
     assert r.status_code == 200 and r.json()["ratedKw"] == 37.285
-    assert r.json()["name"] == "Sheller One" and r.json()["type"] == "sortex"  # the owner names machines
+    assert r.json()["name"] == "Sheller One" and r.json()["type"] == "sortex"
     assert owner_client.put("/api/machines/sheller-1", {"name": "  "}, format="json").status_code == 422
     assert owner_client.put("/api/machines/sheller-1", {"type": "boiler"}, format="json").status_code == 422
     r = owner_client.put("/api/machines/sheller-1", {"meterId": "9", "gatewayId": "x"}, format="json")
-    assert r.status_code == 200 and Machine.objects.get(pk="sheller-1").meter_id == "1"  # ignored
+    assert r.status_code == 200 and Machine.objects.get(pk="sheller-1").meter_id == "1"
     assert owner_client.put("/api/machines/sheller-1", {"ratedKw": -1}, format="json").status_code == 422
     assert owner_client.post("/api/machines", {}, format="json").status_code == 405
     assert owner_client.delete("/api/machines/sheller-1").status_code == 405
 
 
-# --- thresholds & phones: per owner ----------------------------------------------------
 def test_threshold_validation_and_ownership(owner_client, other_user, machines):
     ok = {"param": "powerFactor", "machineId": "all", "warning": 0.9, "critical": 0.8}
     assert owner_client.post("/api/thresholds", {"param": "powerFactor", "machineId": "all"}, format="json").status_code == 422
@@ -96,13 +91,12 @@ def test_threshold_validation_and_ownership(owner_client, other_user, machines):
     assert owner_client.post("/api/thresholds", {**ok, "machineId": "nope"}, format="json").status_code == 422
 
     created = owner_client.post("/api/thresholds", ok, format="json").json()
-    assert owner_client.post("/api/thresholds", ok, format="json").status_code == 409  # duplicate
+    assert owner_client.post("/api/thresholds", ok, format="json").status_code == 409
     only_critical = {"param": "powerFactor", "machineId": "sheller-1", "warning": None, "critical": 0.7}
     assert owner_client.post("/api/thresholds", only_critical, format="json").status_code == 201
     r = owner_client.put(f"/api/thresholds/{created['id']}", {**ok, "warning": 0.95}, format="json")
     assert r.status_code == 200 and r.json()["warning"] == 0.95
 
-    # Another owner can neither see nor touch it
     theirs = client_for(other_user)
     assert theirs.get("/api/thresholds").json() == []
     assert theirs.put(f"/api/thresholds/{created['id']}", ok, format="json").status_code == 404
@@ -123,7 +117,7 @@ def test_phone_numbers_are_per_owner(owner_client, other_user):
 
     theirs = client_for(other_user)
     assert theirs.get("/api/phones").json() == []
-    assert theirs.post("/api/phones", {"digits": "9000000001"}, format="json").status_code == 201  # same number, own list
+    assert theirs.post("/api/phones", {"digits": "9000000001"}, format="json").status_code == 201
     assert theirs.delete(f"/api/phones/{other['id']}").status_code == 404
     assert owner_client.delete(f"/api/phones/{other['id']}").status_code == 204
 
@@ -140,5 +134,5 @@ def test_notification_settings_and_alerts_off_means_no_sms(anon, owner_client, o
 
     owner_client.post("/api/phones", {"digits": "9000000001"}, format="json")
     push(anon, gateway, [{"meterId": "3", "kw": 15, "pf": 0.7}])
-    assert len(owner_client.get("/api/alerts").json()) == 1  # still raised...
-    assert sms.outbox == []  # ...but not texted
+    assert len(owner_client.get("/api/alerts").json()) == 1
+    assert sms.outbox == []

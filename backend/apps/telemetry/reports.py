@@ -1,6 +1,3 @@
-"""Report numbers for one plant owner over a time range. Used by the Reports page API and by
-the automatic report emails, so both always agree."""
-
 from django.db.models import Max, Sum
 
 from apps.plants.access import accessible_machines, window_q
@@ -11,13 +8,10 @@ KW_PER_HP = 0.7457  # 1 mechanical horsepower in kW (a physical constant, not a 
 
 
 def rated_hp(machine):
-    """The machine's motor rating in HP to one decimal, or None if it is not set."""
     return round(machine.rated_kw / KW_PER_HP, 1) if machine.rated_kw else None
 
 
 def owner_report_rows(user, start, end, machines=None):
-    """One dict per machine the owner can see, summed over [start, end) and only over the hours
-    the owner was connected, so a previous owner's hours never appear."""
     if machines is None:
         machines = list(accessible_machines(user))
     ids = [m.pk for m in machines]

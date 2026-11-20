@@ -10,7 +10,6 @@ import { fmt, fmtDuration } from "../lib/format";
 import { hasPowerQuality } from "../lib/machine";
 import loadfactor_img from "../assets/images/load-gauge.svg";
 const todayKwh = (m) => m.hourlyKwh.reduce((a, b) => a + b, 0);
-// "Actual usage" is the part of today's energy used while the machine was running.
 const RANGES = [
   { id: "day", label: "Today" },
   { id: "week", label: "This week" },

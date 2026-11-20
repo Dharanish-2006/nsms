@@ -1,5 +1,3 @@
-"""The WebSocket dashboard feed: data pushed by a gateway reaches open dashboards."""
-
 import asyncio
 from datetime import timedelta
 
@@ -18,7 +16,6 @@ ORIGIN = [(b"origin", b"http://testserver")]
 
 
 async def api(user):
-    """A signed-in REST client (building it touches the database)."""
     return await database_sync_to_async(client_for)(user)
 
 
@@ -43,7 +40,7 @@ async def test_owner_gets_snapshot_then_live_updates(operator, gateway, machines
     assert snap["type"] == "snapshot" and len(snap["machines"]) == 3 and snap["alerts"] == []
     assert snap["serverTime"] > 0
 
-    gateway_client = await api(operator)  # any client may post; the key authenticates it
+    gateway_client = await api(operator)
     r = await database_sync_to_async(push)(gateway_client, gateway, [reading("1", kw=31.5)])
     assert r.status_code == 202
 
@@ -59,7 +56,7 @@ async def test_connected_owner_gets_updates_others_do_not(admin, operator, other
     mine, theirs, boss = await connect(operator), await connect(other_user), await connect(admin)
     assert len((await mine.receive_json_from())["machines"]) == 3
     assert (await theirs.receive_json_from())["machines"] == []
-    assert (await boss.receive_json_from())["machines"] == []  # admins get no machine data
+    assert (await boss.receive_json_from())["machines"] == []
 
     await database_sync_to_async(push)(await api(admin), gateway, [reading("1", kw=12)])
     assert (await mine.receive_json_from(timeout=3))["machines"][0]["kw"] == 12
@@ -77,13 +74,12 @@ async def test_connecting_reaches_open_dashboard(admin, operator, gateway, machi
     post = database_sync_to_async(admin_api.post)
     r = await post("/api/admin-portal/assignments", {"userId": operator.pk, "gatewayId": str(gateway.pk)}, format="json")
     assert r.status_code == 201
-    # Assigned only reserves the gateway: still nothing to see
     assert await ws.receive_nothing(timeout=0.5)
 
     aid = r.json()["id"]
     r = await post(f"/api/admin-portal/assignments/{aid}/connect")
     assert r.status_code == 200
-    snap = await ws.receive_json_from(timeout=3)  # access changed -> fresh snapshot
+    snap = await ws.receive_json_from(timeout=3)
     assert snap["type"] == "snapshot" and len(snap["machines"]) == 3
 
     await database_sync_to_async(push)(await api(admin), gateway, [reading("1", kw=9)])
@@ -92,7 +88,7 @@ async def test_connecting_reaches_open_dashboard(admin, operator, gateway, machi
     r = await post(f"/api/admin-portal/assignments/{aid}/disconnect")
     assert r.status_code == 200
     snap = await ws.receive_json_from(timeout=3)
-    assert snap["machines"] == []  # access taken away at once
+    assert snap["machines"] == []
     await ws.disconnect()
 
 

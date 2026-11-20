@@ -5,7 +5,6 @@ import { Layout } from "./components/Layout";
 import { PageLoader } from "./components/PageState";
 import { AuthProvider } from "./context/AuthContext";
 
-// Each page is its own chunk, so the first screen downloads only what it needs.
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const ProcessPage = lazy(() => import("./pages/ProcessPage"));

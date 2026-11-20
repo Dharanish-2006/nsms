@@ -1,21 +1,3 @@
-"""Load test for a running NSMS server: many fake gateways push readings at once, and
-optionally many dashboards poll at the same time. Standard library only.
-
-    # on the server, once:
-    nsms exec -T web python manage.py load_test_gateways --count 50 --out /tmp/keys.json
-    nsms cp web:/tmp/keys.json ./keys.json          (or print it and save it; keep it private)
-
-    python tools/load_test.py --url https://ricemillmart.tech --keys keys.json \\
-        --gateways 20 --interval 10 --duration 300
-
-    # also simulate owners watching dashboards (one login, reused by every dashboard):
-    python tools/load_test.py ... --dashboards 10 --username demoowner --password '...'
-
-While it runs, watch the server:  docker stats   and   nsms logs web
-Clean up afterwards:  nsms exec -T web python manage.py load_test_gateways --delete
-Run it against your own server only.
-"""
-
 import argparse
 import json
 import math
@@ -71,7 +53,7 @@ def gateway(url, serial, key, meters, interval, ramp_delay):
             record("ingest", status == 202, time.time() - t0, "" if status == 202 else f"HTTP {status}")
         except urllib.error.HTTPError as e:
             record("ingest", False, time.time() - t0, f"HTTP {e.code} from {serial}")
-        except Exception as e:  # timeout, connection refused, ...
+        except Exception as e:
             record("ingest", False, time.time() - t0, f"{type(e).__name__}: {e}")
         stop.wait(max(interval - (time.time() - now), 0))
 

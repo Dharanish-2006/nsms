@@ -6,7 +6,6 @@ const TYPES = [
   ["sortex", "Sortex"],
 ];
 
-/** A machine's name with an inline rename. The plant owner names their own machines. */
 export function MachineName({ machine, onSave }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState("");

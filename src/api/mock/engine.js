@@ -3,13 +3,10 @@ import { evaluate } from "./alertEngine";
 import { createInitial, MACHINES, PLANTS, tick } from "./sim";
 import { load, save } from "./storage";
 
-// Demo-only: simulates the plant in the browser so the UI can be built and
-// shown before the backend exists.
-
 const TH_KEY = "rmm.mock.thresholds";
 const PH_KEY = "rmm.mock.phones";
-const DETAILS_KEY = "rmm.mock.details"; // machine id -> { name, type } edited by the owner
-const RATING_KEY = "rmm.mock.ratings"; // machine id -> ratedKw edited by an admin
+const DETAILS_KEY = "rmm.mock.details";
+const RATING_KEY = "rmm.mock.ratings";
 
 const DEFAULT_THRESHOLDS = [
   { id: "t1", param: "powerFactor", machineId: "all", warning: 0.9, critical: 0.8 },
@@ -24,14 +21,12 @@ let lastTick = 0;
 let alertMap = new Map();
 
 export const plants = () => [...PLANTS];
-// Only power factor is supported; drop limits saved earlier for removed parameters.
 export const getThresholds = () =>
   load(TH_KEY, DEFAULT_THRESHOLDS).filter((t) => t.param === "powerFactor");
 export const setThresholds = (list) => save(TH_KEY, list);
 export const getPhones = () => load(PH_KEY, DEFAULT_PHONES);
 export const setPhones = (list) => save(PH_KEY, list);
 
-/** What the real API returns for one machine: plain JSON, no internals. */
 function snapshot(m) {
   return {
     id: m.def.id,
@@ -68,7 +63,6 @@ export function reevaluate(now = Date.now()) {
   alertMap = evaluate(machines.map(snapshot), getThresholds(), alertMap, now);
 }
 
-/** Move the simulation forward to "now". Cheap to call repeatedly. */
 export function advance(now = Date.now()) {
   if (!machines) {
     const ratings = load(RATING_KEY, {});
@@ -97,7 +91,6 @@ export function listMachines(plant) {
   };
 }
 
-/** Change a machine's rated power. Returns the machine, or null if unknown. */
 export function setRatedKw(id, ratedKw) {
   advance();
   const i = machines.findIndex((x) => x.def.id === id);
@@ -112,7 +105,6 @@ export function setRatedKw(id, ratedKw) {
   return snapshot(machines[i]);
 }
 
-/** Rename a machine or change its type. Returns the machine, or null if unknown. */
 export function setMachineDetails(id, { name, type }) {
   advance();
   const i = machines.findIndex((x) => x.def.id === id);
@@ -137,7 +129,6 @@ export function machineTrend(id, hours) {
   return m.trend.filter((p) => p.t >= cutoff);
 }
 
-/** One machine over the last `hours` (the mock scales today's figures; the real backend sums hourly reports). */
 export function machineSummary(id, hours) {
   advance();
   const m = machines.find((x) => x.def.id === id);

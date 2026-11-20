@@ -1026,7 +1026,6 @@ h1 {
   height: 37px;
 }
 
-/* Authentication */
 .auth-layout {
   min-height: 100vh;
   display: grid;
@@ -1256,7 +1255,6 @@ h1 {
   font-weight: 600;
 }
 
-/* Shared internal screens */
 .content-page {
   min-width: 0;
 }
@@ -1301,7 +1299,6 @@ h1 {
   background: white;
 }
 
-/* Process analysis */
 .process-page {
   min-height: calc(100vh - 68px);
   margin: -23px -22px -28px;
@@ -1557,7 +1554,6 @@ h1 {
   text-align: center;
 }
 
-/* Alerts */
 .filters {
   display: grid;
   grid-template-columns: repeat(3, minmax(150px, 1fr));
@@ -1874,7 +1870,6 @@ h1 {
   background: #e3f0e5;
 }
 
-/* Settings */
 .settings-page {
   gap: 24px;
 }
@@ -2702,7 +2697,6 @@ h1 {
   white-space: nowrap;
 }
 
-/* History (process analysis) layout fixes */
 .machine-banner {
   flex-wrap: wrap;
 }

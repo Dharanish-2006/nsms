@@ -21,17 +21,15 @@ def user_group(user_id):
 
 
 def group_send(groups, message):
-    """Best effort: a realtime failure must never fail ingestion or an API call."""
     layer = get_channel_layer()
     if layer is None:
         return
     try:
         for group in groups:
             async_to_sync(layer.group_send)(group, message)
-    except Exception:  # noqa: BLE001 - e.g. Redis briefly unreachable
+    except Exception:  # noqa: BLE001 
         logger.exception("Realtime publish failed")
 
 
 def notify_user_access_changed(user_id):
-    """Tell a user's open dashboards to re-check what they may see."""
     group_send([user_group(user_id)], {"type": "access.changed"})

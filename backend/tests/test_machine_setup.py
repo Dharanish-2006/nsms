@@ -1,5 +1,3 @@
-"""Machines a gateway reports on its own appear for the owner at once; the owner names them."""
-
 from apps.plants.models import Machine
 
 from .conftest import push
@@ -35,4 +33,4 @@ def test_admin_cannot_rename_machines_but_can_list_them(anon, admin_client, gate
     assert admin_client.put(f"{P}/machines/{m1.pk}", {"name": "X", "type": "sheller"}, format="json").status_code in (404, 405)
     listing = admin_client.get(f"{P}/gateways/{gateway.pk}/machines").json()
     assert [x["meterId"] for x in listing["machines"]] == ["1", "2"]
-    assert "kw" not in listing["machines"][0]  # no readings
+    assert "kw" not in listing["machines"][0]

@@ -1,14 +1,4 @@
 #!/usr/bin/env node
-// Contract stub, NOT a real backend. It answers every endpoint in docs/API.md with
-// in-memory data so the frontend can be exercised in production mode
-// (VITE_USE_MOCK=false) and so backend developers have a runnable reference for the
-// request and response shapes. Nothing here is persisted or secure.
-//
-//   node scripts/dev-api.mjs                 API on http://localhost:8000
-//   node scripts/dev-api.mjs --static dist   also serves the built site (like nginx)
-//
-// Test hooks: GET /__fail?on=1 makes live endpoints return 500, GET /__expire
-// invalidates the current token (next call returns 401).
 
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
@@ -176,7 +166,7 @@ async function api(req, res, url) {
     token = `stub-${Date.now()}`;
     return json(res, 200, { token, user: publicUser(u) });
   }
-  if (route === "POST /auth/otp/send") return json(res, 204); // stub code: 123456
+  if (route === "POST /auth/otp/send") return json(res, 204);
   if (route === "POST /auth/otp/verify") {
     if (body.code !== "123456")
       return json(res, 400, { message: "Incorrect code.", code: "otp_invalid" });
@@ -187,7 +177,6 @@ async function api(req, res, url) {
     return json(res, 201, { ok: true });
   }
 
-  // Everything below needs a valid token.
   if (req.headers.authorization !== `Bearer ${token}`)
     return json(res, 401, { message: "Please sign in again.", code: "unauthenticated" });
 
@@ -308,7 +297,7 @@ async function serveStatic(res, pathname) {
       });
       return res.end(data);
     } catch {
-      /* try the SPA fallback */
+      // ignore
     }
   }
   res.writeHead(404).end();

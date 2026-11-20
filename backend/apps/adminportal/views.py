@@ -1,10 +1,3 @@
-"""The Admin Portal API (Smart Mill Admin Requirements).
-
-Five screens: Dashboard, User Approval, Gateway Assignment, Connections, Profile (the profile
-is /auth/me). Nothing here exposes machine readings, alerts or reports: those belong to the
-plant owners. Every rule is enforced here on the server, and every action is audited.
-"""
-
 from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
@@ -22,7 +15,7 @@ from apps.enquiries.models import Enquiry
 from apps.plants import services
 from apps.plants.models import LIVE_STATUSES, Gateway, GatewayAssignment, Machine
 
-PAGE = 200  # most rows returned by a list
+PAGE = 200
 
 
 class AdminView(APIView):
@@ -40,7 +33,7 @@ def user_row(u):
         "fullName": u.full_name,
         "email": u.email,
         "mobile": u.mobile,
-        "status": u.status,  # pending | active (approved) | rejected
+        "status": u.status,
         "registeredAt": to_ms(u.date_joined),
         "decidedAt": to_ms(u.decided_at),
         "decidedBy": _person(u.decided_by),
@@ -49,7 +42,6 @@ def user_row(u):
 
 
 def gateway_row(g, live=None, api_key=None):
-    """`live` is the gateway's assigned/connected record, if any."""
     data = {
         "id": str(g.pk),
         "name": g.name,
@@ -67,7 +59,7 @@ def gateway_row(g, live=None, api_key=None):
         "machineCount": g.machines.count(),
     }
     if api_key:
-        data["apiKey"] = api_key  # shown once
+        data["apiKey"] = api_key
     return data
 
 
@@ -76,7 +68,7 @@ def assignment_row(a):
         "id": a.pk,
         "user": _person(a.user),
         "gateway": {"id": str(a.gateway_id), "name": a.gateway.name, "serialNumber": a.gateway.serial_number},
-        "status": a.status,  # assigned | connected | disconnected
+        "status": a.status,
         "assignedAt": to_ms(a.assigned_at),
         "assignedBy": _person(a.assigned_by),
         "connectedAt": to_ms(a.connected_at),
@@ -100,7 +92,6 @@ def _remarks(request):
     return value.strip()[:300] if isinstance(value, str) else ""
 
 
-# --- Screen 1: Dashboard ---------------------------------------------------------------
 class DashboardView(AdminView):
     def get(self, request):
         owners = User.objects.filter(role=User.Role.USER)
@@ -124,10 +115,7 @@ class DashboardView(AdminView):
         )
 
 
-# --- Screen 2: User Approval -----------------------------------------------------------
 class UserListView(AdminView):
-    """?status=pending|active|rejected  &q=search (name, username, email)"""
-
     def get(self, request):
         users = User.objects.filter(role=User.Role.USER).select_related("decided_by").order_by("-date_joined", "-pk")
         status = request.query_params.get("status")
@@ -178,10 +166,7 @@ class UserRejectView(AdminView):
         return Response(user_row(_decide(request, pk, approve=False)))
 
 
-# --- Screen 3: Gateway Assignment (gateways list) ---------------------------------------
 class GatewayListView(AdminView):
-    """?availability=available|assigned  &verified=true|false  &q=search (name, serial)"""
-
     def get(self, request):
         gateways = Gateway.objects.order_by("name")
         q = request.query_params.get("q", "").strip()
@@ -199,8 +184,6 @@ class GatewayListView(AdminView):
 
 
 class GatewayRotateKeyView(AdminView):
-    """Issue a new gateway key (a replaced or reset device). The old key stops working at once."""
-
     @transaction.atomic
     def post(self, request, pk):
         gateway = get_object_or_404(Gateway.objects.select_for_update(), pk=pk)
@@ -210,16 +193,12 @@ class GatewayRotateKeyView(AdminView):
         return Response(gateway_row(gateway, _live_by_gateway().get(gateway.pk), api_key=raw))
 
 
-# --- Screens 3 and 4: assignments and connections --------------------------------------
 class AssignSerializer(serializers.Serializer):
     userId = serializers.IntegerField()
     gatewayId = serializers.UUIDField()
 
 
 class AssignmentListView(AdminView):
-    """GET ?status=  &userId=  &gatewayId=  &q=   (current and previous records)
-    POST {userId, gatewayId}   assign an available gateway to an approved user"""
-
     def get(self, request):
         qs = _assignments()
         status = request.query_params.get("status")
@@ -232,7 +211,7 @@ class AssignmentListView(AdminView):
             if value:
                 try:
                     qs = qs.filter(**{field: value})
-                except (ValueError, TypeError, Exception):  # noqa: BLE001 - malformed id
+                except (ValueError, TypeError, Exception):  # noqa: BLE001 
                     raise ApiError(f"{param} is not valid.", 422, "validation") from None
         q = request.query_params.get("q", "").strip()
         if q:
@@ -261,10 +240,7 @@ class AssignmentDisconnectView(AdminView):
         return Response(assignment_row(_assignments().get(pk=a.pk)))
 
 
-# --- Audit log -------------------------------------------------------------------------
 class AuditLogView(AdminView):
-    """?action=  &limit=  (newest first)"""
-
     def get(self, request):
         qs = AdminAuditLog.objects.all()
         action = request.query_params.get("action")
@@ -290,9 +266,7 @@ class AuditLogView(AdminView):
         )
 
 
-# --- Machines (read-only; owners name them) -------------------------------------------------------------------
 def machine_row(m):
-    """Configuration only. No readings: those belong to the plant owner."""
     state = getattr(m, "state", None)
     return {
         "id": m.pk,
@@ -306,8 +280,6 @@ def machine_row(m):
 
 
 class GatewayMachinesView(AdminView):
-    """The machines (meters) a gateway has reported. Read-only: the owner names them."""
-
     def get(self, request, pk):
         gateway = get_object_or_404(Gateway, pk=pk)
         machines = gateway.machines.select_related("state").order_by("configured", "position", "meter_id")

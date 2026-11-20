@@ -12,10 +12,6 @@ class InvalidToken(Exception):
 
 
 def authenticate_token(raw):
-    """Look up a bearer token. Returns (user, token) or raises InvalidToken.
-
-    Shared by the REST authenticator and the WebSocket consumer.
-    """
     if not raw:
         raise InvalidToken
     try:
@@ -35,8 +31,6 @@ def authenticate_token(raw):
 
 
 class BearerTokenAuthentication(BaseAuthentication):
-    """`Authorization: Bearer <token>`."""
-
     def authenticate(self, request):
         parts = get_authorization_header(request).split()
         if not parts or parts[0].lower() != b"bearer":

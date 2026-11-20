@@ -32,14 +32,13 @@ from .reports import owner_report_rows
 from .publish import publish_ingest, publish_machine_change
 
 logger = logging.getLogger(__name__)
-RESERVED_MACHINE_IDS = {"usage"}  # would collide with /machines/usage
+RESERVED_MACHINE_IDS = {"usage"}
 RANGE_DAYS = {"day": 1, "week": 7, "month": 30}
 TREND_MAX_HOURS = 72
 TREND_MAX_POINTS = 360
 
 
 def health(request):
-    """Load balancer / uptime check."""
     from django.http import JsonResponse
 
     with connection.cursor() as cursor:
@@ -47,22 +46,16 @@ def health(request):
     return JsonResponse({"status": "ok"})
 
 
-# --- Gateway ingestion ------------------------------------------------------
 def _store(gateway, data, request):
-    """Shared by the HTTPS and the AWS IoT paths: store, publish live, and answer."""
     result = ingest(gateway, data, ip=BaseThrottle().get_ident(request) or None)
     publish_ingest(gateway, result)
     body = {"accepted": result.accepted, "rejected": result.rejected, "unknownMeters": result.unknown_meters}
-    # Nothing usable at all: tell the sender plainly (4xx = do not retry this data).
     if result.accepted == 0 and result.rejected:
         return Response({"message": "No valid readings in the request.", "code": "validation", **body}, status=422)
     return Response(body, status=202)
 
 
 class IngestView(APIView):
-    """POST /api/ingest: the endpoint the industrial gateway (or an AWS IoT Core rule /
-    API Gateway in front of it) pushes readings to. Authenticated by `X-Gateway-Key`."""
-
     authentication_classes = []
     permission_classes = [AllowAny]
 
@@ -79,15 +72,6 @@ class IngestView(APIView):
 
 
 class IotIngestView(APIView):
-    """POST /api/iot/ingest: where an AWS IoT Core rule delivers what gateways publish over MQTT.
-
-    The gateway publishes to `mill/<serial>/readings`; IoT Core authenticates it with its own
-    certificate and its policy only lets it publish under its own serial, so the rule can trust
-    the topic. The rule forwards `{"serial": topic(2), "readings": [...]}` with the shared secret
-    in `X-IoT-Secret`. A serial we have not seen is registered as a gateway (approved by its first message), exactly
-    like self-registration over HTTPS. See docs/AWS-IOT.md.
-    """
-
     authentication_classes = []
     permission_classes = [AllowAny]
 
@@ -112,10 +96,7 @@ class IotIngestView(APIView):
         return _store(gateway, {"readings": body.get("readings")}, request)
 
 
-# --- Machines ---------------------------------------------------------------
 class MachineEditSerializer(serializers.Serializer):
-    """What a plant owner may change about their machine: its name, type, rating and ON threshold."""
-
     name = serializers.CharField(max_length=100, required=False)
     type = serializers.ChoiceField(Machine.Type.values, required=False)
 
@@ -280,7 +261,6 @@ class TrendView(APIView):
         )
 
 
-# --- Reports ----------------------------------------------------------------
 class DailyReportView(APIView):
     permission_classes = [IsPlantOwner]
 
@@ -312,7 +292,7 @@ class DailyReportView(APIView):
         rows = []
         for m in machines:
             row = dict(report_rows[m.pk])
-            row.pop("motorHp")  # not part of the daily report payload
+            row.pop("motorHp")
             row["activeAlerts"] = active.get(m.pk, 0)
             rows.append(row)
         return Response(

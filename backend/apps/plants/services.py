@@ -1,6 +1,3 @@
-"""The admin's gateway operations. Every rule here is enforced on the server and every
-change is written to the audit log inside the same transaction."""
-
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -16,7 +13,6 @@ Status = GatewayAssignment.Status
 
 
 def _announce(gateway_id, user_id):
-    """After commit: re-judge alerts for the gateway's machines and refresh open dashboards."""
     from apps.alerts import engine
     from apps.alerts.dispatch import dispatch
 
@@ -94,8 +90,6 @@ def disconnect(admin, assignment_id, remarks=""):
 
 
 def ensure_verified(gateway):
-    """There is no approval step: a gateway that sends data is approved on the spot, so it can be
-    assigned to an owner. Returns True."""
     if not gateway.verified:
         gateway.verified = True
         gateway.save(update_fields=["verified"])
@@ -103,8 +97,6 @@ def ensure_verified(gateway):
 
 
 def register_unverified(serial, name=""):
-    """Create a gateway that announced itself (serial number only). It is approved at once, so it
-    can be assigned straight away. Returns (gateway, created); `gateway._first_key` is set only when created."""
     from django.conf import settings
 
     from .models import Plant

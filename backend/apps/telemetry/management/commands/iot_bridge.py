@@ -1,13 +1,3 @@
-"""Subscribe to AWS IoT Core and store what gateways publish, without a public HTTPS endpoint.
-
-    python manage.py iot_bridge --endpoint xxxx-ats.iot.ap-south-1.amazonaws.com \\
-        --cert bridge.cert.pem --key bridge.private.key --ca AmazonRootCA1.pem
-
-Use it for local development (your laptop can reach AWS but AWS cannot reach your laptop), or in
-production as a worker instead of an IoT Rule. The certificate needs a policy that allows Connect,
-Subscribe and Receive on `mill/+/readings` (docs/AWS-IOT.md). Run only one bridge per environment.
-"""
-
 import os
 import ssl
 

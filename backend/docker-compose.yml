@@ -1,7 +1,3 @@
-# Local stack that mirrors production: PostgreSQL + Redis + the app + the maintenance worker.
-#   cp .env.example .env   (set DJANGO_SECRET_KEY)
-#   docker compose up --build
-#   docker compose exec web python manage.py createsuperuser
 services:
   db:
     image: postgres:16
@@ -30,7 +26,6 @@ services:
       redis: {condition: service_started}
     ports: ["8000:8000"]
 
-  # Daily-report consolidation, raw-data pruning and token clean-up, every 5 minutes.
   worker:
     build: .
     command: python manage.py run_maintenance --loop 300

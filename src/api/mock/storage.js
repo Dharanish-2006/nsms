@@ -10,7 +10,7 @@ export function save(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    /* storage unavailable (private mode etc.) */
+    // ignore
   }
 }
 export const uid = () =>

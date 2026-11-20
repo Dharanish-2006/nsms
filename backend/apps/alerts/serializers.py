@@ -6,7 +6,6 @@ from apps.plants.access import accessible_machines
 
 from .models import NotificationSettings, PhoneNumber, Threshold
 
-# Unit-less parameters and which direction is "worse" (only "below" exists today).
 RANGE_01 = {"powerFactor"}
 
 

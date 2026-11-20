@@ -7,8 +7,6 @@ dj-database-url>=2.2
 whitenoise>=6.7
 django-cors-headers>=4.4
 python-dotenv>=1.0
-# Production database driver (SQLite is used when DATABASE_URL is not set)
 psycopg[binary]>=3.2
-# Only needed when SMS_BACKEND=sns
 boto3>=1.34
 paho-mqtt>=2.1

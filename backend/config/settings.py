@@ -1,9 +1,3 @@
-"""Django settings for the Rice Mill Monitor backend.
-
-Everything environment specific comes from environment variables (or a local
-.env file); see .env.example for the full list.
-"""
-
 import os
 from pathlib import Path
 
@@ -16,7 +10,7 @@ try:
     from dotenv import load_dotenv
 
     load_dotenv(BASE_DIR / ".env")
-except ImportError:  # python-dotenv is optional
+except ImportError:
     pass
 
 
@@ -49,7 +43,7 @@ if not SECRET_KEY:
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1" if DEBUG else "")
 
 INSTALLED_APPS = [
-    "daphne",  # ASGI server; must come before staticfiles so `runserver` is ASGI
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -98,8 +92,6 @@ TEMPLATES = [
     }
 ]
 
-# --- Database ---------------------------------------------------------------
-# An empty DATABASE_URL (as in .env.example) means "use the local SQLite file".
 DATABASES = {
     "default": dj_database_url.parse(
         os.environ.get("DATABASE_URL", "").strip() or f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
@@ -108,7 +100,6 @@ DATABASES = {
 }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# --- Realtime and cache -----------------------------------------------------
 REDIS_URL = os.environ.get("REDIS_URL", "")
 if REDIS_URL:
     CHANNEL_LAYERS = {
@@ -127,7 +118,6 @@ else:
     CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
     CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 
-# --- Auth -------------------------------------------------------------------
 AUTH_USER_MODEL = "accounts.User"
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -137,7 +127,6 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 AUTH_TOKEN_TTL_HOURS = env_int("AUTH_TOKEN_TTL_HOURS", 24 * 7)
 
-# --- REST framework ---------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["apps.accounts.authentication.BearerTokenAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
@@ -155,13 +144,11 @@ REST_FRAMEWORK = {
     },
 }
 
-# --- Internationalisation ---------------------------------------------------
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = "Asia/Kolkata"  # day and hour boundaries in reports are IST
+TIME_ZONE = "Asia/Kolkata"
 USE_I18N = False
 USE_TZ = True
 
-# --- Static files (Django admin only) ---------------------------------------
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGES = {
@@ -169,7 +156,6 @@ STORAGES = {
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
 }
 
-# --- CORS / security --------------------------------------------------------
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 
@@ -181,35 +167,27 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = env_int("SECURE_HSTS_SECONDS", 0)
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
-# --- Email (OTP) ------------------------------------------------------------
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
 EMAIL_PORT = env_int("EMAIL_PORT", 587)
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
-# Who is emailed when someone fills in the public Contact form (comma separated). Empty = nobody.
 ENQUIRY_NOTIFY_EMAIL = os.environ.get("ENQUIRY_NOTIFY_EMAIL", "")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Rice Mill Monitor <no-reply@example.com>")
 
-# --- SMS --------------------------------------------------------------------
-SMS_BACKEND = os.environ.get("SMS_BACKEND", "console")  # console | sns
+SMS_BACKEND = os.environ.get("SMS_BACKEND", "console")
 AWS_REGION = os.environ.get("AWS_REGION", "ap-south-1")
 
-# --- Telemetry --------------------------------------------------------------
-# A machine is "unknown" in the UI when silent for this long (matches the frontend).
 STALE_AFTER_SEC = env_int("STALE_AFTER_SEC", 120)
-# Largest gap between two samples that is still integrated into runtime / energy.
 MAX_SAMPLE_GAP_SEC = env_int("MAX_SAMPLE_GAP_SEC", 300)
 RAW_SAMPLE_INTERVAL_SEC = env_int("RAW_SAMPLE_INTERVAL_SEC", 15)
 RAW_RETENTION_DAYS = env_int("RAW_RETENTION_DAYS", 7)
-# Readings stamped further ahead than this are rejected (gateway clock wrong).
 MAX_CLOCK_SKEW_SEC = env_int("MAX_CLOCK_SKEW_SEC", 300)
 INGEST_MAX_READINGS = env_int("INGEST_MAX_READINGS", 500)
 
-# --- Alerts -----------------------------------------------------------------
 ALERT_SMS_COOLDOWN_MIN = env_int("ALERT_SMS_COOLDOWN_MIN", 30)
-ALERT_SMS_ASYNC = True  # send SMS from a worker thread so ingestion never waits on SNS
+ALERT_SMS_ASYNC = True
 
 LOGGING = {
     "version": 1,
@@ -218,19 +196,12 @@ LOGGING = {
     "root": {"handlers": ["console"], "level": "INFO"},
 }
 
-# Gateways register themselves with this shared key (leave empty to turn self-registration off).
 GATEWAY_PROVISION_KEY = os.environ.get("GATEWAY_PROVISION_KEY", "")
-# A gateway is trusted as soon as it sends its first message (it still reaches no owner until an
-# admin assigns and connects it). Set to 0 to make the admin verify every new gateway by hand.
 DEFAULT_PLANT_NAME = os.environ.get("DEFAULT_PLANT_NAME", "Plant 1")
-# A verified gateway may create machines for meters it reports; this caps the junk a bad one can make.
 MAX_AUTO_MACHINES_PER_GATEWAY = env_int("MAX_AUTO_MACHINES_PER_GATEWAY", 32)
 
-# AWS IoT Core: the IoT Rule that forwards device messages to POST /api/iot/ingest proves itself
-# with this shared secret (header X-IoT-Secret). Empty = that endpoint is off.
 IOT_RULE_SECRET = os.environ.get("IOT_RULE_SECRET", "")
 
-# Automatic report emails go out once the local (IST) time passes this hour.
 AUTO_REPORT_HOUR = env_int("AUTO_REPORT_HOUR", 6)
 # Line voltage used ONLY to estimate current when a gateway sends none but sends kVA.
 # Set it to your site's voltage; send real `current` from the meter to avoid estimating.

@@ -1,5 +1,3 @@
-/* Admin Portal. The shell (sidebar, topbar, page) reuses the user-side classes in
-   index.css; this file only adds what the admin screens need, in the same palette. */
 .admin-page h1 {
   margin: 0;
   font-size: 22px;

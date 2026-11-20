@@ -1,5 +1,3 @@
-"""Time helpers. The API speaks epoch milliseconds; reports use IST calendar days."""
-
 from datetime import datetime, timedelta, timezone as dt_timezone
 
 from django.utils import timezone
@@ -10,7 +8,6 @@ _SECONDS_LIMIT = 1e11
 
 
 def to_ms(value):
-    """aware datetime -> epoch ms (None stays None)."""
     if value is None:
         return None
     return int(value.timestamp() * 1000)
@@ -21,7 +18,6 @@ def from_ms(ms):
 
 
 def parse_timestamp(value):
-    """Epoch seconds, epoch milliseconds or an ISO 8601 string -> aware UTC datetime."""
     if isinstance(value, bool):
         raise ValueError("timestamp must be a number or ISO string")
     if isinstance(value, (int, float)):
@@ -43,11 +39,9 @@ def parse_timestamp(value):
 
 
 def local_hour_start(dt):
-    """Start of the IST hour containing `dt` (aware)."""
     return timezone.localtime(dt).replace(minute=0, second=0, microsecond=0)
 
 
 def local_day_start(dt, days_back=0):
-    """Start of the IST day containing `dt`, optionally `days_back` days earlier."""
     start = timezone.localtime(dt).replace(hour=0, minute=0, second=0, microsecond=0)
     return start - timedelta(days=days_back)

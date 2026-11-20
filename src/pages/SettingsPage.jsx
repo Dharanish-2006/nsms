@@ -85,7 +85,6 @@ function PhonePanel() {
   const [error, setError] = useState("");
   const valid = (v) => /^\d{10}$/.test(clean(v));
   const confirming = phones.find((p) => p.id === confirmId);
-  // Runs a change on the server; shows the server's message if it is refused.
   const run = async (fn) => {
     try {
       await fn();

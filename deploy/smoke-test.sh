@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Quick checks of a deployed NSMS site that need no login. Run from anywhere:
-#   bash deploy/smoke-test.sh https://ricemillmart.tech
-# It only sends harmless requests (wrong keys, empty forms). It never creates data.
 BASE="${1:-https://ricemillmart.tech}"
 BASE="${BASE%/}"
 HOST="${BASE#*://}"; HOST="${HOST%%/*}"
@@ -10,7 +7,7 @@ PASS=0; FAIL=0
 ok()   { PASS=$((PASS+1)); printf '  PASS  %s\n' "$1"; }
 bad()  { FAIL=$((FAIL+1)); printf '  FAIL  %s\n' "$1"; }
 code() { curl -sk -o /dev/null -m 20 -w '%{http_code}' "$@"; }
-expect() {  # expect "<label>" "<allowed codes, space separated>" curl-args...
+expect() {
   local label="$1" allowed="$2"; shift 2
   local got; got=$(code "$@")
   case " $allowed " in *" $got "*) ok "$label ($got)";; *) bad "$label: got $got, expected $allowed";; esac

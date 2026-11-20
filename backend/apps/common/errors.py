@@ -1,5 +1,3 @@
-"""Error responses in the shape the frontend expects: { message, code }."""
-
 import re
 
 from rest_framework import exceptions, status
@@ -8,8 +6,6 @@ from rest_framework.views import exception_handler as drf_exception_handler
 
 
 class ApiError(exceptions.APIException):
-    """Raise anywhere in a view to return `{message, code}` with a chosen status."""
-
     def __init__(self, message, status_code=status.HTTP_400_BAD_REQUEST, code="error", details=None):
         super().__init__(message, code)
         self.status_code = status_code
@@ -49,7 +45,7 @@ def api_exception_handler(exc, context):
 
     response = drf_exception_handler(exc, context)
     if response is None:
-        return None  # unexpected error: Django answers 500 and logs it
+        return None
 
     if isinstance(exc, exceptions.ValidationError):
         response.data = {

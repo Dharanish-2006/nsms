@@ -1,5 +1,3 @@
-"""One-time codes used to prove ownership of an email address or phone number."""
-
 import logging
 import re
 import secrets
@@ -52,8 +50,6 @@ def _code_hash(channel, target, code):
 
 
 def send_code(channel, target):
-    """Create and deliver a code. The caller always answers 204, so the response
-    never reveals whether an address is already registered."""
     target = normalise_target(channel, target)
     now = timezone.now()
     recent = OtpChallenge.objects.filter(
@@ -86,7 +82,6 @@ def send_code(channel, target):
 
 
 def verify_code(channel, target, code):
-    """Check a code and return a single-use proof token."""
     target = normalise_target(channel, target)
     now = timezone.now()
     challenge = (
@@ -116,7 +111,6 @@ def verify_code(channel, target, code):
 
 
 def proof_for(channel, target, token):
-    """The unexpired proof matching these values, or None. Does not consume it."""
     if not token:
         return None
     return OtpProof.objects.filter(

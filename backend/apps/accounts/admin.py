@@ -19,8 +19,6 @@ class UserAdmin(DjangoUserAdmin):
 
 @admin.register(AdminAuditLog)
 class AuditLogAdmin(admin.ModelAdmin):
-    """Read-only: the audit trail is append-only."""
-
     list_display = ("timestamp", "admin_username", "action", "target_type", "target_id", "remarks")
     list_filter = ("action",)
 

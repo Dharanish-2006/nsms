@@ -4,9 +4,6 @@ from .models import Gateway, GatewayAssignment, Machine, Plant
 
 
 class AssignmentInline(admin.TabularInline):
-    """History only. Assigning and connecting go through the Admin Portal, which enforces the
-    rules and writes the audit log."""
-
     model = GatewayAssignment
     extra = 0
     can_delete = False

@@ -27,7 +27,6 @@ export const istDate = (ms) =>
     day: "2-digit",
     year: "numeric",
   });
-/** 12-hour clock with seconds, e.g. "03:46:25 PM". */
 export const istClock = (ms) =>
   new Date(ms).toLocaleTimeString("en-US", {
     timeZone: TZ,
@@ -35,7 +34,6 @@ export const istClock = (ms) =>
     minute: "2-digit",
     second: "2-digit",
   });
-/** 12-hour clock without seconds, e.g. "10:00 AM". */
 export const istHm12 = (ms) =>
   new Date(ms).toLocaleTimeString("en-US", {
     timeZone: TZ,
@@ -43,7 +41,6 @@ export const istHm12 = (ms) =>
     minute: "2-digit",
   });
 const dayKey = (ms) => new Date(ms).toLocaleDateString("en-CA", { timeZone: TZ });
-/** "Today 10:00 AM", "Yesterday 10:00 PM", or "05 Nov 10:00 AM". */
 export const istWhen = (ms, now = Date.now()) => {
   const d = dayKey(ms);
   const label =

@@ -1,5 +1,3 @@
-// The words on the login page. Only the text supplied by the owner of the site; edit it here.
-
 export const intro = {
   title: "Smart Milling System",
   tagline: "Transforming Traditional Rice Mills into Smart, Data-Driven Operations.",

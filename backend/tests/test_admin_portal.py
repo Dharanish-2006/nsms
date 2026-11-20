@@ -1,5 +1,3 @@
-"""Admin Portal rules: approvals, assignments, connections, the audit log, self-registering gateways."""
-
 from datetime import timedelta
 
 import pytest
@@ -24,14 +22,12 @@ def ms(t):
     return int(t.timestamp() * 1000)
 
 
-# --- user approval ----------------------------------------------------------------------
 def test_approve_and_reject_pending_requests(admin_client, admin):
     a, b = make_user("pend-a", status="pending"), make_user("pend-b", status="pending")
     r = admin_client.post(f"{P}/users/{a.pk}/approve")
     assert r.status_code == 200 and r.json()["status"] == "active" and r.json()["decidedBy"]["username"] == "boss"
     r = admin_client.post(f"{P}/users/{b.pk}/reject", {"reason": "Unknown company"}, format="json")
     assert r.status_code == 200 and r.json()["status"] == "rejected" and r.json()["rejectionReason"] == "Unknown company"
-    # decided once: a rejected request stops here
     assert admin_client.post(f"{P}/users/{b.pk}/approve").status_code == 409
     assert admin_client.post(f"{P}/users/{a.pk}/reject").status_code == 409
     assert admin_client.post(f"{P}/users/99999/approve").status_code == 404
@@ -49,11 +45,10 @@ def test_user_lists_filter_and_search(admin_client):
     assert names("?status=active") == ["ok-one"]
     assert names("?status=rejected") == ["no-one"]
     assert names("?q=ok-") == ["ok-one"]
-    assert "boss" not in names("")  # admins are not in the owner lists
+    assert "boss" not in names("")
     assert admin_client.get(f"{P}/users?status=bogus").status_code == 422
 
 
-# --- assignment rules -------------------------------------------------------------------
 def test_only_approved_users_can_be_assigned(admin_client, gateway):
     for status in ("pending", "rejected"):
         user = make_user(f"u-{status}", status=status)
@@ -67,11 +62,9 @@ def test_only_approved_users_can_be_assigned(admin_client, gateway):
 def test_gateway_has_one_live_user_and_a_user_may_have_many(admin_client, operator, other_user, gateway, second_gateway):
     a = assign(admin_client, operator, gateway)
     assert a.status_code == 201 and a.json()["status"] == "assigned"
-    # reserved: nobody else can take it, not even the same user twice
     for who in (other_user, operator):
         r = assign(admin_client, who, gateway)
         assert r.status_code == 409 and r.json()["code"] == "gateway_in_use"
-    # one user, several gateways
     assert assign(admin_client, operator, second_gateway).status_code == 201
     assert GatewayAssignment.objects.filter(user=operator).count() == 2
 
@@ -80,20 +73,18 @@ def test_database_refuses_two_live_records_for_one_gateway(operator, other_user,
     GatewayAssignment.objects.create(gateway=gateway, user=operator)
     with pytest.raises(IntegrityError), transaction.atomic():
         GatewayAssignment.objects.create(gateway=gateway, user=other_user, status="connected")
-    # history rows are fine
     GatewayAssignment.objects.create(gateway=gateway, user=other_user, status="disconnected")
 
 
 def test_old_unverified_gateway_can_be_assigned(admin_client, operator, gateway):
-    Gateway.objects.filter(pk=gateway.pk).update(verified=False)  # no approval step any more
+    Gateway.objects.filter(pk=gateway.pk).update(verified=False)
     assert assign(admin_client, operator, gateway).status_code == 201
 
 
-# --- connect / disconnect ---------------------------------------------------------------
 def test_connection_lifecycle_and_history(admin_client, operator, other_user, gateway, machines, anon):
     aid = assign(admin_client, operator, gateway).json()["id"]
     mine = client_for(operator)
-    assert mine.get("/api/machines").json()["machines"] == []  # reserved, not connected
+    assert mine.get("/api/machines").json()["machines"] == []
 
     r = admin_client.post(f"{P}/assignments/{aid}/connect", {"remarks": "visit done"}, format="json")
     assert r.status_code == 200 and r.json()["status"] == "connected" and r.json()["connectedBy"]["username"] == "boss"
@@ -105,7 +96,6 @@ def test_connection_lifecycle_and_history(admin_client, operator, other_user, ga
     assert admin_client.post(f"{P}/assignments/{aid}/disconnect").status_code == 409
     assert mine.get("/api/machines").json()["machines"] == []
 
-    # the gateway is free again; the old record stays as history
     gw = next(g for g in admin_client.get(f"{P}/gateways").json() if g["id"] == str(gateway.pk))
     assert gw["availability"] == "available"
     second = assign(admin_client, other_user, gateway)
@@ -113,17 +103,17 @@ def test_connection_lifecycle_and_history(admin_client, operator, other_user, ga
     history = admin_client.get(f"{P}/assignments?gatewayId={gateway.pk}").json()
     assert [h["status"] for h in history] == ["assigned", "disconnected"]
     assert history[1]["user"]["username"] == "asha" and history[1]["connectedAt"] and history[1]["disconnectedAt"]
-    assert GatewayAssignment.objects.count() == 2  # nothing erased
+    assert GatewayAssignment.objects.count() == 2
 
 
 def test_reconnecting_the_same_assignment(admin_client, operator, other_user, gateway, machines):
     aid = assign(admin_client, operator, gateway).json()["id"]
     admin_client.post(f"{P}/assignments/{aid}/connect")
     admin_client.post(f"{P}/assignments/{aid}/disconnect")
-    assert admin_client.post(f"{P}/assignments/{aid}/connect").status_code == 200  # free: fine
+    assert admin_client.post(f"{P}/assignments/{aid}/connect").status_code == 200
     admin_client.post(f"{P}/assignments/{aid}/disconnect")
 
-    other = assign(admin_client, other_user, gateway).json()["id"]  # someone else takes it
+    other = assign(admin_client, other_user, gateway).json()["id"]
     r = admin_client.post(f"{P}/assignments/{aid}/connect")
     assert r.status_code == 409 and r.json()["code"] == "gateway_in_use"
     assert admin_client.post(f"{P}/assignments/{other}/connect").status_code == 200
@@ -149,7 +139,7 @@ def test_every_action_is_audited(admin_client, operator, gateway):
 def test_failed_actions_leave_no_audit_entry(admin_client, operator, other_user, gateway):
     assign(admin_client, operator, gateway)
     before = AdminAuditLog.objects.count()
-    assign(admin_client, other_user, gateway)  # refused
+    assign(admin_client, other_user, gateway)
     assert AdminAuditLog.objects.count() == before
 
 
@@ -160,23 +150,21 @@ def test_only_admins_reach_the_portal(user_client, anon, operator, gateway):
         assert getattr(anon, method)(P + path).status_code == 401, path
 
 
-# --- dashboard --------------------------------------------------------------------------
 def test_dashboard_counts(admin_client, operator, other_user, gateway, second_gateway):
     make_user("waiting", status="pending")
     aid = assign(admin_client, operator, gateway).json()["id"]
     admin_client.post(f"{P}/assignments/{aid}/connect")
     d = admin_client.get(f"{P}/dashboard").json()
-    assert d["pendingUsers"] == 1 and d["approvedUsers"] == 2  # asha, ravi
+    assert d["pendingUsers"] == 1 and d["approvedUsers"] == 2
     assert d["registeredGateways"] == 2 and d["activeConnections"] == 1
-    assert d["disconnectedUsers"] == 1  # asha is connected, ravi is not
+    assert d["disconnectedUsers"] == 1
     assert d["availableGateways"] == 1 and d["assignedGateways"] == 1
     by_name = {g["name"]: g for g in d["gateways"]}
     assert by_name["Gateway A"]["availability"] == "assigned" and by_name["Gateway A"]["assignedTo"]["username"] == "asha"
     assert by_name["Gateway B"]["availability"] == "available"
-    assert "machines" not in d  # no monitoring data
+    assert "machines" not in d
 
 
-# --- the previous owner's data stays theirs ---------------------------------------------
 def test_new_owner_does_not_see_the_previous_owners_hours(admin_client, anon, operator, other_user, gateway, machines):
     from apps.plants.models import ConnectionPeriod
 
@@ -186,16 +174,13 @@ def test_new_owner_does_not_see_the_previous_owners_hours(admin_client, anon, op
     started = now - timedelta(minutes=40)
     GatewayAssignment.objects.filter(pk=aid).update(connected_at=started)
     ConnectionPeriod.objects.filter(assignment_id=aid).update(start=started)
-    # 30 minutes of the first owner's data, stamped a few minutes ago
     push(anon, gateway, [{"meterId": "1", "ts": ms(now - timedelta(minutes=30)), "kw": 30, "pf": 0.9, "kwh": 100},
                          {"meterId": "1", "ts": ms(now - timedelta(minutes=10)), "kw": 30, "pf": 0.9, "kwh": 110}])  # fmt: skip
     assert client_for(operator).get("/api/machines/usage?range=week").json()["consumedKwh"] > 0
 
     admin_client.post(f"{P}/assignments/{aid}/disconnect")
     new = assign(admin_client, other_user, gateway).json()["id"]
-    admin_client.post(f"{P}/assignments/{new}/connect")  # connects "now": after the data above
-    # the new owner's period starts now; the hour filter is whole-hour, so move the old data
-    # one clear hour back to test the boundary honestly
+    admin_client.post(f"{P}/assignments/{new}/connect")
     from apps.telemetry.models import HourlyReport
 
     keep = HourlyReport.objects.order_by("hour").first()
@@ -210,7 +195,6 @@ def test_new_owner_does_not_see_the_previous_owners_hours(admin_client, anon, op
     assert sum(live["hourlyKwh"]) == 0
 
 
-# --- gateways registering themselves ----------------------------------------------------
 @override_settings(GATEWAY_PROVISION_KEY="fleet-secret")
 def test_gateway_registers_itself_and_is_ready_at_once(anon, admin_client, operator):
     body = {"serial": "SN-2026-0001", "name": "Mill gateway"}
@@ -220,11 +204,9 @@ def test_gateway_registers_itself_and_is_ready_at_once(anon, admin_client, opera
     r = anon.post("/api/gateways/provision", body, format="json", HTTP_X_PROVISION_KEY="fleet-secret")
     assert r.status_code == 201 and r.json()["apiKey"].startswith("gw_")
     key = r.json()["apiKey"]
-    # a second registration of the same serial is refused (the key is shown only once)
     r2 = anon.post("/api/gateways/provision", body, format="json", HTTP_X_PROVISION_KEY="fleet-secret")
     assert r2.status_code == 409
 
-    # The admin sees it straight away, approved and available to assign
     gw = admin_client.get(f"{P}/gateways").json()
     assert len(gw) == 1 and gw[0]["serialNumber"] == "SN-2026-0001" and gw[0]["availability"] == "available"
     assert assign(admin_client, operator, Gateway.objects.get(serial_number="SN-2026-0001")).status_code == 201
@@ -233,7 +215,7 @@ def test_gateway_registers_itself_and_is_ready_at_once(anon, admin_client, opera
     r = anon.post("/api/ingest", reading, format="json", HTTP_X_GATEWAY_KEY=key)
     assert r.status_code == 202 and r.json()["accepted"] == 1
     machine = Machine.objects.get(gateway__serial_number="SN-2026-0001")
-    assert machine.meter_id == "7" and machine.name == "Meter 7"  # the owner renames it later
+    assert machine.meter_id == "7" and machine.name == "Meter 7"
 
 
 def test_provisioning_is_off_without_a_key(anon):
@@ -255,10 +237,9 @@ def test_rotating_a_key_is_audited_and_works(admin_client, anon, gateway, machin
     assert push(anon, gateway, [{"meterId": "1", "kw": 5}], key=old).status_code == 401
     assert push(anon, gateway, [{"meterId": "1", "kw": 5}], key=r.json()["apiKey"]).status_code == 202
     assert AdminAuditLog.objects.filter(action="gateway_key_rotated").count() == 1
-    assert "apiKey" not in admin_client.get(f"{P}/gateways").json()[0]  # shown once only
+    assert "apiKey" not in admin_client.get(f"{P}/gateways").json()[0]
 
 
-# --- AWS IoT Core (MQTT) ---------------------------------------------------------------
 @override_settings(IOT_RULE_SECRET="rule-secret")
 def test_iot_rule_delivers_mqtt_readings(anon, admin_client, operator):
     H = {"HTTP_X_IOT_SECRET": "rule-secret"}
@@ -266,13 +247,11 @@ def test_iot_rule_delivers_mqtt_readings(anon, admin_client, operator):
     assert anon.post("/api/iot/ingest", msg, format="json").status_code == 401
     assert anon.post("/api/iot/ingest", msg, format="json", HTTP_X_IOT_SECRET="nope").status_code == 401
 
-    # The first message from an unknown serial registers it and is stored
     r = anon.post("/api/iot/ingest", msg, format="json", **H)
     assert r.status_code == 202 and r.json()["accepted"] == 1
     assert [g["serialNumber"] for g in admin_client.get(f"{P}/gateways").json()] == ["SN-MQTT-0001"]
     assert Machine.objects.get(gateway__serial_number="SN-MQTT-0001").meter_id == "1"
 
-    # Bad serials and bad bodies are refused
     assert anon.post("/api/iot/ingest", {"serial": "x", "readings": []}, format="json", **H).status_code == 422
     assert anon.post("/api/iot/ingest", {"serial": "SN-MQTT-0001", "readings": "no"}, format="json", **H).status_code == 422
 
@@ -282,7 +261,7 @@ def test_iot_destination_confirmation_is_logged_not_trusted(anon, caplog):
     with caplog.at_level("WARNING"):
         r = anon.post("/api/iot/ingest", {"confirmationToken": "tok-123", "enableUrl": "https://x"}, format="json")
     assert r.status_code == 200 and "tok-123" in caplog.text
-    assert Gateway.objects.count() == 0  # nothing created by it
+    assert Gateway.objects.count() == 0
 
 
 def test_iot_ingest_is_off_without_a_secret(anon):
@@ -290,7 +269,6 @@ def test_iot_ingest_is_off_without_a_secret(anon):
 
 
 def test_iot_bridge_message_handler(admin_client, db):
-    """What the `iot_bridge` subscriber does with each MQTT message."""
     from apps.plants.models import Gateway
     from apps.telemetry.iot import handle_message
 
@@ -298,7 +276,6 @@ def test_iot_bridge_message_handler(admin_client, db):
     assert handle_message("other/topic", good).startswith("ignored")
     assert handle_message("mill/SN-BRIDGE-1/readings", b"not json").startswith("rejected")
     assert handle_message("mill/SN-BRIDGE-1/readings", b"[1]").startswith("rejected")
-    # the first message registers and approves the gateway, and is stored
     assert handle_message("mill/SN-BRIDGE-1/readings", good).startswith("stored")
     gw = Gateway.objects.get(serial_number="SN-BRIDGE-1")
     assert gw.verified
@@ -307,7 +284,6 @@ def test_iot_bridge_message_handler(admin_client, db):
     assert "disabled" in handle_message("mill/SN-BRIDGE-1/readings", good)
 
 
-# --- automatic verification (the default) -----------------------------------------------
 @override_settings(GATEWAY_PROVISION_KEY="fleet-secret")
 def test_self_registered_gateway_is_verified_and_can_send_at_once(anon, admin_client, operator):
     r = anon.post("/api/gateways/provision", {"serial": "SN-AUTO-1"}, format="json", HTTP_X_PROVISION_KEY="fleet-secret")
@@ -316,7 +292,6 @@ def test_self_registered_gateway_is_verified_and_can_send_at_once(anon, admin_cl
     assert gw.verified
     reading = {"readings": [{"meterId": "7", "kw": 10}]}
     assert anon.post("/api/ingest", reading, format="json", HTTP_X_GATEWAY_KEY=r.json()["apiKey"]).status_code == 202
-    # still reaches no owner until the admin assigns and connects it
     assert assign(admin_client, operator, gw).status_code in (200, 201)
 
 

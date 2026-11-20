@@ -1,5 +1,3 @@
-// All images are imported here so the bundler fingerprints them and a missing
-// file fails the build instead of showing a broken image.
 import brand from "./icons/brand.svg";
 import brandAuth from "./icons/brand-auth.svg";
 import navDashboard from "./icons/nav-dashboard.svg";
@@ -78,7 +76,6 @@ export const images = {
   powerfactor,
 };
 
-/** Picture for each machine `type` the API can return. */
 const machineArt = {
   sheller: { card: shellerCard, rail: shellerRail },
   whitener: { card: whitener, rail: whitener },

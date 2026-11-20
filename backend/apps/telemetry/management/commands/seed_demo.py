@@ -1,10 +1,3 @@
-"""Create demo data matching the frontend's built-in demo plant, so the real backend
-can be tried straight away:
-
-    python manage.py seed_demo
-    python manage.py simulate_gateway --key <printed key>
-"""
-
 import secrets
 
 from django.core.management.base import BaseCommand
@@ -14,7 +7,7 @@ from apps.accounts.models import User
 from apps.alerts.models import Threshold
 from apps.plants.models import ConnectionPeriod, Gateway, GatewayAssignment, Machine, Plant
 
-MACHINES = [  # id, name, type, rated kW, meter id
+MACHINES = [
     ("sheller-1", "Sheller", "sheller", 36, "1"),
     ("whitener-1", "Whitener 1", "whitener", 25, "2"),
     ("whitener-2", "Whitener 2", "whitener", 22, "3"),

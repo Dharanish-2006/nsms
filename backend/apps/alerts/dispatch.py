@@ -1,5 +1,3 @@
-"""Deliver alert events: push to open dashboards and text the configured numbers."""
-
 import logging
 from concurrent.futures import ThreadPoolExecutor
 
@@ -28,12 +26,11 @@ def _send_all(numbers, text):
     for digits in numbers:
         try:
             send_sms(digits, text)
-        except Exception:  # noqa: BLE001 - one bad number must not block the rest
+        except Exception:  # noqa: BLE001 
             logger.exception("SMS to %s failed", digits)
 
 
 def _numbers_for(owner_id):
-    """The owner's SMS numbers, or none if they switched alerts off."""
     prefs = NotificationSettings.objects.filter(owner_id=owner_id).first()
     if prefs is not None and not prefs.alerts_enabled:
         return []
@@ -41,7 +38,6 @@ def _numbers_for(owner_id):
 
 
 def dispatch(events):
-    """Call after the transaction that produced `events` has committed."""
     if not events:
         return
     numbers_by_gateway = {}
@@ -51,8 +47,8 @@ def dispatch(events):
         group_send([gateway_group(gateway_id)], {"type": "alert.event", "kind": event.kind, "alert": alert_json(alert)})
 
         if event.notify:
-            if gateway_id not in numbers_by_gateway:  # read here; the worker never touches the database
-                owner_id = alert.threshold.owner_id  # the limits that fired belong to the owner to text
+            if gateway_id not in numbers_by_gateway:
+                owner_id = alert.threshold.owner_id
                 numbers_by_gateway[gateway_id] = _numbers_for(owner_id)
             numbers = numbers_by_gateway[gateway_id]
             if numbers:
@@ -64,7 +60,6 @@ def dispatch(events):
 
 
 def refresh_all_dashboards(user):
-    """Limits changed: ask this owner's open dashboards to reload their alerts."""
     from apps.plants.access import accessible_gateway_ids
 
     group_send([gateway_group(pk) for pk in accessible_gateway_ids(user)], {"type": "alerts.refresh"})

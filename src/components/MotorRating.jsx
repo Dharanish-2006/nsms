@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { hpToKw, kwToHp, parseHp } from "../lib/motor";
 
-/** A machine's motor rating in HP, with an inline editor. */
 export function MotorRating({ machine, canEdit, onSave }) {
   const hp = machine.ratedKw ? kwToHp(machine.ratedKw) : null;
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [pending, setPending] = useState(null); // HP awaiting confirmation
+  const [pending, setPending] = useState(null);
   const [saved, setSaved] = useState(false);
 
   const start = () => {

@@ -1,5 +1,3 @@
-// Remembers the sign-in token between page loads. When the backend uses an
-// httpOnly cookie instead (VITE_API_CREDENTIALS=true) no token is stored here.
 const KEY = "rmm.token";
 let memory = null;
 
@@ -16,7 +14,7 @@ export const tokenStore = {
     try {
       localStorage.setItem(KEY, token);
     } catch {
-      /* storage blocked: the in-memory copy still works for this tab */
+      // ignore
     }
   },
   clear() {
@@ -24,7 +22,7 @@ export const tokenStore = {
     try {
       localStorage.removeItem(KEY);
     } catch {
-      /* ignore */
+      // ignore
     }
   },
 };

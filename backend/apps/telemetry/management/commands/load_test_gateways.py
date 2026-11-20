@@ -1,13 +1,3 @@
-"""Create (or delete) many fake gateways for load testing.
-
-    python manage.py load_test_gateways --count 50 --out keys.json     # create
-    python manage.py load_test_gateways --delete                       # remove them all
-
-The fake gateways have serial numbers LOAD-0001, LOAD-0002 ... and are approved at once. The file
-written by --out holds their keys (it is the only copy: keep it private and delete it afterwards).
-Deleting also removes their machines and readings.
-"""
-
 import json
 import os
 
@@ -30,7 +20,7 @@ class Command(BaseCommand):
         if delete:
             qs = Gateway.objects.filter(serial_number__startswith=PREFIX + "-")
             n = qs.count()
-            Machine.objects.filter(gateway__in=qs).delete()  # machines are protected; their readings go with them
+            Machine.objects.filter(gateway__in=qs).delete()
             qs.delete()
             self.stdout.write(f"Deleted {n} load-test gateways.")
             return
@@ -47,7 +37,7 @@ class Command(BaseCommand):
             gw = Gateway.objects.filter(serial_number=serial).first()
             if gw is None:
                 gw = Gateway(name=serial, plant=plant, serial_number=serial, verified=True)
-            raw = gw.rotate_key()  # existing ones get a fresh key, so the file is always valid
+            raw = gw.rotate_key()
             gw.save()
             keys.append({"serial": serial, "key": raw})
         fd = os.open(out, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)

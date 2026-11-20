@@ -35,7 +35,7 @@ CLOSE_UNAUTHENTICATED = 4401
 
 def _groups_for(user):
     groups = {user_group(user.pk)}
-    groups.update(gateway_group(pk) for pk in accessible_gateway_ids(user))  # none for admins
+    groups.update(gateway_group(pk) for pk in accessible_gateway_ids(user))
     return groups
 
 
@@ -81,9 +81,7 @@ class LiveConsumer(AsyncJsonWebsocketConsumer):
                 return
             await self.send_json({"type": "pong"})
 
-    # -- access ---------------------------------------------------------------
     async def _still_valid(self):
-        """Re-check the token (sign-out, expiry, account removed). Closes the socket if not."""
         try:
             self.user, _ = await database_sync_to_async(authenticate_token)(self.raw_token)
         except InvalidToken:
@@ -113,7 +111,6 @@ class LiveConsumer(AsyncJsonWebsocketConsumer):
         await self._sync_groups()
         await self.send_json(await database_sync_to_async(_snapshot)(self.user))
 
-    # -- events from the channel layer ----------------------------------------
     async def machines_update(self, event):
         if self.user:
             await self.send_json(
@@ -130,7 +127,6 @@ class LiveConsumer(AsyncJsonWebsocketConsumer):
             await self.send_json({"type": "alerts", "alerts": alerts})
 
     async def access_changed(self, event):
-        """Assignments changed, the user signed out or was removed: re-check everything."""
         if self.user and await self._still_valid():
             await self._sync_groups()
             await self.send_json(await database_sync_to_async(_snapshot)(self.user))

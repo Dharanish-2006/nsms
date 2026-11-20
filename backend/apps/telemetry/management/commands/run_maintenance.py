@@ -1,12 +1,3 @@
-"""Housekeeping. Run it every few minutes (cron / ECS scheduled task / EventBridge), or
-keep one process looping:  python manage.py run_maintenance --loop 300
-
-  * rebuilds the DailyReport rows for today and the previous days
-  * deletes raw readings older than RAW_RETENTION_DAYS
-  * deletes expired auth tokens and one-time codes
-  * emails the automatic reports that are due (see apps/alerts/autoreport.py)
-"""
-
 import logging
 import time
 from datetime import timedelta
@@ -30,7 +21,7 @@ def run_once(days=2):
 
     cutoff = timezone.now() - timedelta(days=settings.RAW_RETENTION_DAYS)
     pruned = 0
-    while True:  # in batches so a big backlog never holds one huge lock
+    while True:
         ids = list(Reading.objects.filter(ts__lt=cutoff).values_list("pk", flat=True)[:PRUNE_BATCH])
         if not ids:
             break
@@ -56,7 +47,7 @@ class Command(BaseCommand):
             try:
                 rows, pruned, reports = run_once(days)
                 self.stdout.write(f"daily rows written: {rows}, raw readings pruned: {pruned}, reports sent: {reports}")
-            except Exception:  # noqa: BLE001 - keep a looping worker alive
+            except Exception:  # noqa: BLE001 
                 logger.exception("Maintenance run failed")
                 if not loop:
                     raise

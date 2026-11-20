@@ -8,7 +8,6 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       port: 5173,
-      // Forward /api to a local backend while developing (optional).
       proxy: env.VITE_DEV_API_PROXY
         ? { "/api": { target: env.VITE_DEV_API_PROXY, changeOrigin: true } }
         : undefined,

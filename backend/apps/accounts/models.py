@@ -21,7 +21,7 @@ class User(AbstractUser):
         USER = "user"
 
     class Status(models.TextChoices):
-        ACTIVE = "active"  # "approved" in the admin document; the API keeps the old name
+        ACTIVE = "active"
         PENDING = "pending"
         REJECTED = "rejected"
 
@@ -29,11 +29,8 @@ class User(AbstractUser):
     full_name = models.CharField(max_length=150, blank=True)
     mobile = models.CharField(max_length=10, blank=True)
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.USER)
-    # What the person asked for at sign-up. Never trusted: an admin grants roles.
     requested_role = models.CharField(max_length=10, choices=Role.choices, default=Role.USER)
-    # Fail closed: accounts must be approved before they can sign in.
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
-    # The admin's decision on the sign-up request (kept, so a rejection is never lost).
     decided_at = models.DateTimeField(null=True, blank=True)
     decided_by = models.ForeignKey(
         "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
@@ -51,13 +48,10 @@ class User(AbstractUser):
 
 
 def hash_secret(raw):
-    """SHA-256 of a high-entropy random secret (API tokens, gateway keys)."""
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
 class AuthToken(models.Model):
-    """Opaque bearer token. Only its hash is stored, so a database leak cannot be replayed."""
-
     key_hash = models.CharField(max_length=64, unique=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="auth_tokens")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -76,9 +70,7 @@ class AuthToken(models.Model):
 
 
 class OtpChallenge(models.Model):
-    """A 6-digit code sent to an email address or phone number."""
-
-    channel = models.CharField(max_length=10)  # "email" | "phone"
+    channel = models.CharField(max_length=10)
     target = models.CharField(max_length=254)
     code_hash = models.CharField(max_length=64)
     attempts = models.PositiveSmallIntegerField(default=0)
@@ -90,8 +82,6 @@ class OtpChallenge(models.Model):
 
 
 class OtpProof(models.Model):
-    """Short-lived, single-use proof that someone controls a target (passed to register)."""
-
     channel = models.CharField(max_length=10)
     target = models.CharField(max_length=254)
     token_hash = models.CharField(max_length=64, unique=True)
@@ -99,8 +89,6 @@ class OtpProof(models.Model):
 
 
 class AdminAuditLog(models.Model):
-    """Who did what to whom, and when. Append-only: rows are never edited or deleted by the app."""
-
     class Action(models.TextChoices):
         USER_APPROVED = "user_approved"
         USER_REJECTED = "user_rejected"
@@ -114,10 +102,9 @@ class AdminAuditLog(models.Model):
     admin = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="audit_entries"
     )
-    # Kept as text too, so the entry still reads correctly if the account is later removed.
     admin_username = models.CharField(max_length=150)
     action = models.CharField(max_length=30, choices=Action.choices)
-    target_type = models.CharField(max_length=20)  # "user" | "gateway" | "assignment" | "machine"
+    target_type = models.CharField(max_length=20)
     target_id = models.CharField(max_length=64)
     remarks = models.CharField(max_length=300, blank=True)
     timestamp = models.DateTimeField(default=timezone.now, db_index=True)

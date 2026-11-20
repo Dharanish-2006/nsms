@@ -1,6 +1,3 @@
-"""Builds the `machine` object of docs/API.md from stored state. Used by the REST
-endpoints and by the WebSocket feed so both always agree."""
-
 from collections import defaultdict
 from datetime import timedelta
 
@@ -15,7 +12,6 @@ from .models import HourlyReport
 
 
 def hourly_rows_today(machine_ids, now):
-    """{machine_id: [HourlyReport...]} for the current IST day, in one query."""
     rows = defaultdict(list)
     machine_ids = list(machine_ids)
     qs = HourlyReport.objects.filter(machine_id__in=machine_ids, hour__gte=local_day_start(now))
@@ -100,7 +96,6 @@ def machine_payload(machine, state, hourly_rows, now):
 
 
 def build_payloads(machines, now=None):
-    """`machines` must be loaded with select_related("gateway__plant", "state")."""
     now = now or timezone.now()
     machines = list(machines)
     rows = hourly_rows_today([m.pk for m in machines], now)

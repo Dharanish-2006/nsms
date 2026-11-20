@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 
-/** Load data for an admin screen; `reload()` refetches after an action. */
 export function useLoad(fetcher, deps) {
   const [tick, setTick] = useState(0);
   const key = `${JSON.stringify(deps)}#${tick}`;
@@ -23,7 +22,6 @@ export function useLoad(fetcher, deps) {
   return { data: state.data, error: state.error, loading: state.key !== key, reload };
 }
 
-/** Run an admin action, then refresh. Returns an error message or "". */
 export async function act(fn, reload) {
   try {
     await fn();

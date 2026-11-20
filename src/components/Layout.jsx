@@ -172,7 +172,6 @@ function Shell() {
   );
 }
 
-/** Route guard: signed-out visitors go to /login; signed-in ones get live data. */
 export function Layout() {
   const { user, ready } = useAuth();
   const { pathname } = useLocation();
@@ -183,7 +182,6 @@ export function Layout() {
 
   if (!ready) return <PageLoader label="Checking your session…" />;
   if (!user) return <Navigate to="/login" replace state={{ from: pathname }} />;
-  // Administrators have no machine data: their home is the Admin Portal.
   if (user.role === "admin") return <Navigate to="/admin" replace />;
   return (
     <DataProvider>

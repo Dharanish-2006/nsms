@@ -54,7 +54,7 @@ function LoginForm() {
     const err = await login(username, password);
     setBusy(false);
     if (err) return setError(err);
-    navigate(from, { replace: true }); // admins are redirected on to /admin by the layout guard
+    navigate(from, { replace: true });
   };
   return (
     <form className="auth-card" onSubmit={submit} noValidate>
@@ -86,7 +86,6 @@ function LoginForm() {
     </form>
   );
 }
-/** Which field a server error message belongs to (the server sends one plain message). */
 function fieldFor(message) {
   if (/password/i.test(message)) return "password";
   if (/mobile|phone/i.test(message)) return "mobile";
@@ -131,9 +130,9 @@ function RegisterForm() {
     const { confirm: _c, ...rest } = f;
     const err = await register({
       ...rest,
-      fullName: f.username.trim(), // there is no separate full-name field: the username is the display name
+      fullName: f.username.trim(),
       mobile,
-      role: "user", // plant owners register here; admins are created by us
+      role: "user",
       emailToken,
       ...(usePhone ? { phoneToken } : {}),
     });

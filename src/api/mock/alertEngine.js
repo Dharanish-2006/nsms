@@ -48,7 +48,6 @@ export function evaluate(machines, thresholds, prev, now) {
       old.status === "active" ? { ...old, status: "recovered", recoveredAt: now } : old,
     );
   }
-  // keep only the 20 most recent recoveries
   const recovered = [...next.values()]
     .filter((a) => a.status === "recovered")
     .sort((a, b) => (b.recoveredAt ?? 0) - (a.recoveredAt ?? 0));

@@ -19,7 +19,6 @@ def ms(dt):
 
 
 def feed(anon, gateway, meter="1", start=None, minutes=10, kw=24.0, pf=0.9, kwh0=500.0):
-    """One reading per minute with a consistent kWh counter."""
     start = start or timezone.now() - timedelta(minutes=minutes + 1)
     rows = [
         {"meterId": meter, "ts": ms(start + timedelta(minutes=i)), "kw": kw, "pf": pf,
@@ -27,7 +26,7 @@ def feed(anon, gateway, meter="1", start=None, minutes=10, kw=24.0, pf=0.9, kwh0
         for i in range(minutes + 1)
     ]  # fmt: skip
     assert push(anon, gateway, rows).status_code == 202
-    return kw * minutes / 60  # kWh covered
+    return kw * minutes / 60
 
 
 def test_usage_sums_consumed_and_running_energy(anon, owner_client, gateway, machines):
@@ -45,7 +44,7 @@ def test_usage_sums_consumed_and_running_energy(anon, owner_client, gateway, mac
 def test_idle_draw_counts_as_consumed_but_not_actual(anon, owner_client, gateway, machines):
     t = timezone.now() - timedelta(minutes=10)
     rows = []
-    for i in range(11):  # machine "off" (flag) but the meter still counts a little standby energy
+    for i in range(11):
         rows.append({"meterId": "1", "ts": ms(t + timedelta(minutes=i)), "kw": 0.3, "on": False, "kwh": 10 + 0.3 * i / 60})
     push(anon, gateway, rows)
     body = owner_client.get("/api/machines/usage?range=week").json()
@@ -79,7 +78,6 @@ def test_daily_report_is_consolidated_into_the_database(anon, owner_client, gate
     idle = next(m for m in body["machines"] if m["machineId"] == "whitener-2")
     assert idle["kwh"] == 0 and idle["avgPf"] is None
 
-    # The nightly roll-up stored for operations is idempotent
     consolidate_day(timezone.localdate())
     consolidate_day(timezone.localdate())
     assert DailyReport.objects.filter(machine_id="sheller-1", date=timezone.localdate()).count() == 1

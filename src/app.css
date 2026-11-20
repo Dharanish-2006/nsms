@@ -1,5 +1,3 @@
-/* Application styles that build on the base styles in index.css. */
-
 a {
   color: inherit;
 }
@@ -12,7 +10,6 @@ button:disabled {
   outline-offset: 2px;
 }
 
-/* nav */
 .nav-item {
   position: relative;
   text-decoration: none;
@@ -45,7 +42,6 @@ button:disabled {
   width: 190px;
 }
 
-/* dashboard hero select (was a <label> in the prototype) */
 .hero-select {
   position: relative;
   display: flex;
@@ -66,7 +62,6 @@ button:disabled {
   letter-spacing: 0.7px;
 }
 
-/* auth */
 .auth-card input {
   font-family: inherit;
 }
@@ -104,7 +99,6 @@ button:disabled {
   box-shadow: none;
 }
 
-/* native selects styled like the prototype's dropdown buttons */
 select {
   height: 43px;
   padding: 0 12px;
@@ -126,7 +120,6 @@ select:disabled {
   width: 100%;
 }
 
-/* charts */
 .svg-chart {
   width: 100%;
   height: auto;
@@ -138,7 +131,6 @@ select:disabled {
   background: #ecefea;
 }
 
-/* alerts */
 .alert-row.picked {
   box-shadow: 0 0 0 2px #1e6b3c33;
 }
@@ -221,7 +213,6 @@ select:disabled {
   font-size: 12px;
 }
 
-/* reports */
 .report-table {
   min-width: 840px;
 }
@@ -325,7 +316,6 @@ select:disabled {
   white-space: nowrap;
 }
 
-/* settings */
 .ok-text {
   margin-left: 12px;
   color: #14502b;
@@ -358,9 +348,6 @@ select:disabled {
   border-top: 0;
 }
 
-/* ---- production additions ---- */
-
-/* Minimal reset (box sizing, default margins, form controls inherit the page font). */
 *,
 *::before,
 *::after {
@@ -493,7 +480,6 @@ html {
   white-space: nowrap;
 }
 
-/* The download button must never clip its label. */
 .primary-button.download {
   min-width: max-content;
   padding-inline: 22px;

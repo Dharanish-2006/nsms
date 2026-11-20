@@ -1,6 +1,5 @@
 # syntax=docker/dockerfile:1
 
-# ---- build ----
 FROM node:22-alpine AS build
 WORKDIR /app
 RUN corepack enable
@@ -8,7 +7,6 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY . .
 
-# Public build-time settings (see .env.example). Defaults are production-safe.
 ARG VITE_API_URL=/api
 ARG VITE_USE_MOCK=false
 ARG VITE_POLL_INTERVAL_MS=5000
@@ -31,7 +29,6 @@ ENV VITE_API_URL=$VITE_API_URL \
     VITE_BASE_PATH=$VITE_BASE_PATH
 RUN pnpm build
 
-# ---- serve ----
 FROM nginx:1.27-alpine
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY deploy/security-headers.conf /etc/nginx/security-headers.conf

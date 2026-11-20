@@ -1,12 +1,3 @@
-"""Automatic report emails.
-
-A plant owner who turns on "Send automatically" gets the report for the period that just ended
-(yesterday, last week Mon-Sun, or last month, in IST) by email, as a CSV attachment, once the
-local time passes AUTO_REPORT_HOUR. Run it from `run_maintenance` or `send_auto_reports`.
-The numbers come from the same function as the Reports page, and only cover the hours the
-owner was connected to their gateways.
-"""
-
 import csv
 import io
 import logging
@@ -32,10 +23,10 @@ HEADER = [
 
 @dataclass(frozen=True)
 class Period:
-    key: str  # unique per period, stored to avoid sending twice
+    key: str
     label: str
-    start: datetime  # inclusive, aware
-    end: datetime  # exclusive, aware
+    start: datetime
+    end: datetime
 
 
 def _midnight(day):
@@ -43,7 +34,6 @@ def _midnight(day):
 
 
 def _period_for(freq, first_day, last_day):
-    """The period that spans first_day..last_day (inclusive dates)."""
     start, end = _midnight(first_day), _midnight(last_day + timedelta(days=1))
     if freq == "day":
         return Period(first_day.isoformat(), first_day.strftime("%d %b %Y"), start, end)
@@ -55,7 +45,6 @@ def _period_for(freq, first_day, last_day):
 
 
 def last_finished_period(freq, today=None):
-    """The most recent period that has completely ended."""
     today = today or timezone.localdate()
     if freq == "day":
         d = today - timedelta(days=1)
@@ -69,7 +58,6 @@ def last_finished_period(freq, today=None):
 
 
 def current_period(freq, today=None):
-    """The period that is still running (what 'already sent' means when switching the feature on)."""
     today = today or timezone.localdate()
     if freq == "day":
         return _period_for(freq, today, today)
@@ -97,7 +85,6 @@ def build_csv(rows):
 
 
 def send_report(owner, period):
-    """Email `owner` their report for `period`. Raises if the mail cannot be sent."""
     machines = list(accessible_machines(owner))
     rows = owner_report_rows(owner, period.start, period.end, machines)
     total = round(sum(r["kwh"] for r in rows), 2)
@@ -114,7 +101,6 @@ def send_report(owner, period):
 
 
 def send_due_reports(now=None, ignore_hour=False, only_user=None):
-    """Send every report that is due and has not been sent. Returns how many were sent."""
     now = timezone.localtime(now or timezone.now())
     if not ignore_hour and now.hour < settings.AUTO_REPORT_HOUR:
         return 0
@@ -128,12 +114,11 @@ def send_due_reports(now=None, ignore_hour=False, only_user=None):
         if prefs.last_report_key == period.key or not owner.email:
             continue
         if not accessible_machines(owner).exists():
-            # Nothing connected: skip this period quietly rather than mail an empty report.
             NotificationSettings.objects.filter(pk=prefs.pk).update(last_report_key=period.key)
             continue
         try:
             send_report(owner, period)
-        except Exception:  # noqa: BLE001 - try again on the next run
+        except Exception:  # noqa: BLE001 
             logger.exception("Could not send the automatic report to user %s", owner.pk)
             continue
         NotificationSettings.objects.filter(pk=prefs.pk).update(last_report_key=period.key)

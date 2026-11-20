@@ -16,16 +16,13 @@ const messageOf = (err) => err?.message || "Something went wrong. Please try aga
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  // Nothing to restore means we can render the sign-in screen straight away.
   const [ready, setReady] = useState(() => !mightHaveSession());
 
-  // Any 401 from the API signs the user out everywhere in the app.
   useEffect(() => {
     setUnauthorizedHandler(() => setUser(null));
     return () => setUnauthorizedHandler(() => {});
   }, []);
 
-  // Restore the session after a page reload.
   useEffect(() => {
     if (!mightHaveSession()) return undefined;
     let cancelled = false;
@@ -39,7 +36,6 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  // Each action returns null on success or a message that is safe to show.
   const login = useCallback(async (username, password) => {
     try {
       setUser(await api.auth.login(username, password));
@@ -58,7 +54,6 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  // sendOtp returns null or an error message; verifyOtp returns { token } or { error }.
   const sendOtp = useCallback(async (channel, target) => {
     try {
       const res = await api.auth.sendOtp(channel, target);
@@ -90,7 +85,7 @@ export function AuthProvider({ children }) {
     try {
       await api.auth.logout();
     } catch {
-      /* the local session is cleared either way */
+      // ignore
     }
     setUser(null);
   }, []);

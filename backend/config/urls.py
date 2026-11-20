@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import include, path
 
 urlpatterns = [
-    path("django-admin/", admin.site.urls),  # the React Admin Portal owns /admin,
+    path("django-admin/", admin.site.urls),
     path(
         "api/",
         include(

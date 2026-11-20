@@ -1,5 +1,3 @@
-"""Automatic report emails."""
-
 import csv
 import io
 from datetime import date, datetime, timedelta
@@ -24,14 +22,13 @@ def at(y, m, d, hour):
 
 
 def test_periods():
-    # Sun 8 Nov 2026
     today = date(2026, 11, 8)
     assert last_finished_period("day", today).key == "2026-11-07"
-    w = last_finished_period("week", today)  # last full Mon-Sun: 26 Oct - 1 Nov
+    w = last_finished_period("week", today)
     assert (w.key, w.start.date(), (w.end - timedelta(seconds=1)).date()) == ("2026-W44", date(2026, 10, 26), date(2026, 11, 1))
     m = last_finished_period("month", today)
     assert (m.key, m.start.date(), m.end.date()) == ("2026-10", date(2026, 10, 1), date(2026, 11, 1))
-    assert last_finished_period("month", date(2026, 1, 15)).key == "2025-12"  # across the year
+    assert last_finished_period("month", date(2026, 1, 15)).key == "2025-12"
     assert current_period("week", today).key == "2026-W45" and current_period("month", today).key == "2026-11"
 
 
@@ -63,11 +60,11 @@ def test_sends_yesterdays_report_once_with_csv(prefs, operator, machines):
     rows = {r["Machine"]: r for r in csv.DictReader(io.StringIO(content))}
     assert list(rows["Sheller"]) [:3] == ["Machine", "Plant", "Motor (HP)"]
     assert rows["Sheller"]["Plant"] == "Plant 1" and float(rows["Sheller"]["Energy (kWh)"]) == 40
-    assert rows["Sheller"]["Motor (HP)"] == "48.3"  # 36 kW rating, shown in HP
+    assert rows["Sheller"]["Motor (HP)"] == "48.3"
 
-    assert send_due_reports(now_at(date(2026, 11, 8), 9)) == 0  # same period: not again
+    assert send_due_reports(now_at(date(2026, 11, 8), 9)) == 0
     assert len(mail.outbox) == 1
-    assert send_due_reports(now_at(date(2026, 11, 9), 7)) == 1  # next day: next report
+    assert send_due_reports(now_at(date(2026, 11, 9), 7)) == 1
     assert "2026-11-08" in mail.outbox[1].attachments[0][0]
 
 
@@ -91,7 +88,7 @@ def test_weekly_and_monthly(prefs):
 
 def test_only_the_owners_connected_hours_are_reported(prefs, operator, machines):
     hours(machines["sheller-1"], date(2026, 11, 7), 40)
-    ConnectionPeriod.objects.update(start=at(2026, 11, 7, 12))  # connected after the 10:00 hour
+    ConnectionPeriod.objects.update(start=at(2026, 11, 7, 12))
     send_due_reports(now_at(date(2026, 11, 8), 8))
     rows = {r["Machine"]: r for r in csv.DictReader(io.StringIO(mail.outbox[0].attachments[0][1]))}
     assert float(rows["Sheller"]["Energy (kWh)"]) == 0
@@ -106,7 +103,7 @@ def test_failed_send_is_retried_next_run(prefs, monkeypatch):
 
     monkeypatch.setattr(EmailMessage, "send", boom)
     assert send_due_reports(now_at(date(2026, 11, 8), 8)) == 0
-    assert NotificationSettings.objects.get().last_report_key == ""  # not marked as sent
+    assert NotificationSettings.objects.get().last_report_key == ""
     monkeypatch.undo()
     assert send_due_reports(now_at(date(2026, 11, 8), 9)) == 1
 
@@ -120,7 +117,6 @@ def test_turning_it_on_starts_with_the_next_period(owner_client, operator):
     r = owner_client.put("/api/settings/notifications", {"alertsEnabled": True, "autoReports": True, "reportFrequency": "week"}, format="json")
     assert r.status_code == 200
     key = NotificationSettings.objects.get(owner=operator).last_report_key
-    assert key == current_period("week").key  # not a report for a period that has already ended
-    # saving again with no change leaves it alone
+    assert key == current_period("week").key
     owner_client.put("/api/settings/notifications", {"alertsEnabled": False, "autoReports": True, "reportFrequency": "week"}, format="json")
     assert NotificationSettings.objects.get(owner=operator).last_report_key == key

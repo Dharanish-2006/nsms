@@ -20,11 +20,6 @@ import { MACHINES } from "./sim";
 import { hash, load, save, uid } from "./storage";
 import { RANGE_DAYS, usageTotals } from "./usage";
 
-// Demo backend that lives entirely in the browser. Passwords are only hashed
-// with plain SHA-256 and stored in localStorage: this is NOT secure and exists
-// only so the UI can be built before the real backend. It is excluded from
-// production builds (VITE_USE_MOCK=false).
-
 const USERS_KEY = "rmm.mock.users";
 const NOTIFY_KEY = "rmm.mock.notifications";
 const DEFAULT_NOTIFY = {
@@ -35,8 +30,8 @@ const DEFAULT_NOTIFY = {
 const FREQUENCIES = ["day", "week", "month"];
 const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_MAX_TRIES = 5;
-const otps = new Map(); // `${channel}:${target}` -> { code, expires, tries }
-const proofs = new Map(); // token -> `${channel}:${target}`
+const otps = new Map();
+const proofs = new Map();
 const otpKey = (channel, target) => `${channel}:${String(target).trim().toLowerCase()}`;
 const checkTarget = (channel, target) => {
   if (channel === "email" && !/^\S+@\S+\.\S+$/.test(target))
@@ -63,7 +58,6 @@ function ensureSeed() {
           status: "active",
           passHash: await hash("admin123"),
         },
-        // Demo plant owners so the admin screens have something to show.
         ...(await Promise.all(
           [
             ["ram", "Ram Traders", "active"],
@@ -144,7 +138,6 @@ export const mockApi = {
         expires: Date.now() + OTP_TTL_MS,
         tries: 0,
       });
-      // Demo only: there is no SMS/email gateway, so the code is handed to the UI.
       return { demoCode: code };
     },
     async verifyOtp(channel, target, code) {
@@ -188,7 +181,7 @@ export const mockApi = {
           fullName: input.fullName.trim(),
           email: input.email.trim(),
           mobile: input.mobile || "",
-          role: "user", // administrators are created by the operator, never by sign-up
+          role: "user",
           status: "pending",
           registeredAt: Date.now(),
           passHash: await hash(input.password),
@@ -214,7 +207,6 @@ export const mockApi = {
   },
 
   contact: {
-    // Demo only: the enquiry is stored in this browser, it is NOT sent anywhere.
     async send({ name, mobile, requirement, website }) {
       if (website) return { ok: true };
       const digits = String(mobile ?? "")

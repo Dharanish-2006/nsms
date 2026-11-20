@@ -1,6 +1,5 @@
 const RANK = { critical: 0, warning: 1 };
 
-/** Active alerts first (critical, then newest), then recovered (newest first). */
 export function sortAlerts(list) {
   return list.slice().sort((a, b) => {
     if (a.status !== b.status) return a.status === "active" ? -1 : 1;

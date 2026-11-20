@@ -1,13 +1,4 @@
 #!/usr/bin/env python3
-"""A pretend gateway that publishes meter readings to AWS IoT Core over MQTT + TLS.
-
-    pip install paho-mqtt
-    python tools/mqtt_gateway_sim.py --endpoint xxxx-ats.iot.ap-south-1.amazonaws.com \\
-        --serial SIM-GW-0001 --cert SIM-GW-0001.cert.pem --key SIM-GW-0001.private.key --ca AmazonRootCA1.pem
-
-The serial must equal the IoT Thing name; it becomes part of the topic `mill/<serial>/readings`.
-Meters 1-4 match `seed_demo`. Meter 3 runs at a low power factor so an alert fires.
-"""
 
 import argparse
 import json
@@ -34,7 +25,7 @@ def main():
     args = a.parse_args()
 
     topic = f"mill/{args.serial}/readings"
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=args.serial)  # client id = Thing name
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=args.serial)
     client.tls_set(ca_certs=args.ca, certfile=args.cert, keyfile=args.key, tls_version=ssl.PROTOCOL_TLS_CLIENT)
     client.connect(args.endpoint, 8883, keepalive=60)
     client.loop_start()

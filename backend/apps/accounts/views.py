@@ -28,8 +28,6 @@ LOGIN_FAIL_WINDOW = 15 * 60
 
 
 class PublicView(APIView):
-    """Sign-in, register and OTP: no token needed, and rate limited."""
-
     authentication_classes = []
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
@@ -123,7 +121,7 @@ class RegisterView(PublicView):
                     email=email,
                     full_name=d["fullName"].strip(),
                     mobile=mobile,
-                    role=User.Role.USER,  # asking for "admin" is only a request
+                    role=User.Role.USER,
                     requested_role=d["role"],
                     status=User.Status.PENDING,
                 )
@@ -138,8 +136,6 @@ class RegisterView(PublicView):
 
 
 class ProfileSerializer(serializers.Serializer):
-    """The only profile fields a person may edit. Email and phone need verifying, so not here."""
-
     fullName = serializers.CharField(max_length=150)
 
 
@@ -160,7 +156,7 @@ class MeView(APIView):
 class LogoutView(APIView):
     def post(self, request):
         request.auth.delete()
-        notify_user_access_changed(request.user.pk)  # closes this user's open dashboards
+        notify_user_access_changed(request.user.pk)
         return Response(status=204)
 
 
@@ -177,6 +173,5 @@ class ChangePasswordView(APIView):
             raise serializers.ValidationError({"newPassword": list(exc.messages)}) from None
         user.set_password(s.validated_data["newPassword"])
         user.save(update_fields=["password"])
-        # Sign the account out everywhere else.
         AuthToken.objects.filter(user=user).exclude(pk=request.auth.pk).delete()
         return Response(status=204)

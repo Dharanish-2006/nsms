@@ -49,7 +49,6 @@ def accessible_gateway_ids(user):
 
 
 def connected_owner(gateway_id):
-    """The user connected to this gateway right now, or None."""
     return (
         GatewayAssignment.objects.filter(gateway_id=gateway_id, status=CONNECTED)
         .select_related("user")
@@ -58,14 +57,10 @@ def connected_owner(gateway_id):
     )
 
 
-# --- Reports only cover the time an owner was connected -----------------------------------
 _HOUR = timedelta(hours=1)
 
 
 def window_q(user, *, gateway_field="machine__gateway", time_field="hour", pad=_HOUR):
-    """A filter for rows (hourly reports, readings) that fall inside this user's connection
-    periods. `pad` widens the start so an hour that was only partly connected still counts
-    (hourly rows are stamped with their start). A Q that matches nothing if there are none."""
     now = timezone.now()
     q = Q(pk__in=[])
     periods = ConnectionPeriod.objects.filter(assignment__user=user).select_related("assignment")
@@ -78,7 +73,6 @@ def window_q(user, *, gateway_field="machine__gateway", time_field="hour", pad=_
 
 
 def current_period_starts(gateway_ids):
-    """{gateway_id: when the current owner connected} for gateways with an open period."""
     rows = ConnectionPeriod.objects.filter(
         end__isnull=True, assignment__gateway_id__in=list(gateway_ids)
     ).values_list("assignment__gateway_id", "start")
