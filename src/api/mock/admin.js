@@ -1,3 +1,4 @@
+import { setMachineDetails, setRatedKw } from "./engine";
 import { MACHINES } from "./sim";
 import { load, save, uid } from "./storage";
 
@@ -332,6 +333,54 @@ export function createAdminMock({ users, saveUsers, requireAdmin, fail }) {
         .sort((a, b) => a.meterId.localeCompare(b.meterId))
         .map(({ gatewayId, ...m }) => (void gatewayId, m));
       return { gateway: gwRow(g, live(d)[g.id]), machines: rows };
+    },
+    async updateMachine(id, patch = {}) {
+      const me = await requireAdmin();
+      const d = db();
+      const m =
+        d.machines.find((x) => x.id === id) ?? fail(404, "Not found.", "not_found");
+      const next = {};
+      if (patch.name !== undefined) {
+        next.name = String(patch.name).trim();
+        if (!next.name) fail(422, "Enter a machine name.", "validation");
+        const clash = d.machines.some(
+          (x) =>
+            x.id !== id &&
+            x.gatewayId === m.gatewayId &&
+            x.name.toLowerCase() === next.name.toLowerCase(),
+        );
+        if (clash)
+          fail(
+            409,
+            "Another machine on this gateway already has that name.",
+            "name_in_use",
+          );
+      }
+      if (patch.type !== undefined) {
+        if (!["sheller", "whitener", "sortex"].includes(patch.type))
+          fail(422, "Pick a machine type.", "validation");
+        next.type = patch.type;
+      }
+      if (patch.ratedKw !== undefined) {
+        if (!Number.isFinite(patch.ratedKw) || patch.ratedKw <= 0)
+          fail(422, "Enter a motor rating above 0.", "validation");
+        next.ratedKw = patch.ratedKw;
+      }
+      Object.assign(m, next);
+      log(
+        d,
+        me,
+        "machine_configured",
+        "machine",
+        id,
+        Object.keys(next).sort().join(", "),
+      );
+      commit(d);
+      if (next.name !== undefined || next.type !== undefined)
+        setMachineDetails(id, { name: next.name, type: next.type });
+      if (next.ratedKw !== undefined) setRatedKw(id, next.ratedKw);
+      const { gatewayId, ...row } = m;
+      return (void gatewayId, row);
     },
     async auditLog(query = {}) {
       await requireAdmin();

@@ -28,9 +28,31 @@ def test_owner_renames_a_machine(anon, owner_client, gateway):
     assert dup.status_code == 409 and dup.json()["code"] == "name_in_use"
 
 
-def test_admin_cannot_rename_machines_but_can_list_them(anon, admin_client, gateway):
+def test_admin_renames_a_machine_and_sets_its_motor_rating(anon, admin_client, owner_client, gateway):
+    m1, m2 = _first_data(anon, gateway)
+    r = admin_client.put(
+        f"{P}/machines/{m1.pk}", {"name": "Sheller 1", "type": "whitener", "ratedKw": 29.828}, format="json"
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert (body["name"], body["type"], body["ratedKw"]) == ("Sheller 1", "whitener", 29.828)
+    live = {m["id"]: m for m in owner_client.get("/api/machines").json()["machines"]}
+    assert live[m1.pk]["name"] == "Sheller 1" and live[m1.pk]["ratedKw"] == 29.828
+    dup = admin_client.put(f"{P}/machines/{m2.pk}", {"name": "sheller 1"}, format="json")
+    assert dup.status_code == 409 and dup.json()["code"] == "name_in_use"
+    assert admin_client.put(f"{P}/machines/{m2.pk}", {"name": "  "}, format="json").status_code == 422
+    assert admin_client.put(f"{P}/machines/{m2.pk}", {"ratedKw": -1}, format="json").status_code == 422
+    assert admin_client.get(f"{P}/audit-log?action=machine_configured").json()[0]["targetType"] == "machine"
+
+
+def test_only_admins_edit_through_the_admin_endpoint(anon, owner_client, gateway):
     m1, _ = _first_data(anon, gateway)
-    assert admin_client.put(f"{P}/machines/{m1.pk}", {"name": "X", "type": "sheller"}, format="json").status_code in (404, 405)
+    assert owner_client.put(f"{P}/machines/{m1.pk}", {"name": "X"}, format="json").status_code == 403
+    assert anon.put(f"{P}/machines/{m1.pk}", {"name": "X"}, format="json").status_code == 401
+
+
+def test_admin_lists_machines_without_readings(anon, admin_client, gateway):
+    _first_data(anon, gateway)
     listing = admin_client.get(f"{P}/gateways/{gateway.pk}/machines").json()
     assert [x["meterId"] for x in listing["machines"]] == ["1", "2"]
     assert "kw" not in listing["machines"][0]

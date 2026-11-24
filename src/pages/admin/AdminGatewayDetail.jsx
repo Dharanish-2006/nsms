@@ -1,5 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import { api } from "../../api";
+import { MachineName } from "../../components/MachineName";
+import { MotorRating } from "../../components/MotorRating";
 import { ErrorPanel, PageLoader } from "../../components/PageState";
 import { useLoad } from "./useLoad";
 import { Pill, Table, when } from "./ui";
@@ -10,6 +12,11 @@ export default function AdminGatewayDetail() {
   if (error) return <ErrorPanel message={error} onRetry={reload} />;
   if (!data) return <PageLoader label="Loading…" />;
   const { gateway: g, machines } = data;
+  const save = async (machineId, patch) => {
+    await api.admin.updateMachine(machineId, patch);
+    reload();
+  };
+  const saveRating = (machineId, ratedKw) => save(machineId, { ratedKw });
   return (
     <>
       <p className="adm-crumb">
@@ -26,13 +33,18 @@ export default function AdminGatewayDetail() {
       </div>
       <p className="adm-note">
         Each meter on this gateway is identified by its Meter ID (the Modbus address set
-        on the meter). The plant owner names their machines. Readings are never shown
-        here.
+        on the meter). You and the plant owner can both rename a meter, set its type and
+        change its motor HP. Readings are never shown here.
       </p>
       <section className="adm-card">
         <Table
-          head={["Meter ID", "Name", "Last data"]}
-          rows={machines.map((m) => [m.meterId, m.name, when(m.lastSeenAt)])}
+          head={["Meter ID", "Name and type", "Motor", "Last data"]}
+          rows={machines.map((m) => [
+            m.meterId,
+            <MachineName key="n" compact machine={m} onSave={save} />,
+            <MotorRating key="h" machine={m} canEdit onSave={saveRating} />,
+            when(m.lastSeenAt),
+          ])}
           empty="No meters have reported yet. They appear here when the gateway first sends data."
         />
       </section>

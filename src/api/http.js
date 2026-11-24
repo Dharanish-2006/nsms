@@ -83,6 +83,8 @@ export const httpApi = {
         body: { remarks },
       }),
     gatewayMachines: (id) => request(`/admin-portal/gateways/${enc(id)}/machines`),
+    updateMachine: (id, patch) =>
+      request(`/admin-portal/machines/${enc(id)}`, { method: "PUT", body: patch }),
     auditLog: (query) => request("/admin-portal/audit-log", { query }),
   },
 

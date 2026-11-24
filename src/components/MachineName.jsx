@@ -6,7 +6,7 @@ const TYPES = [
   ["sortex", "Sortex"],
 ];
 
-export function MachineName({ machine, onSave }) {
+export function MachineName({ machine, onSave, compact = false }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState("");
   const [error, setError] = useState("");
@@ -46,8 +46,8 @@ export function MachineName({ machine, onSave }) {
 
   if (!editing) {
     return (
-      <div className="machine-name">
-        <h1>{machine.name}</h1>
+      <div className={`machine-name${compact ? " compact" : ""}`}>
+        {compact ? <strong>{machine.name}</strong> : <h1>{machine.name}</h1>}
         <button
           type="button"
           className="motor-btn"
@@ -82,7 +82,10 @@ export function MachineName({ machine, onSave }) {
     );
   }
   return (
-    <form className="machine-name motor-edit" onSubmit={submit}>
+    <form
+      className={`machine-name motor-edit${compact ? " compact" : ""}`}
+      onSubmit={submit}
+    >
       <input
         autoFocus
         type="text"

@@ -116,6 +116,27 @@ class MachineListView(APIView):
         return Response({"serverTime": to_ms(now), "machines": build_payloads(machines, now)})
 
 
+def apply_machine_edit(machine, d):
+    if "name" in d:
+        name = d["name"].strip()
+        if not name:
+            raise ApiError("Enter a machine name.", 422, "validation")
+        if (
+            Machine.objects.filter(gateway=machine.gateway, name__iexact=name)
+            .exclude(pk=machine.pk)
+            .exists()
+        ):
+            raise ApiError("Another machine on this gateway already has that name.", 409, "name_in_use")
+        machine.name = name
+    if "type" in d:
+        machine.type = d["type"]
+    for src, dst in (("ratedKw", "rated_kw"), ("onThresholdKw", "on_threshold_kw")):
+        if src in d:
+            setattr(machine, dst, d[src])
+    machine.save()
+    return Machine.objects.select_related("gateway__plant", "state").get(pk=machine.pk)
+
+
 class MachineDetailView(APIView):
     permission_classes = [IsPlantOwner]
 
@@ -123,25 +144,7 @@ class MachineDetailView(APIView):
         machine = get_object_or_404(accessible_machines(request.user), pk=pk)
         s = MachineEditSerializer(data=request.data, partial=True)
         s.is_valid(raise_exception=True)
-        d = s.validated_data
-        if "name" in d:
-            name = d["name"].strip()
-            if not name:
-                raise ApiError("Enter a machine name.", 422, "validation")
-            if (
-                Machine.objects.filter(gateway=machine.gateway, name__iexact=name)
-                .exclude(pk=machine.pk)
-                .exists()
-            ):
-                raise ApiError("Another machine on this gateway already has that name.", 409, "name_in_use")
-            machine.name = name
-        if "type" in d:
-            machine.type = d["type"]
-        for src, dst in (("ratedKw", "rated_kw"), ("onThresholdKw", "on_threshold_kw")):
-            if src in d:
-                setattr(machine, dst, d[src])
-        machine.save()
-        machine = Machine.objects.select_related("gateway__plant", "state").get(pk=machine.pk)
+        machine = apply_machine_edit(machine, s.validated_data)
         payload = build_payloads([machine])[0]
         publish_machine_change(machine)
         return Response(payload)

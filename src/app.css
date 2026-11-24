@@ -239,6 +239,13 @@ select:disabled {
 .machine-name h1 {
   margin: 0;
 }
+.machine-name.compact {
+  gap: 8px;
+}
+.machine-name.compact input {
+  height: 34px;
+  min-width: 150px;
+}
 .machine-name input {
   height: 40px;
   min-width: 220px;

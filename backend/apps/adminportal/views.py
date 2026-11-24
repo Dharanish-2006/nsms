@@ -14,6 +14,8 @@ from apps.common.timeutil import to_ms
 from apps.enquiries.models import Enquiry
 from apps.plants import services
 from apps.plants.models import LIVE_STATUSES, Gateway, GatewayAssignment, Machine
+from apps.telemetry.publish import publish_machine_change
+from apps.telemetry.views import MachineEditSerializer, apply_machine_edit
 
 PAGE = 200
 
@@ -284,3 +286,20 @@ class GatewayMachinesView(AdminView):
         gateway = get_object_or_404(Gateway, pk=pk)
         machines = gateway.machines.select_related("state").order_by("configured", "position", "meter_id")
         return Response({"gateway": gateway_row(gateway, _live_by_gateway().get(gateway.pk)), "machines": [machine_row(m) for m in machines]})
+
+
+class MachineEditView(AdminView):
+    def put(self, request, pk):
+        machine = get_object_or_404(Machine.objects.select_related("gateway"), pk=pk)
+        s = MachineEditSerializer(data=request.data, partial=True)
+        s.is_valid(raise_exception=True)
+        d = {k: v for k, v in s.validated_data.items() if k != "onThresholdKw"}
+        machine = apply_machine_edit(machine, d)
+        publish_machine_change(machine)
+        AdminAuditLog.record(
+            request.user, AdminAuditLog.Action.MACHINE_CONFIGURED, "machine", machine.pk,
+            f"{machine.gateway.serial_number or machine.gateway.name} meter {machine.meter_id}: " + ", ".join(sorted(d)),
+        )  # fmt: skip
+        return Response(machine_row(Machine.objects.select_related("state").get(pk=machine.pk)))
+
+    patch = put

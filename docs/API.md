@@ -179,11 +179,12 @@ kwh kvarh kvah on`. Reply `202 {accepted, rejected:[{index,error}], unknownMeter
 fix the data (do not retry), `5xx` / network errors mean retry (duplicates are ignored).
 
 **Gateways and assignment (admin).** Use the Admin Portal endpoints: `GET /admin-portal/gateways?availability=&q=`,
-`GET /admin-portal/gateways/:id/machines` (read-only list of meters, no readings),
+`GET /admin-portal/gateways/:id/machines` (list of meters, no readings),
+`PUT /admin-portal/machines/:id` (admin sets `name`, `type` and `ratedKw`; 409 `name_in_use`),
 `POST /admin-portal/gateways/:id/rotate-key` (the key is returned once, never again),
 `GET/POST /admin-portal/assignments`, and `POST /admin-portal/assignments/:id/connect|disconnect`.
 A gateway is approved by its first message; there is no verify step. Owners see only the machines,
-plants and alerts of gateways connected to them, and rename a machine with `PUT /machines/:id`.
+plants and alerts of gateways connected to them, and rename a machine or change its motor rating with `PUT /machines/:id`.
 
 **Reports.** `GET /reports/daily?plant=&date=YYYY-MM-DD` returns the consolidated per-machine day
 (energy, running energy, runtime, average/max power, average power factor).
