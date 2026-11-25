@@ -239,3 +239,14 @@ def test_hovering_at_a_limit_does_not_text_repeatedly(anon, owner_client, operat
     for i, pf in enumerate([0.78, 0.82, 0.78, 0.82, 0.78]):
         push(anon, gateway, [reading("3", t + timedelta(seconds=10 * i), pf=pf)])
     assert len(sms.outbox) == 1
+
+
+def test_impossible_values_are_rejected_not_stored(anon, gateway, machines):
+    bad = {"meterId": machines["sheller-1"].meter_id, "kw": 2.7e30, "pf": 0.9}
+    huge_kwh = {"meterId": machines["sheller-1"].meter_id, "kw": 10, "kwh": 5e12}
+    wild_current = {"meterId": machines["sheller-1"].meter_id, "kw": 10, "current": 1e20}
+    r = push(anon, gateway, [bad, huge_kwh, wild_current])
+    assert r.status_code == 202
+    body = r.json()
+    assert body["accepted"] == 0 and len(body["rejected"]) == 3
+    assert not Reading.objects.filter(machine=machines["sheller-1"]).exists()
