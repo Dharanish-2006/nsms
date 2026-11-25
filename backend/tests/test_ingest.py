@@ -242,11 +242,15 @@ def test_hovering_at_a_limit_does_not_text_repeatedly(anon, owner_client, operat
 
 
 def test_impossible_values_are_rejected_not_stored(anon, gateway, machines):
-    bad = {"meterId": machines["sheller-1"].meter_id, "kw": 2.7e30, "pf": 0.9}
-    huge_kwh = {"meterId": machines["sheller-1"].meter_id, "kw": 10, "kwh": 5e12}
-    wild_current = {"meterId": machines["sheller-1"].meter_id, "kw": 10, "current": 1e20}
-    r = push(anon, gateway, [bad, huge_kwh, wild_current])
+    sheller = machines["sheller-1"]
+    bad = {"meterId": sheller.meter_id, "kw": 2.7e30, "pf": 0.9}
+    huge_kwh = {"meterId": sheller.meter_id, "kw": 10, "kwh": 5e12}
+    wild_current = {"meterId": sheller.meter_id, "kw": 10, "current": 1e20}
+    assert push(anon, gateway, [bad, huge_kwh, wild_current]).status_code == 422
+    assert not Reading.objects.filter(machine=sheller).exists()
+
+    good = {"meterId": sheller.meter_id, "kw": 20, "pf": 0.9}
+    r = push(anon, gateway, [good, bad])
     assert r.status_code == 202
     body = r.json()
-    assert body["accepted"] == 0 and len(body["rejected"]) == 3
-    assert not Reading.objects.filter(machine=machines["sheller-1"]).exists()
+    assert body["accepted"] == 1 and len(body["rejected"]) == 1
