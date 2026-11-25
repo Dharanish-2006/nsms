@@ -81,7 +81,7 @@ function MachineCard({ m, now, onOpen }) {
         <div className="machine-stat">
           <span className="stat-title">
             <b className="bolt">ϟ</b>
-            Energy Utilisation
+             Industrial Standard
           </span>
           <strong>{utilisation === null ? "-- %" : `${utilisation} %`}</strong>
         </div>
@@ -188,7 +188,7 @@ export default function DashboardPage() {
           </div>
         </article>
         <article>
-          <h2>ENERGY UTILISATION</h2>
+          <h2> Industrial Standard</h2>
           <div className="energy-value">
             <span className="energy-icon">ϟ</span>
             <strong>

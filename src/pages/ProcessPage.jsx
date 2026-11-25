@@ -206,7 +206,7 @@ export default function ProcessPage() {
 
               <div>
                 <strong style={{ fontSize: 20 }}>
-                  Energy Utilisation
+                   Industrial Standard
                   <br />
                   {range
                     ? utilisation === null
