@@ -63,7 +63,7 @@ function MachineCard({ m, now, onOpen }) {
             <div className="machine-stat">
               <span className="stat-title">
                 <img src={loadfactor_img} height={25} width={20} />
-                Load Factor
+                Production Output
               </span>
               <strong>{on ? Math.round(m.loadFactor) : 0} %</strong>
               <div className="load-track">
