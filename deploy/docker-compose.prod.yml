@@ -53,9 +53,9 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_COMPANY_NAME: ${COMPANY_NAME:-RicemillMart}
-        VITE_COMPANY_ADDRESS: ${COMPANY_ADDRESS:-[Your address, City, State PIN]}
-        VITE_COMPANY_PHONE: ${COMPANY_PHONE:-+91 XXXXX XXXXX}
-        VITE_COMPANY_EMAIL: ${COMPANY_EMAIL:-[info@yourdomain.com]}
+        VITE_COMPANY_ADDRESS: ${COMPANY_ADDRESS:-}
+        VITE_COMPANY_PHONE: ${COMPANY_PHONE:-}
+        VITE_COMPANY_EMAIL: ${COMPANY_EMAIL:-}
     restart: unless-stopped
 
   caddy:

@@ -20,8 +20,8 @@ export const config = {
   staleAfterMs: 120000,
   company: {
     name: env.VITE_COMPANY_NAME || "RicemillMart",
-    address: env.VITE_COMPANY_ADDRESS || "[Your address, City, State PIN]",
-    phone: env.VITE_COMPANY_PHONE || "+91 XXXXX XXXXX",
-    email: env.VITE_COMPANY_EMAIL || "[info@yourdomain.com]",
+    address: env.VITE_COMPANY_ADDRESS || "",
+    phone: env.VITE_COMPANY_PHONE || "",
+    email: env.VITE_COMPANY_EMAIL || "",
   },
 };

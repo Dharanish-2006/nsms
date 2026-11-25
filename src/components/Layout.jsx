@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import logo from "../assets/images/logo.png";
 import { Navigate, NavLink, Outlet, useLocation } from "react-router-dom";
 import { icons } from "../assets";
@@ -8,6 +8,8 @@ import { DataProvider, useData } from "../context/DataContext";
 import { istClock, istDate, istTime } from "../lib/format";
 import { AssetIcon } from "./Icon";
 import { ErrorPanel, PageLoader } from "./PageState";
+const LandingPage = lazy(() => import("../pages/LandingPage"));
+import { useSeo } from "../lib/seo";
 
 const navItems = [
   { label: "Dashboard", to: "/", icon: icons.navDashboard },
@@ -153,6 +155,8 @@ function Banners() {
 
 function Shell() {
   const { status, error, reload } = useData();
+  const { pathname } = useLocation();
+  useSeo({ title: `${titleFor(pathname)} | RicemillMart`, path: pathname, index: false });
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main">
@@ -181,6 +185,11 @@ export function Layout() {
   }, [pathname]);
 
   if (!ready) return <PageLoader label="Checking your session…" />;
+  if (!user && pathname === "/") return (
+      <Suspense fallback={<PageLoader />}>
+        <LandingPage />
+      </Suspense>
+    );
   if (!user) return <Navigate to="/login" replace state={{ from: pathname }} />;
   if (user.role === "admin") return <Navigate to="/admin" replace />;
   return (

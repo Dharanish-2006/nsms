@@ -1,2 +1,9 @@
 User-agent: *
-Disallow: /
+Allow: /
+Disallow: /api/
+Disallow: /admin
+Disallow: /django-admin/
+Disallow: /login
+Disallow: /register
+
+Sitemap: https://ricemillmart.com/sitemap.xml

@@ -4,11 +4,12 @@ import { intro } from "../content/smartMilling";
 import logo from "../assets/images/logo.png";
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { AssetIcon } from "../components/Icon";
 import { Field } from "../components/Field";
 import { OtpVerify } from "../components/OtpVerify";
+import { ContactList } from "../components/ContactList";
 import { config } from "../config";
 import { useAuth } from "../context/AuthContext";
+import { useSeo } from "../lib/seo";
 function CompanyPanel() {
   return (
     <section className="company-panel">
@@ -22,20 +23,7 @@ function CompanyPanel() {
         {intro.paragraphs.map((t) => (
           <p key={t}>{t}</p>
         ))}
-        <ul>
-          <li>
-            <AssetIcon src={icons.contactAddress} size={20} />
-            {config.company.address}
-          </li>
-          <li>
-            <AssetIcon src={icons.contactPhone} size={20} />
-            {config.company.phone}
-          </li>
-          <li>
-            <AssetIcon src={icons.contactMail} size={20} />
-            {config.company.email}
-          </li>
-        </ul>
+        <ContactList />
       </div>
     </section>
   );
@@ -244,6 +232,11 @@ function RegisterForm() {
 }
 export default function AuthPage({ mode }) {
   const { user, ready } = useAuth();
+  useSeo({
+    title: mode === "login" ? "Sign in | RicemillMart" : "Create account | RicemillMart",
+    path: mode === "login" ? "/login" : "/register",
+    index: false,
+  });
   if (ready && user)
     return <Navigate to={user.role === "admin" ? "/admin" : "/"} replace />;
   return (
