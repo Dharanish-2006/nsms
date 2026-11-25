@@ -81,7 +81,7 @@ function MachineCard({ m, now, onOpen }) {
         <div className="machine-stat">
           <span className="stat-title">
             <b className="bolt">ϟ</b>
-             Industrial Standard
+             INDUSTRIAL STANDARD
           </span>
           <strong>{utilisation === null ? "-- %" : `${utilisation} %`}</strong>
         </div>
