@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { AutoReportPanel } from "../components/AutoReportPanel";
 import { StatusBadge } from "../components/Icon";
-import { MotorRating } from "../components/MotorRating";
 import { useData } from "../context/DataContext";
 import {
   downloadCsv,
@@ -16,7 +15,7 @@ import { kwToHp } from "../lib/motor";
 import { statusOf } from "../lib/status";
 
 export default function ReportsPage() {
-  const { machines, alerts, plant, lastUpdate, saveMotorRating } = useData();
+  const { machines, alerts, plant, lastUpdate } = useData();
   const rows = machines.map((m) => {
     const kwh = m.hourlyKwh.reduce((a, b) => a + b, 0);
     return {
@@ -40,7 +39,7 @@ export default function ReportsPage() {
         "Runtime today",
         "Energy today (kWh)",
         "Avg power factor (run)",
-        "Load factor (%)",
+        "Production output (%)",
         "Active alerts",
       ],
       ...rows.map(({ m, kwh, avgPf, pq, active }) => [
@@ -88,7 +87,7 @@ export default function ReportsPage() {
                   <span>
                     <Link to={`/machines/${m.id}`}>{m.name}</Link>
                   </span>
-                  <MotorRating machine={m} canEdit onSave={saveMotorRating} />
+                  <span>{m.ratedKw ? `${kwToHp(m.ratedKw)} HP` : "--"}</span>
                   <span>
                     <StatusBadge status={statusOf(m, lastUpdate)} />
                   </span>

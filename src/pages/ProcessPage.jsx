@@ -6,8 +6,6 @@ import { AutoReportPanel } from "../components/AutoReportPanel";
 import { StatusBadge } from "../components/Icon";
 import { useData } from "../context/DataContext";
 import runtime_icon from "../assets/images/runtime-icon.svg";
-import { MotorRating } from "../components/MotorRating";
-import { MachineName } from "../components/MachineName";
 import {
   downloadCsv,
   fmtDuration,
@@ -16,7 +14,8 @@ import {
   istStamp,
   istStamp12,
 } from "../lib/format";
-import { hasPowerQuality } from "../lib/machine";
+import { hasPowerQuality, utilisationPct } from "../lib/machine";
+import { kwToHp } from "../lib/motor";
 import { statusOf } from "../lib/status";
 
 const Row = ({ k, v }) => (
@@ -34,7 +33,7 @@ const RANGES = [
 export default function ProcessPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { machines, plant, lastUpdate, saveMotorRating, saveMachineName } = useData();
+  const { machines, plant, lastUpdate } = useData();
   const [windowHrs, setWindowHrs] = useState(24);
   const m = machines.find((x) => x.id === id);
   const [sum, setSum] = useState({ key: "", data: null });
@@ -58,6 +57,7 @@ export default function ProcessPage() {
   const hour = istHour(lastUpdate);
   const range = sum.key === sumKey ? sum.data : null;
   const rangeLabel = RANGES.find((r) => r.hours === windowHrs)?.short ?? "Last 24 hrs";
+  const utilisation = range ? utilisationPct(range.runKwh, range.kwh) : null;
   const download = () =>
     downloadCsv(`${m.id}-${istDay(lastUpdate).replace(" ", "-")}.csv`, [
       ["Machine", m.name],
@@ -104,9 +104,9 @@ export default function ProcessPage() {
         <section className="machine-banner">
           <img src={images.machineBanner} alt="" />
           <div>
-            <MachineName machine={m} onSave={saveMachineName} />
+            <h1>{m.name}</h1>
             <p>
-              {m.plant} · <MotorRating machine={m} canEdit onSave={saveMotorRating} /> ·
+              {m.plant} · {m.ratedKw ? `${kwToHp(m.ratedKw)} HP` : "--"} ·
               Updated {istStamp12(m.updatedAt)}
             </p>
             <Row k="Motor ON Time " v={m.runStart ? istStamp12(m.runStart) : na} />
@@ -141,7 +141,7 @@ export default function ProcessPage() {
               <div className="load-visual">
                 <img src={images.loadGauge} alt="" />
                 <div>
-                  <span>Load factor</span>
+                  <span>Production Output</span>
                   <strong>
                     {on ? Math.round(m.loadFactor) : 0}
                     <small>%</small>
@@ -150,7 +150,7 @@ export default function ProcessPage() {
               </div>
               <div className="data-list compact">
                 <Row
-                  k={`Average Load Factor (${rangeLabel})`}
+                  k={`Average Production Output (${rangeLabel})`}
                   v={range ? `${Math.round(range.avgLoadFactor)} %` : "…"}
                 />
               </div>
@@ -167,7 +167,6 @@ export default function ProcessPage() {
                 </div>
               </div>
               <div className="data-list compact">
-                <Row k="Power Factor (now)" v={on ? m.pf.toFixed(2) : na} />
                 <Row
                   k={`Average PF (${rangeLabel})`}
                   v={range ? (range.avgPf == null ? na : range.avgPf.toFixed(2)) : "…"}
@@ -179,15 +178,9 @@ export default function ProcessPage() {
             <div className="load-visual">
               <img src={runtime_icon} alt="" />
               <div>
-                <span>Runtime</span>
-                <strong>{on ? fmtDuration(m.runSec) : na}</strong>
+                <span>{`Total Runtime (${rangeLabel})`}</span>
+                <strong>{range ? fmtDuration(range.runSeconds) : "…"}</strong>
               </div>
-            </div>
-            <div className="data-list compact">
-              <Row
-                k={`Total Runtime (${rangeLabel})`}
-                v={range ? fmtDuration(range.runSeconds) : "…"}
-              />
             </div>
           </article>
           <article className="info-card load-card">
@@ -213,17 +206,17 @@ export default function ProcessPage() {
 
               <div>
                 <strong style={{ fontSize: 20 }}>
-                  Actual Usage
+                  Energy Utilisation
                   <br />
-                  {range ? range.runKwh.toFixed(1) : "…"} kWh
+                  {range
+                    ? utilisation === null
+                      ? na
+                      : `${utilisation} %`
+                    : "…"}
                 </strong>
               </div>
             </div>
             <div className="data-list compact">
-              <Row
-                k={`Energy used (${rangeLabel})`}
-                v={range ? `${range.kwh.toFixed(1)} kWh` : "…"}
-              />
               <Row k="Energy usage today" v={`${todayKwh.toFixed(1)} kWh`} />
             </div>
           </article>

@@ -7,7 +7,7 @@ import { ConsumptionBars } from "../components/Charts";
 import { AssetIcon, StatusBadge } from "../components/Icon";
 import { useData } from "../context/DataContext";
 import { fmt, fmtDuration } from "../lib/format";
-import { hasPowerQuality } from "../lib/machine";
+import { hasPowerQuality, utilisationPct } from "../lib/machine";
 import loadfactor_img from "../assets/images/load-gauge.svg";
 const todayKwh = (m) => m.hourlyKwh.reduce((a, b) => a + b, 0);
 const RANGES = [
@@ -20,7 +20,7 @@ function MachineCard({ m, now, onOpen }) {
   const status = statusOf(m, now);
   const on = status === "on";
   const kwh = todayKwh(m);
-  const actual = actualKwh(m);
+  const utilisation = utilisationPct(actualKwh(m), kwh);
   const pq = hasPowerQuality(m);
   return (
     <button
@@ -81,9 +81,9 @@ function MachineCard({ m, now, onOpen }) {
         <div className="machine-stat">
           <span className="stat-title">
             <b className="bolt">ϟ</b>
-            Actual Usage
+            Energy Utilisation
           </span>
-          <strong>{actual > 0 ? `${fmt(actual, 1)} kWh` : "-- kWh"}</strong>
+          <strong>{utilisation === null ? "-- %" : `${utilisation} %`}</strong>
         </div>
       </div>
     </button>
@@ -188,11 +188,17 @@ export default function DashboardPage() {
           </div>
         </article>
         <article>
-          <h2>ACTUAL USAGE</h2>
+          <h2>ENERGY UTILISATION</h2>
           <div className="energy-value">
             <span className="energy-icon">ϟ</span>
-            <strong>{value(shown?.actualKwh)}</strong>
-            <span>kWh</span>
+            <strong>
+              {loading
+                ? "…"
+                : shown
+                  ? (utilisationPct(shown.actualKwh, shown.consumedKwh) ?? "--")
+                  : "--"}
+            </strong>
+            <span>%</span>
           </div>
         </article>
       </section>

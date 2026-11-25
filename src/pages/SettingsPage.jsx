@@ -2,6 +2,8 @@ import { icons, images } from "../assets";
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { Field } from "../components/Field";
+import { MachineName } from "../components/MachineName";
+import { MotorRating } from "../components/MotorRating";
 import { ThresholdPanel } from "../components/ThresholdPanel";
 import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
@@ -272,6 +274,27 @@ function NotificationPanel() {
     </section>
   );
 }
+function MachinePanel() {
+  const { machines, plant, saveMachineName, saveMotorRating } = useData();
+  return (
+    <section className="panel machines-settings">
+      <div className="settings-title">
+        <div>
+          <h2>Machines</h2>
+          <p>Rename a machine, set its type and motor HP. {plant}</p>
+        </div>
+      </div>
+      <div className="machine-settings-list">
+        {machines.map((m) => (
+          <div className="machine-settings-row" key={m.id}>
+            <MachineName compact machine={m} onSave={saveMachineName} />
+            <MotorRating machine={m} canEdit onSave={saveMotorRating} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 function ThresholdCard() {
   const { thresholds } = useData();
   const [editing, setEditing] = useState(false);
@@ -321,11 +344,12 @@ export default function SettingsPage() {
       <div className="page-heading">
         <div>
           <h1>Settings</h1>
-          <p>Your account and who gets alert messages.</p>
+          <p>Your account, machines and who gets alert messages.</p>
         </div>
       </div>
       <PasswordPanel />
       <PhonePanel />
+      <MachinePanel />
       <NotificationPanel />
       <ThresholdCard />
       <section className="settings-panel panel logout-panel">

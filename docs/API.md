@@ -98,7 +98,7 @@ edits horsepower and converts at 1 HP = 0.7457 kW, so `ratedKw` stays the stored
 }
 ```
 
-- `type` is one of `sheller | whitener | sortex`; it picks the picture. Machines of type `sortex` have no power factor or load factor: the UI hides them and the backend must not raise power factor alerts for them.
+- `type` is one of `sheller | whitener | sortex`; it picks the picture. Machines of type `sortex` have no power factor or production output: the UI hides them and the backend must not raise power factor alerts for them.
 - `serverTime` is the server's clock. The UI compares it with `updatedAt` to decide
   whether a machine is "unknown" (no data for 2 minutes), so it never relies on the
   viewer's clock.

@@ -515,3 +515,20 @@ html {
   color: #1f7a3d;
   font-weight: 600;
 }
+
+.machine-settings-list {
+  display: grid;
+  gap: 4px;
+}
+.machine-settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e6ebe2;
+}
+.machine-settings-row:last-child {
+  border-bottom: 0;
+}
