@@ -214,7 +214,7 @@ select:disabled {
 }
 
 .report-table {
-  min-width: 840px;
+  min-width: 700px;
 }
 .report-table .table-head,
 .report-table .table-row {
@@ -516,9 +516,14 @@ html {
   font-weight: 600;
 }
 
+.machines-settings {
+  padding: 28px 34px 16px;
+}
+.machines-settings .settings-title p {
+  margin: 4px 0 16px;
+}
 .machine-settings-list {
   display: grid;
-  gap: 4px;
 }
 .machine-settings-row {
   display: flex;
@@ -526,9 +531,42 @@ html {
   align-items: center;
   justify-content: space-between;
   gap: 12px 24px;
-  padding: 10px 0;
-  border-bottom: 1px solid #e6ebe2;
+  padding: 14px 0;
+  border-top: 1px solid #e6ebe2;
 }
-.machine-settings-row:last-child {
-  border-bottom: 0;
+.machine-settings-row .machine-name.compact {
+  flex: 1 1 320px;
+  margin: 0;
+}
+.machine-settings-row .motor-cell {
+  flex: 0 0 auto;
+  min-width: 120px;
+  justify-content: flex-end;
+}
+@media (max-width: 720px) {
+  .machines-settings {
+    padding: 18px;
+  }
+  .machine-settings-row .motor-cell {
+    justify-content: flex-start;
+  }
+}
+.machines-settings h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.analysis-grid {
+  align-items: stretch;
+}
+.analysis-grid .info-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.machines-header {
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+.report-panel {
+  overflow: hidden;
 }

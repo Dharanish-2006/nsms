@@ -591,3 +591,15 @@ svg {
     border-bottom: 0;
   }
 }
+
+@media (max-width: 520px) {
+  .banner-actions .select-button,
+  .banner-actions .download {
+    flex: 0 0 auto;
+    height: 46px;
+  }
+  .info-card.load-card .load-visual {
+    height: auto;
+    min-height: 96px;
+  }
+}

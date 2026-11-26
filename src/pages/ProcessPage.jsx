@@ -188,7 +188,7 @@ export default function ProcessPage() {
               <span className="energy-icon">ϟ</span>
 
               <div>
-                <strong style={{ fontSize: 20, padding: 0 }}>
+                <strong style={{ fontSize: 17, padding: 0 }}>
                   Units Consumed
                   <br />
                   {range ? range.kwh.toFixed(1) : "…"} kWh
@@ -205,8 +205,8 @@ export default function ProcessPage() {
               />
 
               <div>
-                <strong style={{ fontSize: 20 }}>
-                   Industrial Standard
+                <strong style={{ fontSize: 17 }}>
+                  Industrial Standard
                   <br />
                   {range
                     ? utilisation === null

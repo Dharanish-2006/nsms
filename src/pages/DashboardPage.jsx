@@ -188,7 +188,7 @@ export default function DashboardPage() {
           </div>
         </article>
         <article>
-          <h2> Industrial Standard</h2>
+          <h2>Industrial Standard</h2>
           <div className="energy-value">
             <span className="energy-icon">ϟ</span>
             <strong>
