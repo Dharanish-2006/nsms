@@ -53,9 +53,9 @@ def machine_payload(machine, state, hourly_rows, now):
             "hourlyKwh": hourly_kwh, "hourOn": hour_on,
         }  # fmt: skip
 
-    # Electrical values read 0 while the machine is off (docs/API.md).
+    # Electrical values read 0 while the machine is off, except power factor, which keeps the last reading.
     kw = state.kw if on else 0
-    pf = (state.pf or 0) if on else 0
+    pf = state.pf or 0
     kva = state.kva if on else 0
     kvar = state.kvar if on else 0
     current = state.current if on else 0

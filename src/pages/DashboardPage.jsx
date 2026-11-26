@@ -58,7 +58,7 @@ function MachineCard({ m, now, onOpen }) {
                 <b className="line-icon gauge" />
                 Power Factor
               </span>
-              <strong>{on ? fmt(m.pf) : "N/A"}</strong>
+              <strong>{status !== "unknown" && m.pf > 0 ? fmt(m.pf) : "N/A"}</strong>
             </div>
             <div className="machine-stat">
               <span className="stat-title">
@@ -76,7 +76,7 @@ function MachineCard({ m, now, onOpen }) {
           <span className="stat-title">
             <b className="bolt">ϟ</b>Power Consumed
           </span>
-          <strong>{kwh > 0 ? `${fmt(kwh, 1)} kWh` : "-- kWh"}</strong>
+          <strong>{m.totalKwh > 0 ? `${fmt(m.totalKwh, 1)} kWh` : "-- kWh"}</strong>
         </div>
         <div className="machine-stat">
           <span className="stat-title">

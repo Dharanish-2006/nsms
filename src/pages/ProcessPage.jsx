@@ -67,7 +67,7 @@ export default function ProcessPage() {
       ["Measurement", "Value", "Unit"],
       ["Status", status.toUpperCase(), ""],
       ["Average current", on ? m.current.toFixed(2) : na, "A"],
-      ...(pq ? [["Power factor", on ? m.pf.toFixed(3) : na, ""]] : []),
+      ...(pq ? [["Power factor", m.pf > 0 && status !== "unknown" ? m.pf.toFixed(3) : na, ""]] : []),
       ["Active power", on ? m.kw.toFixed(2) : na, "kW"],
       ["Reactive power", on ? m.kvar.toFixed(2) : na, "kVAR"],
       ["Apparent power", on ? m.kva.toFixed(2) : na, "kVA"],
@@ -163,7 +163,7 @@ export default function ProcessPage() {
                 <img src={images.powerfactor} alt="" />
                 <div>
                   <span>Power factor</span>
-                  <strong>{on ? m.pf.toFixed(2) : na}</strong>
+                  <strong>{m.pf > 0 && status !== "unknown" ? m.pf.toFixed(2) : na}</strong>
                 </div>
               </div>
               <div className="data-list compact">
