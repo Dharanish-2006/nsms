@@ -275,3 +275,10 @@ def test_reset_history_keeps_setup_and_needs_confirmation(anon, gateway, machine
     assert not MachineState.objects.exists()
     assert not Alert.objects.exists()
     assert Machine.objects.filter(pk=sheller.pk).exists()
+
+
+def test_leading_reactive_power_is_accepted(anon, gateway, machines):
+    sheller = machines["sheller-1"]
+    r = push(anon, gateway, [{"meterId": sheller.meter_id, "kw": 3.6, "kva": 21.4, "kvar": -21.1, "pf": 0.17}])
+    assert r.status_code == 202
+    assert r.json()["accepted"] == 1

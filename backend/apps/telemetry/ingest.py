@@ -55,7 +55,7 @@ class ReadingSerializer(serializers.Serializer):
     kw = FiniteFloat(min_value=-5000, max_value=5000)
     pf = FiniteFloat(required=False, allow_null=True)
     kva = FiniteFloat(required=False, allow_null=True, min_value=0, max_value=10000)
-    kvar = FiniteFloat(required=False, allow_null=True, min_value=0, max_value=10000)
+    kvar = FiniteFloat(required=False, allow_null=True, min_value=-10000, max_value=10000)
     current = FiniteFloat(required=False, allow_null=True, min_value=0, max_value=10000)
     voltage = FiniteFloat(required=False, allow_null=True, min_value=0, max_value=1500)
     frequency = FiniteFloat(required=False, allow_null=True, min_value=0, max_value=100)
