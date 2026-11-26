@@ -254,3 +254,24 @@ def test_impossible_values_are_rejected_not_stored(anon, gateway, machines):
     assert r.status_code == 202
     body = r.json()
     assert body["accepted"] == 1 and len(body["rejected"]) == 1
+
+
+def test_reset_history_keeps_setup_and_needs_confirmation(anon, gateway, machines):
+    from django.core.management import call_command
+    from django.core.management.base import CommandError
+
+    from apps.alerts.models import Alert
+    from apps.plants.models import Machine
+    from apps.telemetry.models import MachineState, Reading
+
+    sheller = machines["sheller-1"]
+    assert push(anon, gateway, [{"meterId": sheller.meter_id, "kw": 5, "current": 8, "voltage": 230}]).status_code == 202
+    assert Reading.objects.exists()
+    with pytest.raises(CommandError):
+        call_command("reset_history")
+    assert Reading.objects.exists()
+    call_command("reset_history", "--yes")
+    assert not Reading.objects.exists()
+    assert not MachineState.objects.exists()
+    assert not Alert.objects.exists()
+    assert Machine.objects.filter(pk=sheller.pk).exists()
